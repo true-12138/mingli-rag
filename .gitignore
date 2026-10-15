@@ -8,4 +8,5 @@ huggingface_cache/
 .venv/
 env/
 corpus-derived
+01-classics
 
