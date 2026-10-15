@@ -7,3 +7,5 @@ huggingface_cache/
 # 环境
 .venv/
 env/
+corpus-derived
+
