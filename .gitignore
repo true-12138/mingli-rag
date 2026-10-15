@@ -4,3 +4,6 @@ __pycache__/
 *.faiss
 *.pkl
 huggingface_cache/
+# 环境
+.venv/
+env/
