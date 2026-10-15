@@ -1,0 +1,44 @@
+# 通用术语（数据来源：bazi-terms，MIT License）
+
+八字：BaZi (Four Pillars)；拼音 bā zì；The Eight Characters: a destiny chart built from the year, month, day and hour of birth.
+四柱：Four Pillars；拼音 sì zhù；The four stem-branch pairs — year, month, day and hour — that make up a chart.
+年柱：Year Pillar；拼音 nián zhù；The first pillar; roots, ancestry and early life.
+月柱：Month Pillar；拼音 yuè zhù；The second pillar; parents, career environment and youth.
+日柱：Day Pillar；拼音 rì zhù；The third pillar; the self (stem) and the spouse palace (branch).
+时柱：Hour Pillar；拼音 shí zhù；The fourth pillar; children, later life and ambitions.
+天干：Heavenly Stem；拼音 tiān gān；One of ten yang/yin symbols; the visible, active layer of a pillar.
+地支：Earthly Branch；拼音 dì zhī；One of twelve symbols (the zodiac animals); the hidden, receptive layer of a pillar.
+干支：Stem-Branch (GanZhi)；拼音 gān zhī；A stem paired with a branch; one unit of the sexagenary cycle.
+藏干：Hidden Stems；拼音 cáng gān；The stems concealed inside each branch, giving it layered meaning.
+大运：Luck Pillar；拼音 dà yùn；A ten-year fortune cycle overlaid on the natal chart.
+流年：Annual Fortune；拼音 liú nián；The influence of a specific calendar year on the chart.
+小运：Minor Cycle；拼音 xiǎo yùn；A one-year cycle used before the first Luck Pillar begins.
+起运：Luck Onset；拼音 qǐ yùn；The age at which the first Luck Pillar cycle starts.
+命宫：Life Palace；拼音 mìng gōng；An auxiliary pillar describing the core life theme.
+身宫：Body Palace；拼音 shēn gōng；An auxiliary pillar describing how life is lived out in practice.
+胎元：Conception Pillar；拼音 tāi yuán；The stem-branch of conception; inherited and prenatal influence.
+胎息：Prenatal Breath；拼音 tāi xī；A pillar paired with the Conception Pillar; subtle life force.
+阴阳：Yin & Yang；拼音 yīn yáng；The two complementary polarities underlying every stem and branch.
+五行：Five Elements；拼音 wǔ xíng；Wood, Fire, Earth, Metal and Water — the phases of transforming energy.
+十神：Ten Gods；拼音 shí shén；Relationship labels between each stem and the Day Master.
+神煞：Shen Sha (Symbolic Stars)；拼音 shén shà；Auspicious and inauspicious symbolic stars overlaid on the chart.
+纳音：Na Yin (Melodic Element)；拼音 nà yīn；The thirty melodic elements assigned to each stem-branch pair.
+刑冲合会：Interactions；拼音 xíng chōng hé huì；The clashes, combinations, punishments, harms and destructions between stems and branches.
+生肖：Chinese Zodiac；拼音 shēng xiào；The twelve animals mapped to the Earthly Branches.
+旬：Decade (Xun)；拼音 xún；A ten-day group of the sexagenary cycle; determines the void branches.
+星运：Growth Stage；拼音 xīng yùn；One of the twelve lifecycle stages of an element across the branches.
+自坐：Self-sitting；拼音 zì zuò；The branch directly beneath the Day Stem and the ten god it forms.
+五行分值：Element Score；拼音 wǔ xíng fēn zhí；Weighted strength of each of the Five Elements in the chart.
+主星：Main Star；拼音 zhǔ xīng；The primary ten god of a pillar (usually its hidden main stem).
+副星：Secondary Star；拼音 fù xīng；The additional ten gods contributed by other hidden stems.
+日主五行：Day Master Element；拼音 rì zhǔ wǔ xíng；The Five Element of the Day Stem — the self element of the chart.
+真太阳时：True Solar Time；拼音 zhēn tài yáng shí；Local apparent solar time, corrected for longitude and season; the basis of the Hour Pillar.
+时辰：Double-hour；拼音 shí chén；A traditional two-hour period; twelve of them span a day.
+农历：Lunar Calendar；拼音 nóng lì；The traditional Chinese lunisolar calendar.
+公历：Gregorian Calendar；拼音 gōng lì；The international solar calendar.
+性别：Gender；拼音 xìng bié；Male or female; determines the direction of the Luck Pillar cycles.
+男：Male；Male gender input for chart calculation.
+女：Female；Female gender input for chart calculation.
+顺行：Forward；拼音 shùn xíng；Luck Pillars advancing in the natural cycle order.
+逆行：Backward；拼音 nì xíng；Luck Pillars advancing in the reverse cycle order.
+当前：Current；拼音 dāng qián；Marks the Luck Pillar or year that is active now.

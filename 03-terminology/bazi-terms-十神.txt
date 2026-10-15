@@ -1,0 +1,13 @@
+# 十神（数据来源：bazi-terms，MIT License）
+
+比肩：Friend；拼音 bǐ jiān；Same element, same polarity as the Day Master: peers, siblings, competitors and self-reliance.
+劫财：Rob Wealth；拼音 jié cái；Same element, opposite polarity: rivals who share your resources; boldness and spending.
+食神：Eating God；拼音 shí shén；Element the Day Master generates, same polarity: creativity, enjoyment, expression and fertility.
+伤官：Hurting Officer；拼音 shāng guān；Element the Day Master generates, opposite polarity: talent, rebellion and rule-breaking brilliance.
+偏财：Indirect Wealth；拼音 piān cái；Element the Day Master controls, same polarity: windfall money, business acumen and generosity.
+正财：Direct Wealth；拼音 zhèng cái；Element the Day Master controls, opposite polarity: stable income, savings and (traditionally) the wife star.
+七杀：Seven Killings；拼音 qī shā；Element that controls the Day Master, same polarity: pressure, authority, courage and fierce ambition.
+正官：Direct Officer；拼音 zhèng guān；Element that controls the Day Master, opposite polarity: career, discipline, reputation and (traditionally) the husband star.
+偏印：Indirect Resource；拼音 piān yìn；Element that generates the Day Master, same polarity: unconventional learning, intuition and solitude.
+正印：Direct Resource；拼音 zhèng yìn；Element that generates the Day Master, opposite polarity: education, protection, motherly support and credentials.
+日主：Day Master；拼音 rì zhǔ；The Heavenly Stem of the Day Pillar — the reference point of the whole chart, representing the self.

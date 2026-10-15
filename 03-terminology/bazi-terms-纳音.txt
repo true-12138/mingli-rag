@@ -1,0 +1,32 @@
+# 纳音（数据来源：bazi-terms，MIT License）
+
+海中金：Sea Gold；Gold hidden in the sea: talent waiting to be discovered.
+炉中火：Furnace Fire；Fire in the furnace: energy that forges and transforms.
+大林木：Forest Wood；Great forest wood: abundant, sheltering growth.
+路旁土：Roadside Earth；Earth by the roadside: practical, trodden, serviceable.
+剑锋金：Sword-edge Gold；Sharpened blade metal: precision and cutting brilliance.
+山头火：Mountaintop Fire；Fire on the summit: visible, far-reaching light.
+涧下水：Stream Water；Water in the ravine: clear, quiet, persistent flow.
+城头土：City-wall Earth；Rampart earth: defensive strength and boundaries.
+白蜡金：Wax Gold；White wax metal: formable value needing refinement.
+杨柳木：Willow Wood；Willow wood: graceful flexibility and resilience.
+泉中水：Spring Water；Water in the well: inexhaustible, hidden source.
+屋上土：Rooftop Earth；Earth on the roof: shelter and protection.
+霹雳火：Thunderbolt Fire；Lightning fire: sudden, dramatic power.
+松柏木：Pine Wood；Pine and cypress: endurance through seasons.
+长流水：Long-flowing Water；Ever-flowing water: momentum that never stagnates.
+沙中金：Sand Gold；Gold in sand: value requiring patient sifting.
+山下火：Foothill Fire；Fire below the mountain: warmth close to home.
+平地木：Plain Wood；Wood on the plain: steady, unpretentious growth.
+壁上土：Wall Earth；Earth on the wall: quiet support and structure.
+金箔金：Gold Foil；Gilt foil: beauty, ornament and surface brilliance.
+覆灯火：Lamp Fire；Covered lamp flame: small light that guides in darkness.
+天河水：River of Heaven Water；Celestial river: the Milky Way; inspiration from above.
+大驿土：Highway Earth；Great post-road earth: connection, travel and commerce.
+钗钏金：Hairpin Gold；Ornamental jewelry metal: adornment and refined value.
+桑柘木：Mulberry Wood；Mulberry wood: cultivation, silkworms and useful craft.
+大溪水：Great Stream Water；Rushing stream: vigorous, purposeful movement.
+沙中土：Desert Earth；Earth in sand: loose foundation needing consolidation.
+天上火：Celestial Fire；Fire in the sky: the sun itself; universal warmth.
+石榴木：Pomegranate Wood；Pomegranate wood: hard wood bearing many fruits.
+大海水：Ocean Water；The open ocean: vastness, depth and inclusiveness.
