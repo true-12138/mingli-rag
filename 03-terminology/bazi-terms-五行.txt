@@ -1,0 +1,7 @@
+# 五行（数据来源：bazi-terms，MIT License）
+
+木：Wood；拼音 mù；Growth, expansion and benevolence; associated with spring and the east.
+火：Fire；拼音 huǒ；Heat, illumination and propriety; associated with summer and the south.
+土：Earth；拼音 tǔ；Stability, nourishment and trust; associated with the late-season transitions and the center.
+金：Metal；拼音 jīn；Structure, decisiveness and righteousness; associated with autumn and the west.
+水：Water；拼音 shuǐ；Flow, wisdom and adaptability; associated with winter and the north.

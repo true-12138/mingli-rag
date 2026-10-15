@@ -1,0 +1,14 @@
+# 地支（数据来源：bazi-terms，MIT License）
+
+子：Zi；拼音 zǐ；五行 water；Rat branch — cardinal Water; midnight, winter solstice, hidden beginnings.
+丑：Chou；拼音 chǒu；五行 earth；Ox branch — moist Earth; late winter, quiet accumulation.
+寅：Yin；拼音 yín；五行 wood；Tiger branch — Yang Wood; early spring, the start of the zodiac year.
+卯：Mao；拼音 mǎo；五行 wood；Rabbit branch — Yin Wood; mid-spring, sunrise and expansion.
+辰：Chen；拼音 chén；五行 earth；Dragon branch — wet Earth; late spring, the water reservoir.
+巳：Si；拼音 sì；五行 fire；Snake branch — Yin Fire; early summer, hidden heat.
+午：Wu；拼音 wǔ；五行 fire；Horse branch — cardinal Fire; noon, summer solstice, peak Yang.
+未：Wei；拼音 wèi；五行 earth；Goat branch — dry Earth; late summer, the wood reservoir.
+申：Shen；拼音 shēn；五行 metal；Monkey branch — Yang Metal; early autumn, the water birthplace.
+酉：You；拼音 yǒu；五行 metal；Rooster branch — cardinal Metal; mid-autumn, sunset and precision.
+戌：Xu；拼音 xū；五行 earth；Dog branch — dry Earth; late autumn, the fire reservoir.
+亥：Hai；拼音 hài；五行 water；Pig branch — Yang Water; early winter, the wood birthplace.

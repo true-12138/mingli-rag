@@ -1,0 +1,22 @@
+# rag.py
+# 来源：Sudo-Biao/Chinese-Metaphysics-Platform（MIT License）
+
+## 模块说明
+knowledge/rag.py
+================
+BM25 + jieba Classical Text RAG Engine.
+
+Replaces static prompt-injection with semantic retrieval:
+every LLM call now gets the TOP-K most relevant classical
+passages for the specific question, rather than fixed snippets.
+
+Usage:
+    from knowledge.rag import ClassicalRAG
+    rag = ClassicalRAG()                        # auto-indexes on first call
+    chunks = rag.search("日主强弱用神", top_k=5)
+    context = rag.format_context(chunks)        # ready for LLM prompt
+
+
+## _rag_instance
+
+None

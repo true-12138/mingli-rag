@@ -1,0 +1,12 @@
+# 天干（数据来源：bazi-terms，MIT License）
+
+甲：Jia；拼音 jiǎ；五行 wood；阴阳 yang；Yang Wood — a towering tree; growth, initiative and uprightness.
+乙：Yi；拼音 yǐ；五行 wood；阴阳 yin；Yin Wood — flowering plants and vines; flexibility and adaptability.
+丙：Bing；拼音 bǐng；五行 fire；阴阳 yang；Yang Fire — the sun; brightness, generosity and visibility.
+丁：Ding；拼音 dīng；五行 fire；阴阳 yin；Yin Fire — a candle or lamp flame; focus, warmth and refinement.
+戊：Wu；拼音 wù；五行 earth；阴阳 yang；Yang Earth — a mountain or city wall; stability and reliability.
+己：Ji；拼音 jǐ；五行 earth；阴阳 yin；Yin Earth — garden soil; nourishment, patience and practicality.
+庚：Geng；拼音 gēng；五行 metal；阴阳 yang；Yang Metal — a sword or axe; decisiveness, justice and resolve.
+辛：Xin；拼音 xīn；五行 metal；阴阳 yin；Yin Metal — jewelry and fine ornaments; precision, elegance and sensitivity.
+壬：Ren；拼音 rén；五行 water；阴阳 yang；Yang Water — the ocean or a great river; movement, ambition and resourcefulness.
+癸：Gui；拼音 guǐ；五行 water；阴阳 yin；Yin Water — rain, dew and springs; intuition, gentleness and permeation.

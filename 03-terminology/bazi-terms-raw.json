@@ -1,0 +1,1661 @@
+{
+  "STEMS": [
+    {
+      "key": "jia",
+      "zh": "甲",
+      "en": "Jia",
+      "pinyin": "jiǎ",
+      "element": "wood",
+      "polarity": "yang",
+      "definition": "Yang Wood — a towering tree; growth, initiative and uprightness."
+    },
+    {
+      "key": "yi",
+      "zh": "乙",
+      "en": "Yi",
+      "pinyin": "yǐ",
+      "element": "wood",
+      "polarity": "yin",
+      "definition": "Yin Wood — flowering plants and vines; flexibility and adaptability."
+    },
+    {
+      "key": "bing",
+      "zh": "丙",
+      "en": "Bing",
+      "pinyin": "bǐng",
+      "element": "fire",
+      "polarity": "yang",
+      "definition": "Yang Fire — the sun; brightness, generosity and visibility."
+    },
+    {
+      "key": "ding",
+      "zh": "丁",
+      "en": "Ding",
+      "pinyin": "dīng",
+      "element": "fire",
+      "polarity": "yin",
+      "definition": "Yin Fire — a candle or lamp flame; focus, warmth and refinement."
+    },
+    {
+      "key": "wu",
+      "zh": "戊",
+      "en": "Wu",
+      "pinyin": "wù",
+      "element": "earth",
+      "polarity": "yang",
+      "definition": "Yang Earth — a mountain or city wall; stability and reliability."
+    },
+    {
+      "key": "ji",
+      "zh": "己",
+      "en": "Ji",
+      "pinyin": "jǐ",
+      "element": "earth",
+      "polarity": "yin",
+      "definition": "Yin Earth — garden soil; nourishment, patience and practicality."
+    },
+    {
+      "key": "geng",
+      "zh": "庚",
+      "en": "Geng",
+      "pinyin": "gēng",
+      "element": "metal",
+      "polarity": "yang",
+      "definition": "Yang Metal — a sword or axe; decisiveness, justice and resolve."
+    },
+    {
+      "key": "xin",
+      "zh": "辛",
+      "en": "Xin",
+      "pinyin": "xīn",
+      "element": "metal",
+      "polarity": "yin",
+      "definition": "Yin Metal — jewelry and fine ornaments; precision, elegance and sensitivity."
+    },
+    {
+      "key": "ren",
+      "zh": "壬",
+      "en": "Ren",
+      "pinyin": "rén",
+      "element": "water",
+      "polarity": "yang",
+      "definition": "Yang Water — the ocean or a great river; movement, ambition and resourcefulness."
+    },
+    {
+      "key": "gui",
+      "zh": "癸",
+      "en": "Gui",
+      "pinyin": "guǐ",
+      "element": "water",
+      "polarity": "yin",
+      "definition": "Yin Water — rain, dew and springs; intuition, gentleness and permeation."
+    }
+  ],
+  "BRANCHES": [
+    {
+      "key": "zi",
+      "zh": "子",
+      "en": "Zi",
+      "pinyin": "zǐ",
+      "zodiacZh": "鼠",
+      "zodiacEn": "Rat",
+      "element": "water",
+      "hours": "23:00-01:00",
+      "definition": "Rat branch — cardinal Water; midnight, winter solstice, hidden beginnings."
+    },
+    {
+      "key": "chou",
+      "zh": "丑",
+      "en": "Chou",
+      "pinyin": "chǒu",
+      "zodiacZh": "牛",
+      "zodiacEn": "Ox",
+      "element": "earth",
+      "hours": "01:00-03:00",
+      "definition": "Ox branch — moist Earth; late winter, quiet accumulation."
+    },
+    {
+      "key": "yin",
+      "zh": "寅",
+      "en": "Yin",
+      "pinyin": "yín",
+      "zodiacZh": "虎",
+      "zodiacEn": "Tiger",
+      "element": "wood",
+      "hours": "03:00-05:00",
+      "definition": "Tiger branch — Yang Wood; early spring, the start of the zodiac year."
+    },
+    {
+      "key": "mao",
+      "zh": "卯",
+      "en": "Mao",
+      "pinyin": "mǎo",
+      "zodiacZh": "兔",
+      "zodiacEn": "Rabbit",
+      "element": "wood",
+      "hours": "05:00-07:00",
+      "definition": "Rabbit branch — Yin Wood; mid-spring, sunrise and expansion."
+    },
+    {
+      "key": "chen",
+      "zh": "辰",
+      "en": "Chen",
+      "pinyin": "chén",
+      "zodiacZh": "龙",
+      "zodiacEn": "Dragon",
+      "element": "earth",
+      "hours": "07:00-09:00",
+      "definition": "Dragon branch — wet Earth; late spring, the water reservoir."
+    },
+    {
+      "key": "si",
+      "zh": "巳",
+      "en": "Si",
+      "pinyin": "sì",
+      "zodiacZh": "蛇",
+      "zodiacEn": "Snake",
+      "element": "fire",
+      "hours": "09:00-11:00",
+      "definition": "Snake branch — Yin Fire; early summer, hidden heat."
+    },
+    {
+      "key": "wuHorse",
+      "zh": "午",
+      "en": "Wu",
+      "pinyin": "wǔ",
+      "zodiacZh": "马",
+      "zodiacEn": "Horse",
+      "element": "fire",
+      "hours": "11:00-13:00",
+      "definition": "Horse branch — cardinal Fire; noon, summer solstice, peak Yang."
+    },
+    {
+      "key": "wei",
+      "zh": "未",
+      "en": "Wei",
+      "pinyin": "wèi",
+      "zodiacZh": "羊",
+      "zodiacEn": "Goat",
+      "element": "earth",
+      "hours": "13:00-15:00",
+      "definition": "Goat branch — dry Earth; late summer, the wood reservoir."
+    },
+    {
+      "key": "shen",
+      "zh": "申",
+      "en": "Shen",
+      "pinyin": "shēn",
+      "zodiacZh": "猴",
+      "zodiacEn": "Monkey",
+      "element": "metal",
+      "hours": "15:00-17:00",
+      "definition": "Monkey branch — Yang Metal; early autumn, the water birthplace."
+    },
+    {
+      "key": "you",
+      "zh": "酉",
+      "en": "You",
+      "pinyin": "yǒu",
+      "zodiacZh": "鸡",
+      "zodiacEn": "Rooster",
+      "element": "metal",
+      "hours": "17:00-19:00",
+      "definition": "Rooster branch — cardinal Metal; mid-autumn, sunset and precision."
+    },
+    {
+      "key": "xu",
+      "zh": "戌",
+      "en": "Xu",
+      "pinyin": "xū",
+      "zodiacZh": "狗",
+      "zodiacEn": "Dog",
+      "element": "earth",
+      "hours": "19:00-21:00",
+      "definition": "Dog branch — dry Earth; late autumn, the fire reservoir."
+    },
+    {
+      "key": "hai",
+      "zh": "亥",
+      "en": "Hai",
+      "pinyin": "hài",
+      "zodiacZh": "猪",
+      "zodiacEn": "Pig",
+      "element": "water",
+      "hours": "21:00-23:00",
+      "definition": "Pig branch — Yang Water; early winter, the wood birthplace."
+    }
+  ],
+  "ELEMENTS": [
+    {
+      "key": "wood",
+      "zh": "木",
+      "en": "Wood",
+      "pinyin": "mù",
+      "definition": "Growth, expansion and benevolence; associated with spring and the east."
+    },
+    {
+      "key": "fire",
+      "zh": "火",
+      "en": "Fire",
+      "pinyin": "huǒ",
+      "definition": "Heat, illumination and propriety; associated with summer and the south."
+    },
+    {
+      "key": "earth",
+      "zh": "土",
+      "en": "Earth",
+      "pinyin": "tǔ",
+      "definition": "Stability, nourishment and trust; associated with the late-season transitions and the center."
+    },
+    {
+      "key": "metal",
+      "zh": "金",
+      "en": "Metal",
+      "pinyin": "jīn",
+      "definition": "Structure, decisiveness and righteousness; associated with autumn and the west."
+    },
+    {
+      "key": "water",
+      "zh": "水",
+      "en": "Water",
+      "pinyin": "shuǐ",
+      "definition": "Flow, wisdom and adaptability; associated with winter and the north."
+    }
+  ],
+  "ELEMENT_CYCLES": {
+    "generating": [
+      [
+        "wood",
+        "fire"
+      ],
+      [
+        "fire",
+        "earth"
+      ],
+      [
+        "earth",
+        "metal"
+      ],
+      [
+        "metal",
+        "water"
+      ],
+      [
+        "water",
+        "wood"
+      ]
+    ],
+    "controlling": [
+      [
+        "wood",
+        "earth"
+      ],
+      [
+        "earth",
+        "water"
+      ],
+      [
+        "water",
+        "fire"
+      ],
+      [
+        "fire",
+        "metal"
+      ],
+      [
+        "metal",
+        "wood"
+      ]
+    ]
+  },
+  "TEN_GODS": [
+    {
+      "key": "biJian",
+      "zh": "比肩",
+      "en": "Friend",
+      "pinyin": "bǐ jiān",
+      "definition": "Same element, same polarity as the Day Master: peers, siblings, competitors and self-reliance."
+    },
+    {
+      "key": "jieCai",
+      "zh": "劫财",
+      "en": "Rob Wealth",
+      "pinyin": "jié cái",
+      "definition": "Same element, opposite polarity: rivals who share your resources; boldness and spending."
+    },
+    {
+      "key": "shiShen",
+      "zh": "食神",
+      "en": "Eating God",
+      "pinyin": "shí shén",
+      "definition": "Element the Day Master generates, same polarity: creativity, enjoyment, expression and fertility."
+    },
+    {
+      "key": "shangGuan",
+      "zh": "伤官",
+      "en": "Hurting Officer",
+      "pinyin": "shāng guān",
+      "definition": "Element the Day Master generates, opposite polarity: talent, rebellion and rule-breaking brilliance."
+    },
+    {
+      "key": "pianCai",
+      "zh": "偏财",
+      "en": "Indirect Wealth",
+      "pinyin": "piān cái",
+      "definition": "Element the Day Master controls, same polarity: windfall money, business acumen and generosity."
+    },
+    {
+      "key": "zhengCai",
+      "zh": "正财",
+      "en": "Direct Wealth",
+      "pinyin": "zhèng cái",
+      "definition": "Element the Day Master controls, opposite polarity: stable income, savings and (traditionally) the wife star."
+    },
+    {
+      "key": "qiSha",
+      "zh": "七杀",
+      "en": "Seven Killings",
+      "pinyin": "qī shā",
+      "definition": "Element that controls the Day Master, same polarity: pressure, authority, courage and fierce ambition."
+    },
+    {
+      "key": "zhengGuan",
+      "zh": "正官",
+      "en": "Direct Officer",
+      "pinyin": "zhèng guān",
+      "definition": "Element that controls the Day Master, opposite polarity: career, discipline, reputation and (traditionally) the husband star."
+    },
+    {
+      "key": "pianYin",
+      "zh": "偏印",
+      "en": "Indirect Resource",
+      "pinyin": "piān yìn",
+      "definition": "Element that generates the Day Master, same polarity: unconventional learning, intuition and solitude."
+    },
+    {
+      "key": "zhengYin",
+      "zh": "正印",
+      "en": "Direct Resource",
+      "pinyin": "zhèng yìn",
+      "definition": "Element that generates the Day Master, opposite polarity: education, protection, motherly support and credentials."
+    },
+    {
+      "key": "dayMaster",
+      "zh": "日主",
+      "en": "Day Master",
+      "pinyin": "rì zhǔ",
+      "definition": "The Heavenly Stem of the Day Pillar — the reference point of the whole chart, representing the self."
+    }
+  ],
+  "GROWTH_STAGES": [
+    {
+      "key": "birth",
+      "zh": "长生",
+      "en": "Birth",
+      "pinyin": "cháng shēng",
+      "definition": "Newly born energy; the element enters its most promising phase."
+    },
+    {
+      "key": "bathing",
+      "zh": "沐浴",
+      "en": "Bathing",
+      "pinyin": "mù yù",
+      "definition": "Infancy and washing; vulnerable, romantic and unstable energy."
+    },
+    {
+      "key": "crowning",
+      "zh": "冠带",
+      "en": "Crowning",
+      "pinyin": "guàn dài",
+      "definition": "Coming of age; the element dresses up and starts to show capability."
+    },
+    {
+      "key": "officiating",
+      "zh": "临官",
+      "en": "Officiating",
+      "pinyin": "lín guān",
+      "definition": "Taking office; mature, productive energy approaching its peak."
+    },
+    {
+      "key": "peak",
+      "zh": "帝旺",
+      "en": "Peak",
+      "pinyin": "dì wàng",
+      "definition": "Imperial prosperity; the element at maximum strength."
+    },
+    {
+      "key": "decline",
+      "zh": "衰",
+      "en": "Decline",
+      "pinyin": "shuāi",
+      "definition": "Energy past its prime, gradually weakening."
+    },
+    {
+      "key": "illness",
+      "zh": "病",
+      "en": "Illness",
+      "pinyin": "bìng",
+      "definition": "Weakened energy, like sickness; low vitality."
+    },
+    {
+      "key": "death",
+      "zh": "死",
+      "en": "Death",
+      "pinyin": "sǐ",
+      "definition": "Dormant energy; quiet, still and inactive."
+    },
+    {
+      "key": "tomb",
+      "zh": "墓",
+      "en": "Tomb",
+      "pinyin": "mù",
+      "definition": "Stored energy locked in the tomb; latent, hoarded, awaiting a key."
+    },
+    {
+      "key": "extinction",
+      "zh": "绝",
+      "en": "Extinction",
+      "pinyin": "jué",
+      "definition": "The lowest point; energy seemingly gone but about to turn."
+    },
+    {
+      "key": "gestation",
+      "zh": "胎",
+      "en": "Gestation",
+      "pinyin": "tāi",
+      "definition": "Conception; a new cycle forming in secret."
+    },
+    {
+      "key": "nurturing",
+      "zh": "养",
+      "en": "Nurturing",
+      "pinyin": "yǎng",
+      "definition": "Nourishment before birth; gentle preparation for the next cycle."
+    }
+  ],
+  "SHEN_SHA": [
+    {
+      "key": "tianYiGuiRen",
+      "zh": "天乙贵人",
+      "en": "Heavenly Nobleman",
+      "pinyin": "tiān yǐ guì rén",
+      "definition": "The most auspicious star: helpful people and timely rescue in difficulty."
+    },
+    {
+      "key": "taiJiGuiRen",
+      "zh": "太极贵人",
+      "en": "Taiji Nobleman",
+      "pinyin": "tài jí guì rén",
+      "definition": "Affinity with metaphysics, philosophy and deep research."
+    },
+    {
+      "key": "tianDeGuiRen",
+      "zh": "天德贵人",
+      "en": "Heavenly Virtue",
+      "pinyin": "tiān dé guì rén",
+      "definition": "Heaven-sent protection that softens disasters."
+    },
+    {
+      "key": "yueDeGuiRen",
+      "zh": "月德贵人",
+      "en": "Monthly Virtue",
+      "pinyin": "yuè dé guì rén",
+      "definition": "Gentle protective virtue; calming influence on misfortune."
+    },
+    {
+      "key": "tianDeHe",
+      "zh": "天德合",
+      "en": "Heavenly Virtue Union",
+      "pinyin": "tiān dé hé",
+      "definition": "Companion star of Heavenly Virtue; reinforces protection."
+    },
+    {
+      "key": "yueDeHe",
+      "zh": "月德合",
+      "en": "Monthly Virtue Union",
+      "pinyin": "yuè dé hé",
+      "definition": "Companion star of Monthly Virtue; reinforces protection."
+    },
+    {
+      "key": "deXiuGuiRen",
+      "zh": "德秀贵人",
+      "en": "Virtue-Elegance Nobleman",
+      "pinyin": "dé xiù guì rén",
+      "definition": "Refined character and talent; turns danger into fortune."
+    },
+    {
+      "key": "fuXingGuiRen",
+      "zh": "福星贵人",
+      "en": "Blessing Nobleman",
+      "pinyin": "fú xīng guì rén",
+      "definition": "Everyday blessings, comfort and a smooth life path."
+    },
+    {
+      "key": "wenChangGuiRen",
+      "zh": "文昌贵人",
+      "en": "Literary Star",
+      "pinyin": "wén chāng guì rén",
+      "definition": "Academic success, writing talent and examination luck."
+    },
+    {
+      "key": "xueTang",
+      "zh": "学堂",
+      "en": "School Hall",
+      "pinyin": "xué táng",
+      "definition": "Scholarly star favoring study and intellectual growth."
+    },
+    {
+      "key": "ciGuan",
+      "zh": "词馆",
+      "en": "Literary Bureau",
+      "pinyin": "cí guǎn",
+      "definition": "Eloquence and literary accomplishment."
+    },
+    {
+      "key": "tianYi",
+      "zh": "天医",
+      "en": "Heavenly Doctor",
+      "pinyin": "tiān yī",
+      "definition": "Affinity with medicine, healing and health work."
+    },
+    {
+      "key": "yiMa",
+      "zh": "驿马",
+      "en": "Traveling Horse",
+      "pinyin": "yì mǎ",
+      "definition": "Movement: travel, relocation, overseas ties and restless change."
+    },
+    {
+      "key": "taoHua",
+      "zh": "桃花",
+      "en": "Peach Blossom",
+      "pinyin": "táo huā",
+      "definition": "Romance, charm and social magnetism."
+    },
+    {
+      "key": "hongYan",
+      "zh": "红艳",
+      "en": "Red Beauty",
+      "pinyin": "hóng yàn",
+      "definition": "Intense romantic allure; passion that can outshine caution."
+    },
+    {
+      "key": "hongLuan",
+      "zh": "红鸾",
+      "en": "Red Phoenix",
+      "pinyin": "hóng luán",
+      "definition": "Marriage and celebration star; joyous occasions."
+    },
+    {
+      "key": "tianXi",
+      "zh": "天喜",
+      "en": "Heavenly Joy",
+      "pinyin": "tiān xǐ",
+      "definition": "Happiness, weddings and festive events."
+    },
+    {
+      "key": "huaGai",
+      "zh": "华盖",
+      "en": "Elegant Canopy",
+      "pinyin": "huá gài",
+      "definition": "Artistic genius and spiritual depth, tinged with solitude."
+    },
+    {
+      "key": "jinYu",
+      "zh": "金舆",
+      "en": "Golden Carriage",
+      "pinyin": "jīn yú",
+      "definition": "Comfort, spousal support and an easy ride through life."
+    },
+    {
+      "key": "jiangXing",
+      "zh": "将星",
+      "en": "General Star",
+      "pinyin": "jiàng xīng",
+      "definition": "Leadership, authority and command over others."
+    },
+    {
+      "key": "yangRen",
+      "zh": "羊刃",
+      "en": "Blade",
+      "pinyin": "yáng rèn",
+      "definition": "Sharp, aggressive edge just past the peak; courage mixed with risk of injury."
+    },
+    {
+      "key": "feiRen",
+      "zh": "飞刃",
+      "en": "Flying Blade",
+      "pinyin": "fēi rèn",
+      "definition": "The opposite-facing blade; sudden conflicts and impulsive force."
+    },
+    {
+      "key": "luShen",
+      "zh": "禄神",
+      "en": "Prosperity Star",
+      "pinyin": "lù shén",
+      "definition": "Steady income and self-earned wealth; the stem at its own root."
+    },
+    {
+      "key": "liuXia",
+      "zh": "流霞",
+      "en": "Flowing Mist",
+      "pinyin": "liú xiá",
+      "definition": "Blood-related caution star; watch for injuries and inflammation."
+    },
+    {
+      "key": "guChen",
+      "zh": "孤辰",
+      "en": "Solitary Star",
+      "pinyin": "gū chén",
+      "definition": "Emotional distance and preference for solitude."
+    },
+    {
+      "key": "guaSu",
+      "zh": "寡宿",
+      "en": "Widowed Star",
+      "pinyin": "guǎ sù",
+      "definition": "Loneliness in close relationships; inner detachment."
+    },
+    {
+      "key": "jieSha",
+      "zh": "劫煞",
+      "en": "Robbery Star",
+      "pinyin": "jié shà",
+      "definition": "Sudden loss or seizure; act with caution in risky matters."
+    },
+    {
+      "key": "zaiSha",
+      "zh": "灾煞",
+      "en": "Disaster Star",
+      "pinyin": "zāi shà",
+      "definition": "External misfortune; traditionally linked to accidents and setbacks."
+    },
+    {
+      "key": "wangShen",
+      "zh": "亡神",
+      "en": "Lost Spirit",
+      "pinyin": "wáng shén",
+      "definition": "Hidden schemes and mental drain; can sharpen strategy when controlled."
+    },
+    {
+      "key": "piMa",
+      "zh": "披麻",
+      "en": "Mourning Veil",
+      "pinyin": "pī má",
+      "definition": "Family worries and melancholy events."
+    },
+    {
+      "key": "tongZiSha",
+      "zh": "童子煞",
+      "en": "Child Star",
+      "pinyin": "tóng zǐ shà",
+      "definition": "Folk belief of a celestial child identity; a youthful, otherworldly temperament."
+    },
+    {
+      "key": "liuXiuRi",
+      "zh": "六秀日",
+      "en": "Six Elegance Day",
+      "pinyin": "liù xiù rì",
+      "definition": "Day pillar known for talent and refined appearance."
+    },
+    {
+      "key": "jiuChouRi",
+      "zh": "九丑日",
+      "en": "Nine Ugly Day",
+      "pinyin": "jiǔ chǒu rì",
+      "definition": "Day pillar linked to romantic entanglements; name misleads, effect is relational friction."
+    },
+    {
+      "key": "kongWang",
+      "zh": "空亡",
+      "en": "Void",
+      "pinyin": "kōng wáng",
+      "definition": "The two branches outside the current decade cycle; energy that feels hollow or deferred."
+    },
+    {
+      "key": "guoYin",
+      "zh": "国印",
+      "en": "State Seal",
+      "pinyin": "guó yìn",
+      "definition": "Officialdom, seals of office and institutional power."
+    },
+    {
+      "key": "tianLuoDiWang",
+      "zh": "天罗地网",
+      "en": "Sky Net & Earth Net",
+      "pinyin": "tiān luó dì wǎng",
+      "definition": "Confining combinations (戌亥 / 辰巳) that feel like being trapped."
+    },
+    {
+      "key": "yinChaYangCuo",
+      "zh": "阴差阳错",
+      "en": "Yin-Yang Mismatch",
+      "pinyin": "yīn chā yáng cuò",
+      "definition": "Day pillar linked to misunderstandings in family and marriage matters."
+    },
+    {
+      "key": "shiEDaBai",
+      "zh": "十恶大败",
+      "en": "Ten Evils Great Defeat",
+      "pinyin": "shí è dà bài",
+      "definition": "Classic inauspicious day pillar group; tradition advises careful money management."
+    }
+  ],
+  "NA_YIN": [
+    {
+      "key": "seaGold",
+      "zh": "海中金",
+      "en": "Sea Gold",
+      "pairs": [
+        "甲子",
+        "乙丑"
+      ],
+      "definition": "Gold hidden in the sea: talent waiting to be discovered."
+    },
+    {
+      "key": "furnaceFire",
+      "zh": "炉中火",
+      "en": "Furnace Fire",
+      "pairs": [
+        "丙寅",
+        "丁卯"
+      ],
+      "definition": "Fire in the furnace: energy that forges and transforms."
+    },
+    {
+      "key": "forestWood",
+      "zh": "大林木",
+      "en": "Forest Wood",
+      "pairs": [
+        "戊辰",
+        "己巳"
+      ],
+      "definition": "Great forest wood: abundant, sheltering growth."
+    },
+    {
+      "key": "roadsideEarth",
+      "zh": "路旁土",
+      "en": "Roadside Earth",
+      "pairs": [
+        "庚午",
+        "辛未"
+      ],
+      "definition": "Earth by the roadside: practical, trodden, serviceable."
+    },
+    {
+      "key": "swordEdgeGold",
+      "zh": "剑锋金",
+      "en": "Sword-edge Gold",
+      "pairs": [
+        "壬申",
+        "癸酉"
+      ],
+      "definition": "Sharpened blade metal: precision and cutting brilliance."
+    },
+    {
+      "key": "mountaintopFire",
+      "zh": "山头火",
+      "en": "Mountaintop Fire",
+      "pairs": [
+        "甲戌",
+        "乙亥"
+      ],
+      "definition": "Fire on the summit: visible, far-reaching light."
+    },
+    {
+      "key": "streamWater",
+      "zh": "涧下水",
+      "en": "Stream Water",
+      "pairs": [
+        "丙子",
+        "丁丑"
+      ],
+      "definition": "Water in the ravine: clear, quiet, persistent flow."
+    },
+    {
+      "key": "cityWallEarth",
+      "zh": "城头土",
+      "en": "City-wall Earth",
+      "pairs": [
+        "戊寅",
+        "己卯"
+      ],
+      "definition": "Rampart earth: defensive strength and boundaries."
+    },
+    {
+      "key": "waxGold",
+      "zh": "白蜡金",
+      "en": "Wax Gold",
+      "pairs": [
+        "庚辰",
+        "辛巳"
+      ],
+      "definition": "White wax metal: formable value needing refinement."
+    },
+    {
+      "key": "willowWood",
+      "zh": "杨柳木",
+      "en": "Willow Wood",
+      "pairs": [
+        "壬午",
+        "癸未"
+      ],
+      "definition": "Willow wood: graceful flexibility and resilience."
+    },
+    {
+      "key": "springWater",
+      "zh": "泉中水",
+      "en": "Spring Water",
+      "pairs": [
+        "甲申",
+        "乙酉"
+      ],
+      "definition": "Water in the well: inexhaustible, hidden source."
+    },
+    {
+      "key": "rooftopEarth",
+      "zh": "屋上土",
+      "en": "Rooftop Earth",
+      "pairs": [
+        "丙戌",
+        "丁亥"
+      ],
+      "definition": "Earth on the roof: shelter and protection."
+    },
+    {
+      "key": "thunderboltFire",
+      "zh": "霹雳火",
+      "en": "Thunderbolt Fire",
+      "pairs": [
+        "戊子",
+        "己丑"
+      ],
+      "definition": "Lightning fire: sudden, dramatic power."
+    },
+    {
+      "key": "pineWood",
+      "zh": "松柏木",
+      "en": "Pine Wood",
+      "pairs": [
+        "庚寅",
+        "辛卯"
+      ],
+      "definition": "Pine and cypress: endurance through seasons."
+    },
+    {
+      "key": "longFlowingWater",
+      "zh": "长流水",
+      "en": "Long-flowing Water",
+      "pairs": [
+        "壬辰",
+        "癸巳"
+      ],
+      "definition": "Ever-flowing water: momentum that never stagnates."
+    },
+    {
+      "key": "sandGold",
+      "zh": "沙中金",
+      "en": "Sand Gold",
+      "pairs": [
+        "甲午",
+        "乙未"
+      ],
+      "definition": "Gold in sand: value requiring patient sifting."
+    },
+    {
+      "key": "foothillFire",
+      "zh": "山下火",
+      "en": "Foothill Fire",
+      "pairs": [
+        "丙申",
+        "丁酉"
+      ],
+      "definition": "Fire below the mountain: warmth close to home."
+    },
+    {
+      "key": "plainWood",
+      "zh": "平地木",
+      "en": "Plain Wood",
+      "pairs": [
+        "戊戌",
+        "己亥"
+      ],
+      "definition": "Wood on the plain: steady, unpretentious growth."
+    },
+    {
+      "key": "wallEarth",
+      "zh": "壁上土",
+      "en": "Wall Earth",
+      "pairs": [
+        "庚子",
+        "辛丑"
+      ],
+      "definition": "Earth on the wall: quiet support and structure."
+    },
+    {
+      "key": "goldFoil",
+      "zh": "金箔金",
+      "en": "Gold Foil",
+      "pairs": [
+        "壬寅",
+        "癸卯"
+      ],
+      "definition": "Gilt foil: beauty, ornament and surface brilliance."
+    },
+    {
+      "key": "lampFire",
+      "zh": "覆灯火",
+      "en": "Lamp Fire",
+      "pairs": [
+        "甲辰",
+        "乙巳"
+      ],
+      "definition": "Covered lamp flame: small light that guides in darkness."
+    },
+    {
+      "key": "riverOfHeavenWater",
+      "zh": "天河水",
+      "en": "River of Heaven Water",
+      "pairs": [
+        "丙午",
+        "丁未"
+      ],
+      "definition": "Celestial river: the Milky Way; inspiration from above."
+    },
+    {
+      "key": "highwayEarth",
+      "zh": "大驿土",
+      "en": "Highway Earth",
+      "pairs": [
+        "戊申",
+        "己酉"
+      ],
+      "definition": "Great post-road earth: connection, travel and commerce."
+    },
+    {
+      "key": "hairpinGold",
+      "zh": "钗钏金",
+      "en": "Hairpin Gold",
+      "pairs": [
+        "庚戌",
+        "辛亥"
+      ],
+      "definition": "Ornamental jewelry metal: adornment and refined value."
+    },
+    {
+      "key": "mulberryWood",
+      "zh": "桑柘木",
+      "en": "Mulberry Wood",
+      "pairs": [
+        "壬子",
+        "癸丑"
+      ],
+      "definition": "Mulberry wood: cultivation, silkworms and useful craft."
+    },
+    {
+      "key": "greatStreamWater",
+      "zh": "大溪水",
+      "en": "Great Stream Water",
+      "pairs": [
+        "甲寅",
+        "乙卯"
+      ],
+      "definition": "Rushing stream: vigorous, purposeful movement."
+    },
+    {
+      "key": "desertEarth",
+      "zh": "沙中土",
+      "en": "Desert Earth",
+      "pairs": [
+        "丙辰",
+        "丁巳"
+      ],
+      "definition": "Earth in sand: loose foundation needing consolidation."
+    },
+    {
+      "key": "celestialFire",
+      "zh": "天上火",
+      "en": "Celestial Fire",
+      "pairs": [
+        "戊午",
+        "己未"
+      ],
+      "definition": "Fire in the sky: the sun itself; universal warmth."
+    },
+    {
+      "key": "pomegranateWood",
+      "zh": "石榴木",
+      "en": "Pomegranate Wood",
+      "pairs": [
+        "庚申",
+        "辛酉"
+      ],
+      "definition": "Pomegranate wood: hard wood bearing many fruits."
+    },
+    {
+      "key": "oceanWater",
+      "zh": "大海水",
+      "en": "Ocean Water",
+      "pairs": [
+        "壬戌",
+        "癸亥"
+      ],
+      "definition": "The open ocean: vastness, depth and inclusiveness."
+    }
+  ],
+  "INTERACTION_TYPES": [
+    {
+      "key": "stemCombination",
+      "zh": "天干五合",
+      "en": "Stem Combination",
+      "pinyin": "tiān gān wǔ hé",
+      "zhVerb": "合",
+      "definition": "Five Heavenly Stem pairings that bond and may transform: 甲己, 乙庚, 丙辛, 丁壬, 戊癸."
+    },
+    {
+      "key": "liuHe",
+      "zh": "六合",
+      "en": "Six Harmony",
+      "pinyin": "liù hé",
+      "enumCode": "COMBINATION_2",
+      "zhVerb": "合",
+      "definition": "Six branch pairings of mutual affinity and support: 子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未."
+    },
+    {
+      "key": "sanHe",
+      "zh": "三合",
+      "en": "Three Harmony",
+      "pinyin": "sān hé",
+      "enumCode": "TRINE",
+      "definition": "Triads that combine into one element: 申子辰(water), 亥卯未(wood), 寅午戌(fire), 巳酉丑(metal)."
+    },
+    {
+      "key": "sanHui",
+      "zh": "三会",
+      "en": "Directional Combination",
+      "pinyin": "sān huì",
+      "enumCode": "DIRECTIONAL",
+      "definition": "Three adjacent branches of one seasonal direction: 寅卯辰(east), 巳午未(south), 申酉戌(west), 亥子丑(north)."
+    },
+    {
+      "key": "liuChong",
+      "zh": "六冲",
+      "en": "Clash",
+      "pinyin": "liù chōng",
+      "enumCode": "CLASH",
+      "zhVerb": "冲",
+      "definition": "Six opposing branch pairings that collide and disrupt: 子午, 丑未, 寅申, 卯酉, 辰戌, 巳亥."
+    },
+    {
+      "key": "xiangXing",
+      "zh": "相刑",
+      "en": "Punishment",
+      "pinyin": "xiāng xíng",
+      "enumCode": "PUNISHMENT",
+      "zhVerb": "刑",
+      "definition": "Branch punishments that grind and injure: 寅巳申, 丑戌未, 子卯, and the self-punishments 辰/午/酉/亥."
+    },
+    {
+      "key": "xiangHai",
+      "zh": "相害",
+      "en": "Harm",
+      "pinyin": "xiāng hài",
+      "enumCode": "HARM",
+      "zhVerb": "害",
+      "definition": "Six branch pairings of hidden injury and betrayal: 子未, 丑午, 寅巳, 卯辰, 申亥, 酉戌."
+    },
+    {
+      "key": "xiangPo",
+      "zh": "相破",
+      "en": "Destruction",
+      "pinyin": "xiāng pò",
+      "enumCode": "DESTRUCTION",
+      "zhVerb": "破",
+      "definition": "Six branch pairings of breakage and erosion: 子酉, 卯午, 辰丑, 未戌, 寅亥, 巳申."
+    }
+  ],
+  "ZH_VERB_RULES": [
+    [
+      "三合",
+      "sanHe"
+    ],
+    [
+      "三会",
+      "sanHui"
+    ],
+    [
+      "会",
+      "sanHui"
+    ],
+    [
+      "相冲",
+      "liuChong"
+    ],
+    [
+      "冲",
+      "liuChong"
+    ],
+    [
+      "相刑",
+      "xiangXing"
+    ],
+    [
+      "刑",
+      "xiangXing"
+    ],
+    [
+      "相破",
+      "xiangPo"
+    ],
+    [
+      "破",
+      "xiangPo"
+    ],
+    [
+      "相害",
+      "xiangHai"
+    ],
+    [
+      "害",
+      "xiangHai"
+    ],
+    [
+      "六合",
+      "liuHe"
+    ],
+    [
+      "相合",
+      "liuHe"
+    ],
+    [
+      "合",
+      "liuHe"
+    ]
+  ],
+  "STEM_COMBINATIONS": [
+    [
+      "甲",
+      "己"
+    ],
+    [
+      "乙",
+      "庚"
+    ],
+    [
+      "丙",
+      "辛"
+    ],
+    [
+      "丁",
+      "壬"
+    ],
+    [
+      "戊",
+      "癸"
+    ]
+  ],
+  "LIU_HE": [
+    [
+      "子",
+      "丑"
+    ],
+    [
+      "寅",
+      "亥"
+    ],
+    [
+      "卯",
+      "戌"
+    ],
+    [
+      "辰",
+      "酉"
+    ],
+    [
+      "巳",
+      "申"
+    ],
+    [
+      "午",
+      "未"
+    ]
+  ],
+  "LIU_CHONG": [
+    [
+      "子",
+      "午"
+    ],
+    [
+      "丑",
+      "未"
+    ],
+    [
+      "寅",
+      "申"
+    ],
+    [
+      "卯",
+      "酉"
+    ],
+    [
+      "辰",
+      "戌"
+    ],
+    [
+      "巳",
+      "亥"
+    ]
+  ],
+  "SAN_HE": [
+    [
+      "申",
+      "子",
+      "辰"
+    ],
+    [
+      "亥",
+      "卯",
+      "未"
+    ],
+    [
+      "寅",
+      "午",
+      "戌"
+    ],
+    [
+      "巳",
+      "酉",
+      "丑"
+    ]
+  ],
+  "SAN_HUI": [
+    [
+      "寅",
+      "卯",
+      "辰"
+    ],
+    [
+      "巳",
+      "午",
+      "未"
+    ],
+    [
+      "申",
+      "酉",
+      "戌"
+    ],
+    [
+      "亥",
+      "子",
+      "丑"
+    ]
+  ],
+  "XIANG_HAI": [
+    [
+      "子",
+      "未"
+    ],
+    [
+      "丑",
+      "午"
+    ],
+    [
+      "寅",
+      "巳"
+    ],
+    [
+      "卯",
+      "辰"
+    ],
+    [
+      "申",
+      "亥"
+    ],
+    [
+      "酉",
+      "戌"
+    ]
+  ],
+  "XIANG_PO": [
+    [
+      "子",
+      "酉"
+    ],
+    [
+      "卯",
+      "午"
+    ],
+    [
+      "辰",
+      "丑"
+    ],
+    [
+      "未",
+      "戌"
+    ],
+    [
+      "寅",
+      "亥"
+    ],
+    [
+      "巳",
+      "申"
+    ]
+  ],
+  "XIANG_XING": {
+    "wuEn": [
+      "寅",
+      "巳",
+      "申"
+    ],
+    "shiShi": [
+      "丑",
+      "戌",
+      "未"
+    ],
+    "wuLi": [
+      "子",
+      "卯"
+    ],
+    "ziXing": [
+      "辰",
+      "午",
+      "酉",
+      "亥"
+    ]
+  },
+  "GENERAL_TERMS": [
+    {
+      "key": "bazi",
+      "zh": "八字",
+      "en": "BaZi (Four Pillars)",
+      "pinyin": "bā zì",
+      "definition": "The Eight Characters: a destiny chart built from the year, month, day and hour of birth."
+    },
+    {
+      "key": "fourPillars",
+      "zh": "四柱",
+      "en": "Four Pillars",
+      "pinyin": "sì zhù",
+      "definition": "The four stem-branch pairs — year, month, day and hour — that make up a chart."
+    },
+    {
+      "key": "yearPillar",
+      "zh": "年柱",
+      "en": "Year Pillar",
+      "pinyin": "nián zhù",
+      "definition": "The first pillar; roots, ancestry and early life."
+    },
+    {
+      "key": "monthPillar",
+      "zh": "月柱",
+      "en": "Month Pillar",
+      "pinyin": "yuè zhù",
+      "definition": "The second pillar; parents, career environment and youth."
+    },
+    {
+      "key": "dayPillar",
+      "zh": "日柱",
+      "en": "Day Pillar",
+      "pinyin": "rì zhù",
+      "definition": "The third pillar; the self (stem) and the spouse palace (branch)."
+    },
+    {
+      "key": "hourPillar",
+      "zh": "时柱",
+      "en": "Hour Pillar",
+      "pinyin": "shí zhù",
+      "definition": "The fourth pillar; children, later life and ambitions."
+    },
+    {
+      "key": "heavenlyStem",
+      "zh": "天干",
+      "en": "Heavenly Stem",
+      "pinyin": "tiān gān",
+      "definition": "One of ten yang/yin symbols; the visible, active layer of a pillar."
+    },
+    {
+      "key": "earthlyBranch",
+      "zh": "地支",
+      "en": "Earthly Branch",
+      "pinyin": "dì zhī",
+      "definition": "One of twelve symbols (the zodiac animals); the hidden, receptive layer of a pillar."
+    },
+    {
+      "key": "ganZhi",
+      "zh": "干支",
+      "en": "Stem-Branch (GanZhi)",
+      "pinyin": "gān zhī",
+      "definition": "A stem paired with a branch; one unit of the sexagenary cycle."
+    },
+    {
+      "key": "hiddenStems",
+      "zh": "藏干",
+      "en": "Hidden Stems",
+      "pinyin": "cáng gān",
+      "definition": "The stems concealed inside each branch, giving it layered meaning."
+    },
+    {
+      "key": "daYun",
+      "zh": "大运",
+      "en": "Luck Pillar",
+      "pinyin": "dà yùn",
+      "definition": "A ten-year fortune cycle overlaid on the natal chart."
+    },
+    {
+      "key": "liuNian",
+      "zh": "流年",
+      "en": "Annual Fortune",
+      "pinyin": "liú nián",
+      "definition": "The influence of a specific calendar year on the chart."
+    },
+    {
+      "key": "xiaoYun",
+      "zh": "小运",
+      "en": "Minor Cycle",
+      "pinyin": "xiǎo yùn",
+      "definition": "A one-year cycle used before the first Luck Pillar begins."
+    },
+    {
+      "key": "qiYun",
+      "zh": "起运",
+      "en": "Luck Onset",
+      "pinyin": "qǐ yùn",
+      "definition": "The age at which the first Luck Pillar cycle starts."
+    },
+    {
+      "key": "mingGong",
+      "zh": "命宫",
+      "en": "Life Palace",
+      "pinyin": "mìng gōng",
+      "definition": "An auxiliary pillar describing the core life theme."
+    },
+    {
+      "key": "shenGong",
+      "zh": "身宫",
+      "en": "Body Palace",
+      "pinyin": "shēn gōng",
+      "definition": "An auxiliary pillar describing how life is lived out in practice."
+    },
+    {
+      "key": "taiYuan",
+      "zh": "胎元",
+      "en": "Conception Pillar",
+      "pinyin": "tāi yuán",
+      "definition": "The stem-branch of conception; inherited and prenatal influence."
+    },
+    {
+      "key": "taiXi",
+      "zh": "胎息",
+      "en": "Prenatal Breath",
+      "pinyin": "tāi xī",
+      "definition": "A pillar paired with the Conception Pillar; subtle life force."
+    },
+    {
+      "key": "yinYang",
+      "zh": "阴阳",
+      "en": "Yin & Yang",
+      "pinyin": "yīn yáng",
+      "definition": "The two complementary polarities underlying every stem and branch."
+    },
+    {
+      "key": "wuXing",
+      "zh": "五行",
+      "en": "Five Elements",
+      "pinyin": "wǔ xíng",
+      "definition": "Wood, Fire, Earth, Metal and Water — the phases of transforming energy."
+    },
+    {
+      "key": "shiShenGods",
+      "zh": "十神",
+      "en": "Ten Gods",
+      "pinyin": "shí shén",
+      "definition": "Relationship labels between each stem and the Day Master."
+    },
+    {
+      "key": "shenSha",
+      "zh": "神煞",
+      "en": "Shen Sha (Symbolic Stars)",
+      "pinyin": "shén shà",
+      "definition": "Auspicious and inauspicious symbolic stars overlaid on the chart."
+    },
+    {
+      "key": "naYin",
+      "zh": "纳音",
+      "en": "Na Yin (Melodic Element)",
+      "pinyin": "nà yīn",
+      "definition": "The thirty melodic elements assigned to each stem-branch pair."
+    },
+    {
+      "key": "interactions",
+      "zh": "刑冲合会",
+      "en": "Interactions",
+      "pinyin": "xíng chōng hé huì",
+      "definition": "The clashes, combinations, punishments, harms and destructions between stems and branches."
+    },
+    {
+      "key": "shengXiao",
+      "zh": "生肖",
+      "en": "Chinese Zodiac",
+      "pinyin": "shēng xiào",
+      "definition": "The twelve animals mapped to the Earthly Branches."
+    },
+    {
+      "key": "xun",
+      "zh": "旬",
+      "en": "Decade (Xun)",
+      "pinyin": "xún",
+      "definition": "A ten-day group of the sexagenary cycle; determines the void branches."
+    },
+    {
+      "key": "xingYun",
+      "zh": "星运",
+      "en": "Growth Stage",
+      "pinyin": "xīng yùn",
+      "definition": "One of the twelve lifecycle stages of an element across the branches."
+    },
+    {
+      "key": "ziZuo",
+      "zh": "自坐",
+      "en": "Self-sitting",
+      "pinyin": "zì zuò",
+      "definition": "The branch directly beneath the Day Stem and the ten god it forms."
+    },
+    {
+      "key": "wuXingFenZhi",
+      "zh": "五行分值",
+      "en": "Element Score",
+      "pinyin": "wǔ xíng fēn zhí",
+      "definition": "Weighted strength of each of the Five Elements in the chart."
+    },
+    {
+      "key": "zhuXing",
+      "zh": "主星",
+      "en": "Main Star",
+      "pinyin": "zhǔ xīng",
+      "definition": "The primary ten god of a pillar (usually its hidden main stem)."
+    },
+    {
+      "key": "fuXing",
+      "zh": "副星",
+      "en": "Secondary Star",
+      "pinyin": "fù xīng",
+      "definition": "The additional ten gods contributed by other hidden stems."
+    },
+    {
+      "key": "dayMasterElement",
+      "zh": "日主五行",
+      "en": "Day Master Element",
+      "pinyin": "rì zhǔ wǔ xíng",
+      "definition": "The Five Element of the Day Stem — the self element of the chart."
+    },
+    {
+      "key": "zhenTaiYangShi",
+      "zh": "真太阳时",
+      "en": "True Solar Time",
+      "pinyin": "zhēn tài yáng shí",
+      "definition": "Local apparent solar time, corrected for longitude and season; the basis of the Hour Pillar."
+    },
+    {
+      "key": "shiChen",
+      "zh": "时辰",
+      "en": "Double-hour",
+      "pinyin": "shí chén",
+      "definition": "A traditional two-hour period; twelve of them span a day."
+    },
+    {
+      "key": "nongLi",
+      "zh": "农历",
+      "en": "Lunar Calendar",
+      "pinyin": "nóng lì",
+      "definition": "The traditional Chinese lunisolar calendar."
+    },
+    {
+      "key": "gongLi",
+      "zh": "公历",
+      "en": "Gregorian Calendar",
+      "pinyin": "gōng lì",
+      "definition": "The international solar calendar."
+    },
+    {
+      "key": "gender",
+      "zh": "性别",
+      "en": "Gender",
+      "pinyin": "xìng bié",
+      "definition": "Male or female; determines the direction of the Luck Pillar cycles."
+    },
+    {
+      "key": "male",
+      "zh": "男",
+      "en": "Male",
+      "definition": "Male gender input for chart calculation."
+    },
+    {
+      "key": "female",
+      "zh": "女",
+      "en": "Female",
+      "definition": "Female gender input for chart calculation."
+    },
+    {
+      "key": "forward",
+      "zh": "顺行",
+      "en": "Forward",
+      "pinyin": "shùn xíng",
+      "definition": "Luck Pillars advancing in the natural cycle order."
+    },
+    {
+      "key": "backward",
+      "zh": "逆行",
+      "en": "Backward",
+      "pinyin": "nì xíng",
+      "definition": "Luck Pillars advancing in the reverse cycle order."
+    },
+    {
+      "key": "current",
+      "zh": "当前",
+      "en": "Current",
+      "pinyin": "dāng qián",
+      "definition": "Marks the Luck Pillar or year that is active now."
+    }
+  ]
+}

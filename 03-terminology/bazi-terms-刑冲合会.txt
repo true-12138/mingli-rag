@@ -1,0 +1,10 @@
+# 刑冲合会（数据来源：bazi-terms，MIT License）
+
+天干五合：Stem Combination；拼音 tiān gān wǔ hé；Five Heavenly Stem pairings that bond and may transform: 甲己, 乙庚, 丙辛, 丁壬, 戊癸.
+六合：Six Harmony；拼音 liù hé；Six branch pairings of mutual affinity and support: 子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未.
+三合：Three Harmony；拼音 sān hé；Triads that combine into one element: 申子辰(water), 亥卯未(wood), 寅午戌(fire), 巳酉丑(metal).
+三会：Directional Combination；拼音 sān huì；Three adjacent branches of one seasonal direction: 寅卯辰(east), 巳午未(south), 申酉戌(west), 亥子丑(north).
+六冲：Clash；拼音 liù chōng；Six opposing branch pairings that collide and disrupt: 子午, 丑未, 寅申, 卯酉, 辰戌, 巳亥.
+相刑：Punishment；拼音 xiāng xíng；Branch punishments that grind and injure: 寅巳申, 丑戌未, 子卯, and the self-punishments 辰/午/酉/亥.
+相害：Harm；拼音 xiāng hài；Six branch pairings of hidden injury and betrayal: 子未, 丑午, 寅巳, 卯辰, 申亥, 酉戌.
+相破：Destruction；拼音 xiāng pò；Six branch pairings of breakage and erosion: 子酉, 卯午, 辰丑, 未戌, 寅亥, 巳申.
