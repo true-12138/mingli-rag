@@ -54,4 +54,33 @@ venv文件夹一般被git忽略，不会被Git追踪。安装包属于运行环�
   1. 先执行 git fetch origin，让云端从 GitHub 拉取最新分支列表（成功的话会看到绿色提示 * [new branch] corpus-tooling -> origin/corpus-tooling）。
   2. 完整、正确地敲击：git checkout corpus-tooling。
   3. 成功切换，终端提示符从 git:(main) 变成 git:(corpus-tooling)。
-  
+##D2
+今日任务写Python脚本遍历古籍txt，统计每本文件行数、字符、标点数量，输出csv统计表格。
+一、遇到的Bug + 解决方案
+1. ModuleNotFoundError: No module named 'pandas'
+问题：当前激活的虚拟环境venv没有安装pandas库
+解决：pip install pandas
+3. TypeError: Bookstat.init() takes 6 positional arguments but 7 were given（核心报错）
+问题：dataclass定义的字段数量，和return实例时传入参数数量不匹配；同时变量名不一致（total_char vs total_chars）
+解决：在Bookstat类补充缺失字段pure_text_chars:int，保证传参个数、变量名称一一对应。
+二、本次新学到的知识点
+1. Pathlib路径相关
+Path("xxx").parent：拿到文件所在文件夹路径
+.mkdir(parents=True, exist_ok=True)：
+parents=True：多层父目录不存在时，递归创建
+exist_ok=True：目录已经存在，不会抛异常（工程必备写法）
+绝对路径 /workspace/xxx VS 相对路径 workspace/xxx：绝对路径不受终端当前工作目录干扰，推荐CloudStudio开发使用。
+2. dataclass 数据类
+@dataclass 自动生成构造函数__init__
+硬性规则：实例化传入参数数量、顺序、变量名必须和类定义完全匹配，多传/少传/名字写错直接TypeError。
+对象.__dict__：把实例所有字段转为字典，pd.DataFrame可以接收字典列表，快速生成表格。
+3. 文件读取的细节
+f.readlines()：读取文件，返回字符串列表，每一行作为列表元素，自带\n换行符
+"".join(lines)：拼接列表里所有字符串，得到单个长字符串；字符串内部保留换行符\n，len()统计的是字符串内字符数量，不是行数。
+len(lines)：统计文件行数（列表元素个数）
+4. Pandas小常识
+pd.DataFrame([字典列表])：字典的key自动成为表格列，value作为每行数据
+.to_csv()：仅负责写入文件，不会自动新建文件夹，这是高频踩坑点。
+5. CloudStudio开发习惯
+修改代码后一定要Ctrl+S保存，否则运行的是旧代码，改了半天不生效。
+虚拟环境venv隔离依赖：包必须装在当前激活的venv里面，全局安装的包在venv里看不见。
