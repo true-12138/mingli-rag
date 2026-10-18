@@ -1,0 +1,29 @@
+{
+  "source": "lantai_test",
+  "utc_time": "2026-10-18T06:00:05.764109",
+  "params": {
+    "scan_head": 200,
+    "short_max": 26
+  },
+  "result": {
+    "found_toc": true,
+    "toc_start_line": 2,
+    "toc_end_line": 7,
+    "has_mulu_keyword": true,
+    "evidence_list": [
+      {
+        "type": "keyword_mulu",
+        "line": 1,
+        "text": "目录"
+      },
+      {
+        "note": "未检测到明确正文边界，使用安全长度截断"
+      }
+    ],
+    "toc_entries": [
+      "卷一　五行总论｜2",
+      "卷二　干支起例｜6",
+      "卷三　格局｜13"
+    ]
+  }
+}
