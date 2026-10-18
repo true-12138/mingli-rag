@@ -1,0 +1,29 @@
+{
+  "source_file": "兰台妙选_样例",
+  "generate_time": "2026-10-18T05:50:25.188256",
+  "toc_result": [
+    {
+      "is_directory": true,
+      "confidence": 2.9,
+      "start_line": 2,
+      "end_line": 10,
+      "detected_number_sequence": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "entries": [
+        "卷一　五行总论　｜3",
+        "卷二　干支起例　｜7",
+        "卷三　格局详解　｜12",
+        "卷四　神煞取用　｜18",
+        "卷五　兰台赋注解　｜25",
+        "卷六　诸家断验　｜33",
+        "【正文】盖闻天地之道，阴阳五行而生万物……"
+      ],
+      "has_increasing_sequence": true
+    }
+  ]
+}
