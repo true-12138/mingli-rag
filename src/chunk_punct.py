@@ -1,134 +1,189 @@
-import os
-import re
+# -*- coding: utf-8 -*-
+"""07/08 标点组 chunk + meta 生成入口。
+
+只扫描：
+    data/clean_text/07_星命七政四余/标点组/*.txt
+    data/clean_text/08_八字禄命/标点组/*.txt
+
+输出：
+    data/chunks_punct_meta.jsonl          chunk + 内嵌 meta（主文件）
+    data/chunk_meta_07_08.jsonl           meta 独立文件（每条 chunk 一行）
+    data/chunk_meta_07_08_report.json     每本书的结构/chunk 统计与覆盖率
+
+不读写 clean_meta_tagged，也不改动其他类别的数据。
+"""
+from __future__ import annotations
+
 import json
+import sys
+from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
-target_chunk_len = 500
-overlap_len = 100
-BUF_READ = 65536
-META_LOOKAHEAD = 128   # 专门用来粘被切断meta标记的小缓冲区，很小
+try:  # 作为包导入
+    from . import chunk_meta
+except ImportError:  # 直接运行 src/chunk_punct.py
+    import chunk_meta
 
-# 正文分句
-sentence_pat = re.compile(r'(。|；|？)')
-# meta标记正则：@@META|k1=v1;k2=v2@@
-meta_pat = re.compile(r'@@META\|([^@]+)@@')
+ROOT = Path(__file__).resolve().parents[1]
+CLEAN = ROOT / "data" / "clean_text"
+CATS = chunk_meta.CATS
 
-input_root = Path("data/clean_text")
-output_path = Path("data/chunks_punct_meta.jsonl")
-scan_dir = ["07_星命七政四余","08_八字禄命"]
+OUT_CHUNKS = ROOT / "data" / "chunks_punct_meta.jsonl"
+OUT_META = ROOT / "data" / "chunk_meta_07_08.jsonl"
+OUT_REPORT = ROOT / "data" / "chunk_meta_07_08_report.json"
 
-def parse_meta_str(s:str):
-    """把 vol=卷二;title=xxx 转成 dict；容错"""
-    d = {}
-    for part in s.split(";"):
-        if "=" in part:
-            k, v = part.split("=",1)
-            d[k.strip()] = v.strip()
-    return d
 
-def feed_buffer(buf: str):
-    parts = sentence_pat.split(buf)
-    tail = ""
-    if len(parts)>=2 and (parts[-1] not in ("。","；","？")):
-        tail = parts.pop()
-    sents = []
-    for i in range(0, len(parts)-1, 2):
-        s = (parts[i].strip() + parts[i+1]).strip()
-        if s:
-            sents.append(s)
-    return sents, tail
+def _utf8_stdout():
+    """Windows 控制台默认 cp936，统一切到 UTF-8，避免中文输出乱码。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
-def chunk_by_sentences(sents, cur_buffer):
-    new_chunks = []
-    for s in sents:
-        if len("".join(cur_buffer)) + len(s) > target_chunk_len and cur_buffer:
-            full = "".join(cur_buffer)
-            new_chunks.append(full)
-            # overlap：安全保护，不要取负数
-            take = min(overlap_len, len(full))
-            cur_buffer = [full[-take:]]
-        cur_buffer.append(s)
-    return new_chunks, cur_buffer
 
-def process_one_file(fpath: Path, fw):
-    print(f"▶开始 {fpath.name}")
-    rel_path = str(fpath.relative_to(input_root))
+def _rel(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
 
-    tail_str = ""             # 正文残留（原有）
-    meta_detect_tail = ""      # NEW：专门粘可能截断meta标记
-    cur_sent_buf = []
-    chunk_counter = 0
-    current_meta = {"vol": None, "chapter": None, "title": None} # NEW 当前生效meta
 
-    with open(fpath,"r",encoding="utf-8",errors="ignore") as f:
-        while True:
-            chunk_raw = f.read(BUF_READ)
-            if not chunk_raw:
-                break
-            work_text = meta_detect_tail + chunk_raw
-            matched_meta = []
-            last_pos = 0
-            # 扫描全部meta标记
-            for m in meta_pat.finditer(work_text):
-                matched_meta.append(m.group(1))
-                text_segment = work_text[last_pos:m.start()]
-                tail_str += text_segment
-                last_pos = m.end()
-            # 剩下没处理的：判断末尾是否有可能是标记的一部分
-            remaining = work_text[last_pos:]
-            # 简单策略：末尾最多保留 META_LOOKAHEAD 字节当作待检测尾巴
-            if len(remaining) > META_LOOKAHEAD:
-                tail_str += remaining[:-META_LOOKAHEAD]
-                meta_detect_tail = remaining[-META_LOOKAHEAD:]
-            else:
-                meta_detect_tail = remaining
+def _iter_books():
+    for cat in CATS:
+        dp = CLEAN / cat / "标点组"
+        if not dp.exists():
+            yield cat, dp, []
+            continue
+        yield cat, dp, sorted(dp.glob("*.txt"))
 
-            # 所有抓到meta全部更新 current_meta
-            for meta_content in matched_meta:
-                parsed = parse_meta_str(meta_content)
-                current_meta.update(parsed)
 
-            # --- 原来整套正文切分流水线完全不变！只喂 tail_str ---
-            sents, tail_str = feed_buffer(tail_str)
-            ck_list, cur_sent_buf = chunk_by_sentences(sents, cur_sent_buf)
-            for ck in ck_list:
-                rec = {
-                    "sourcefile": rel_path,
-                    "chunk_id": chunk_counter,
-                    "chunk_text": ck,
-                    "meta": current_meta.copy()   # ⭐这里是关键！copy防止dict引用坑
-                }
-                fw.write(json.dumps(rec, ensure_ascii=False)+"\n")
-                chunk_counter +=1
+def main() -> int:
+    _utf8_stdout()
+    OUT_CHUNKS.parent.mkdir(parents=True, exist_ok=True)
+    tmp_chunks = OUT_CHUNKS.with_name(OUT_CHUNKS.name + ".tmp")
+    tmp_meta = OUT_META.with_name(OUT_META.name + ".tmp")
 
-        # 文件读完：把最后的 meta_detect_tail 全部当成正文（已经不可能有跨buffer标记了）
-        tail_str += meta_detect_tail
-        rest_txt = "".join(cur_sent_buf) + tail_str
-        if rest_txt.strip():
-            rec = {
-                "sourcefile": rel_path,
-                "chunk_id": chunk_counter,
-                "chunk_text": rest_txt.strip(),
-                "meta": current_meta.copy()
-            }
-            fw.write(json.dumps(rec, ensure_ascii=False)+"\n")
-    print(f"✅{fpath.name} 完成")
+    books = []
+    errors = []
+    chunk_id = 0
+    type_counts = Counter()
+    missing = Counter()
+    total_chars = 0
+    seen_files = []
 
-def main():
-    print("===带meta标记流式切分启动===")
-    total_files = 0
-    with open(output_path,"w",encoding="utf-8") as fw:
-        for dn in scan_dir:
-            dp = input_root / dn / "标点组"
+    with open(tmp_chunks, "w", encoding="utf-8", newline="\n") as fc, \
+            open(tmp_meta, "w", encoding="utf-8", newline="\n") as fm:
+        for cat, dp, files in _iter_books():
             if not dp.exists():
-                print(f"目录不存在：{dn}")
+                errors.append(f"目录不存在：{_rel(dp)}")
                 continue
-            all_txt = list(dp.glob("*.txt"))
-            print(f"发现 {len(all_txt)} 个txt")
-            for fp in all_txt:
-                process_one_file(fp, fw)
-                total_files +=1
-    print(f"\n🎉全部结束，处理文件数：{total_files}")
+            if not files:
+                errors.append(f"目录下没有 txt：{_rel(dp)}")
+                continue
+            print(f"\n[{cat}] {len(files)} 本")
+            for path in files:
+                try:
+                    result = chunk_meta.build_book_chunks(cat, path, CLEAN)
+                except Exception as exc:  # 保留其他书的产出，报告里记录
+                    errors.append(f"{_rel(path)}: {type(exc).__name__}: {exc}")
+                    print(f"  [失败] {path.name}: {exc}")
+                    continue
 
-if __name__=="__main__":
-    main()
+                rows = result["chunks"]
+                for row in rows:
+                    chunk_id += 1
+                    row["chunk_id"] = chunk_id
+                    fc.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+                    meta_row = {"chunk_id": chunk_id}
+                    meta_row.update(row["meta"])
+                    fm.write(json.dumps(meta_row, ensure_ascii=False) + "\n")
+
+                stats = dict(result["stats"])
+                stats["chunk_id_start"] = chunk_id - len(rows) + 1 if rows else None
+                stats["chunk_id_end"] = chunk_id if rows else None
+                books.append(stats)
+
+                type_counts.update(stats["chunk_types"])
+                total_chars += stats["chars_total"]
+                missing["book"] += sum(1 for r in rows if not r["meta"].get("book"))
+                missing["category"] += sum(1 for r in rows if not r["meta"].get("category"))
+                missing["volume"] += stats["missing_volume"]
+                missing["chapter"] += stats["missing_chapter"]
+                missing["section_path"] += stats["missing_section_path"]
+                missing["chunk_uid"] += sum(1 for r in rows if not r["meta"].get("chunk_uid"))
+                seen_files.append(result["sourcefile"])
+
+                print(
+                    f"  {result['book']}: {stats['n']} chunks | "
+                    f"sections={stats['sections']} groups={stats['groups']} | "
+                    f"p50={stats['p50']} p90={stats['p90']} max={stats['max']} "
+                    f"small={stats['small']} | types={stats['chunk_types']}"
+                )
+
+    tmp_chunks.replace(OUT_CHUNKS)
+    tmp_meta.replace(OUT_META)
+
+    report = {
+        "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "script": _rel(Path(__file__)),
+        "scope": {
+            "categories": CATS,
+            "pattern": "data/clean_text/<category>/标点组/*.txt",
+            "files": len(seen_files),
+        },
+        "params": {
+            "target": chunk_meta.TARGET,
+            "max": chunk_meta.MAX,
+            "min": chunk_meta.MIN,
+            "overlap": chunk_meta.OVERLAP,
+        },
+        "outputs": {
+            "chunks": _rel(OUT_CHUNKS),
+            "meta": _rel(OUT_META),
+        },
+        "books": books,
+        "totals": {
+            "books": len(books),
+            "chunks": chunk_id,
+            "chars": total_chars,
+            "chunk_types": dict(type_counts),
+        },
+        "coverage": {
+            "missing_book": missing["book"],
+            "missing_category": missing["category"],
+            "missing_volume": missing["volume"],
+            "missing_chapter": missing["chapter"],
+            "missing_section_path": missing["section_path"],
+            "missing_chunk_uid": missing["chunk_uid"],
+            "note": "volume 为空表示原书没有可识别的卷次结构，不代表解析失败。",
+        },
+        "errors": errors,
+    }
+    OUT_REPORT.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    print("\n" + "=" * 72)
+    print(f"chunk 总数：{chunk_id}，书数：{len(books)}，字符数：{total_chars}")
+    print(f"chunk 类型：{dict(type_counts)}")
+    print(f"缺失 book/category/chapter/section_path/chunk_uid："
+          f"{missing['book']}/{missing['category']}/{missing['chapter']}/"
+          f"{missing['section_path']}/{missing['chunk_uid']}")
+    print(f"缺失 volume（原书无卷次）：{missing['volume']}")
+    print(f"输出：{_rel(OUT_CHUNKS)}")
+    print(f"输出：{_rel(OUT_META)}")
+    print(f"报告：{_rel(OUT_REPORT)}")
+    if errors:
+        print(f"\n有 {len(errors)} 个错误：")
+        for err in errors:
+            print("  -", err)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
