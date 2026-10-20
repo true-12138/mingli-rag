@@ -16,9 +16,8 @@
 
 输出
 ----
-    data/chunks_unpunct_meta.jsonl
-    data/chunk_meta_unpunct.jsonl
-    data/chunk_meta_unpunct_report.json
+    data/chunks/unpunct.jsonl        每行 = 一个 chunk + 内嵌 meta（唯一事实来源）
+    data/chunks/unpunct_report.json  每本书的行数/段数/chunk 统计
 """
 from __future__ import annotations
 
@@ -37,9 +36,8 @@ except ImportError:  # 直接运行 src/chunk_unpunct.py
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean_text"
 
-OUT_CHUNKS = ROOT / "data" / "chunks_unpunct_meta.jsonl"
-OUT_META = ROOT / "data" / "chunk_meta_unpunct.jsonl"
-OUT_REPORT = ROOT / "data" / "chunk_meta_unpunct_report.json"
+OUT_CHUNKS = ROOT / "data" / "chunks" / "unpunct.jsonl"
+OUT_REPORT = ROOT / "data" / "chunks" / "unpunct_report.json"
 
 # 选书与分段参数
 PUNCT_CHARS = set("。！？，；：、,;:!?")
@@ -316,7 +314,6 @@ def main() -> int:
     _utf8_stdout()
     OUT_CHUNKS.parent.mkdir(parents=True, exist_ok=True)
     tmp_chunks = OUT_CHUNKS.with_name(OUT_CHUNKS.name + ".tmp")
-    tmp_meta = OUT_META.with_name(OUT_META.name + ".tmp")
 
     books = []
     errors = []
@@ -326,8 +323,7 @@ def main() -> int:
     seen_files = []
     cats = Counter()
 
-    with open(tmp_chunks, "w", encoding="utf-8", newline="\n") as fc, \
-            open(tmp_meta, "w", encoding="utf-8", newline="\n") as fm:
+    with open(tmp_chunks, "w", encoding="utf-8", newline="\n") as fc:
         for category, path in iter_books():
             try:
                 result = build_book(category, path)
@@ -341,10 +337,6 @@ def main() -> int:
                 chunk_id += 1
                 row["chunk_id"] = chunk_id
                 fc.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-                meta_row = {"chunk_id": chunk_id}
-                meta_row.update(row["meta"])
-                fm.write(json.dumps(meta_row, ensure_ascii=False) + "\n")
 
             stats = dict(result["stats"])
             stats["chunk_id_start"] = chunk_id - len(rows) + 1 if rows else None
@@ -369,7 +361,6 @@ def main() -> int:
             )
 
     tmp_chunks.replace(OUT_CHUNKS)
-    tmp_meta.replace(OUT_META)
 
     report = {
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
@@ -390,7 +381,6 @@ def main() -> int:
         },
         "outputs": {
             "chunks": _rel(OUT_CHUNKS),
-            "meta": _rel(OUT_META),
         },
         "categories": dict(cats),
         "books": books,
@@ -423,7 +413,6 @@ def main() -> int:
     print(f"按类别：{dict(cats)}")
     print(f"volume/chapter 为空（设计如此）：{missing['volume']}/{missing['chapter']}")
     print(f"输出：{_rel(OUT_CHUNKS)}")
-    print(f"输出：{_rel(OUT_META)}")
     print(f"报告：{_rel(OUT_REPORT)}")
     if errors:
         print(f"\n有 {len(errors)} 个错误：")
