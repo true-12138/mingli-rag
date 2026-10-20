@@ -9,4 +9,8 @@ huggingface_cache/
 env/
 corpus-derived
 01-classics
+# chunk 生成的临时文件
+data/chunks/*.tmp
+# 第三方包解压目录（用 vendor/oss/*.tgz 现解现用）
+vendor/oss/extracted-*/
 
