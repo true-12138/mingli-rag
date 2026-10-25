@@ -6,6 +6,14 @@ data_chunk="/workspace/data/chunks/punct.jsonl"
 data_emb="/workspace/data/embeddings.npy"
 rrf_k=60
 top_k=5
+candidate_k=20  # 融合前每路先取这么多，再截 top_k
+def tokenize(text):
+    # 中文用字二元组：比单字更有区分度，也不需要 jieba 词典。
+    # v1.1 再换 jieba + data/terminology 自定义词典。
+    s="".join(ch for ch in text if not ch.isspace())
+    if len(s)<2:
+        return list(s)
+    return [s[i:i+2] for i in range(len(s)-1)]
 def load_chunks(path):
     chunks=[]
     texts_bm25=[]
@@ -13,14 +21,16 @@ def load_chunks(path):
         for line in f:
             obj=json.loads(line)
             chunks.append(obj)
-            raw=obj["chunk_text"]
-            tokenized=list(raw.strip())
-            texts_bm25.append(tokenized)
+            texts_bm25.append(tokenize(obj["chunk_text"]))
         return chunks, texts_bm25
 chunks,tokenized_corpus=load_chunks(data_chunk)
-embeds=np.load(data_emb)
+embeds=np.load(data_emb).astype(np.float32)
 print(f"chunks:{len(chunks)}|embeds shape:{embeds.shape}")
 assert len(chunks)==embeds.shape[0]
+# 统一归一化，保证 embeds @ q_emb 就是余弦相似度（不依赖 embedding 脚本是否归一化过）
+norms=np.linalg.norm(embeds,axis=1,keepdims=True)
+norms[norms==0]=1.0
+embeds=embeds/norms
 bm25=BM25Okapi(tokenized_corpus)
 model=SentenceTransformer("BAAI/bge-m3")
 def dense_search(query,topk=top_k):
@@ -30,12 +40,12 @@ def dense_search(query,topk=top_k):
     res=[{"idx":i,"scores":float(sims[i] )} for i in indices]
     return res
 def bm25_search(query,topk=top_k):
-    q_tokens=list(query.strip())
+    q_tokens=tokenize(query)
     scores=bm25.get_scores(q_tokens)
-    indices=np.argsort(scores)[::-1][topk:]
-    res=[{"idx":i, "score":float(scores[i])} for i in indices]
+    indices=np.argsort(scores)[::-1][:topk]
+    res=[{"idx":i, "scores":float(scores[i])} for i in indices]
     return res
-def rrf_fuse(dense_list,bm25_list,k=rrf_k):
+def rrf_fuse(dense_list,bm25_list,k=rrf_k,topk=top_k):
     rrf_dict={}
     for rank,item in enumerate(dense_list,start=1):
         idx=item["idx"]
@@ -44,19 +54,30 @@ def rrf_fuse(dense_list,bm25_list,k=rrf_k):
         idx=item["idx"]
         rrf_dict[idx]=rrf_dict.get(idx,0.0)+1.0/(rank+k)
     sorted_idx=sorted(rrf_dict.items(),key=lambda x:x[1], reverse=True)
-    out=[{"idx":i,"rrf_score":s} for i,s in sorted_idx[:top_k]]
+    out=[{"idx":i,"scores":s} for i,s in sorted_idx[:topk]]
     return out
-def retrieve_one(query):
-    d_res=dense_search(query,top_k)
-    b_res=bm25_search(query,top_k)
-    fused=rrf_fuse(d_res,b_res)
+def retrieve_one(query,top_k=5,mode="rrf"):
+    cand=max(top_k,candidate_k)
+    d_res=dense_search(query,cand)
+    b_res=bm25_search(query,cand)
+    fused=rrf_fuse(d_res,b_res,topk=top_k)
+    if mode=="dense":
+        raw_list=d_res
+    elif mode=="bm25":
+        raw_list=b_res
+    elif mode=="rrf":
+        raw_list=fused
+    else:
+        raise ValueError("mode 只能是dense、bm25、rrf中的一种")
     final=[]
-    for item in fused:
+    for item in raw_list[:top_k]:
         c=chunks[item["idx"]]
         final.append({
             "query":query,
+            # idx 是语料行号（0 起），chunk_id 才是评测和引用用的 1 起编号
+            "chunk_id":c["chunk_id"],
             "chunk_idx":item["idx"],
-            "rrf_score":item["rrf_score"],
+            "rrf_score":item["scores"],
             "text":c["chunk_text"],
             "meta":c["meta"]
         })
@@ -91,14 +112,13 @@ if __name__=="__main__":
     ]
     log_lines=[]
     for q in test_query:
-        print(f"/n------Query:{q}")
+        print(f"\n------Query:{q}")
         hits=retrieve_one(q)
         for h in hits:
             line = f"{q}\t{h['chunk_idx']}\t{h['rrf_score']:.4f}\t{h['text'][:80]}"
             print(line)
             log_lines.append(line)
     # 保存日志
-    with open("data/retrieval_log.txt", "w", encoding="utf-8") as f:
+    with open("data\retrieval_log.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(log_lines))
     print("\n✅全部检索日志已经保存至 data/retrieval_log.txt")
-
