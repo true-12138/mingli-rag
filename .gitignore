@@ -13,4 +13,6 @@ corpus-derived
 data/chunks/*.tmp
 # 第三方包解压目录（用 vendor/oss/*.tgz 现解现用）
 vendor/oss/extracted-*/
+.env
+
 
