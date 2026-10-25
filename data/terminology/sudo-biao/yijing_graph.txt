@@ -1,0 +1,1132 @@
+# yijing_graph.py
+# 来源：Sudo-Biao/Chinese-Metaphysics-Platform（MIT License）
+
+## 模块说明
+knowledge/yijing_graph.py
+=========================
+Complete I Ching (易经) + Chinese Metaphysics Knowledge Graph
+Covers: 阴阳 → 四象 → 八卦 → 六十四卦 → 五行 → 天干地支 → 纳甲 → 河图洛书
+
+
+## YINYANG
+
+太极：
+  desc：无极而太极，太极动而生阳，静而生阴
+  generates：
+    - 阳
+    - 阴
+阳：
+  symbol：⚊
+  nature：刚健、光明、运动、向上
+  number：9
+阴：
+  symbol：⚋
+  nature：柔顺、暗昧、静止、向下
+  number：6
+
+## SIXIANG
+
+太阳：
+  binary：11
+  element：火
+  season：夏
+  direction：南
+少阴：
+  binary：10
+  element：金
+  season：秋
+  direction：西
+少阳：
+  binary：01
+  element：木
+  season：春
+  direction：东
+太阴：
+  binary：00
+  element：水
+  season：冬
+  direction：北
+
+## BAGUA
+
+乾：
+  symbol：☰
+  binary：111
+  wuxing：金
+  nature：天
+  family：父
+  body：首
+  animal：马
+  direction_xiantian：南
+  direction_houtian：西北
+  number_xiantian：1
+  number_houtian：6
+  luoshu：6
+兑：
+  symbol：☱
+  binary：110
+  wuxing：金
+  nature：泽
+  family：少女
+  body：口
+  animal：羊
+  direction_xiantian：东南
+  direction_houtian：西
+  number_xiantian：2
+  number_houtian：7
+  luoshu：7
+离：
+  symbol：☲
+  binary：101
+  wuxing：火
+  nature：火
+  family：中女
+  body：目
+  animal：雉
+  direction_xiantian：东
+  direction_houtian：南
+  number_xiantian：3
+  number_houtian：9
+  luoshu：9
+震：
+  symbol：☳
+  binary：100
+  wuxing：木
+  nature：雷
+  family：长男
+  body：足
+  animal：龙
+  direction_xiantian：东北
+  direction_houtian：东
+  number_xiantian：4
+  number_houtian：3
+  luoshu：3
+巽：
+  symbol：☴
+  binary：011
+  wuxing：木
+  nature：风
+  family：长女
+  body：股
+  animal：鸡
+  direction_xiantian：西南
+  direction_houtian：东南
+  number_xiantian：5
+  number_houtian：4
+  luoshu：4
+坎：
+  symbol：☵
+  binary：010
+  wuxing：水
+  nature：水
+  family：中男
+  body：耳
+  animal：豕
+  direction_xiantian：西
+  direction_houtian：北
+  number_xiantian：6
+  number_houtian：1
+  luoshu：1
+艮：
+  symbol：☶
+  binary：001
+  wuxing：土
+  nature：山
+  family：少男
+  body：手
+  animal：狗
+  direction_xiantian：西北
+  direction_houtian：东北
+  number_xiantian：7
+  number_houtian：8
+  luoshu：8
+坤：
+  symbol：☷
+  binary：000
+  wuxing：土
+  nature：地
+  family：母
+  body：腹
+  animal：牛
+  direction_xiantian：北
+  direction_houtian：西南
+  number_xiantian：8
+  number_houtian：2
+  luoshu：2
+
+## WUXING_SYSTEM
+
+木：
+  direction：东
+  season：春
+  color：青
+  planet：岁星(木星)
+  organ_zang：肝
+  organ_fu：胆
+  sense：目
+  emotion：怒
+  taste：酸
+  number：3,8
+  generates：火
+  overcomes：土
+  tiangan：
+    - 甲
+    - 乙
+  dizhi：
+    - 寅
+    - 卯
+火：
+  direction：南
+  season：夏
+  color：赤
+  planet：荧惑(火星)
+  organ_zang：心
+  organ_fu：小肠
+  sense：舌
+  emotion：喜
+  taste：苦
+  number：2,7
+  generates：土
+  overcomes：金
+  tiangan：
+    - 丙
+    - 丁
+  dizhi：
+    - 巳
+    - 午
+土：
+  direction：中
+  season：长夏
+  color：黄
+  planet：镇星(土星)
+  organ_zang：脾
+  organ_fu：胃
+  sense：口
+  emotion：思
+  taste：甘
+  number：5,10
+  generates：金
+  overcomes：水
+  tiangan：
+    - 戊
+    - 己
+  dizhi：
+    - 辰
+    - 戌
+    - 丑
+    - 未
+金：
+  direction：西
+  season：秋
+  color：白
+  planet：太白(金星)
+  organ_zang：肺
+  organ_fu：大肠
+  sense：鼻
+  emotion：悲
+  taste：辛
+  number：4,9
+  generates：水
+  overcomes：木
+  tiangan：
+    - 庚
+    - 辛
+  dizhi：
+    - 申
+    - 酉
+水：
+  direction：北
+  season：冬
+  color：黑
+  planet：辰星(水星)
+  organ_zang：肾
+  organ_fu：膀胱
+  sense：耳
+  emotion：恐
+  taste：咸
+  number：1,6
+  generates：木
+  overcomes：火
+  tiangan：
+    - 壬
+    - 癸
+  dizhi：
+    - 亥
+    - 子
+
+## TIANGAN_DETAIL
+
+甲：
+  wuxing：木
+  yinyang：阳
+  direction：东
+  season：春
+  organ：胆
+  image：参天大树
+  合：己
+  冲：庚
+乙：
+  wuxing：木
+  yinyang：阴
+  direction：东
+  season：春
+  organ：肝
+  image：花草藤蔓
+  合：庚
+  冲：辛
+丙：
+  wuxing：火
+  yinyang：阳
+  direction：南
+  season：夏
+  organ：小肠
+  image：太阳烈火
+  合：辛
+  冲：壬
+丁：
+  wuxing：火
+  yinyang：阴
+  direction：南
+  season：夏
+  organ：心
+  image：灯烛星火
+  合：壬
+  冲：癸
+戊：
+  wuxing：土
+  yinyang：阳
+  direction：中
+  season：长夏
+  organ：胃
+  image：城墙大山
+  合：癸
+  冲：甲
+己：
+  wuxing：土
+  yinyang：阴
+  direction：中
+  season：长夏
+  organ：脾
+  image：田园湿土
+  合：甲
+  冲：乙
+庚：
+  wuxing：金
+  yinyang：阳
+  direction：西
+  season：秋
+  organ：大肠
+  image：刀剑斧钺
+  合：乙
+  冲：丙
+辛：
+  wuxing：金
+  yinyang：阴
+  direction：西
+  season：秋
+  organ：肺
+  image：珠玉首饰
+  合：丙
+  冲：丁
+壬：
+  wuxing：水
+  yinyang：阳
+  direction：北
+  season：冬
+  organ：膀胱
+  image：江河大海
+  合：丁
+  冲：戊
+癸：
+  wuxing：水
+  yinyang：阴
+  direction：北
+  season：冬
+  organ：肾
+  image：雨露溪泉
+  合：戊
+  冲：己
+
+## DIZHI_DETAIL
+
+子：
+  wuxing：水
+  yinyang：阳
+  hour：23-01
+  month：11
+  shengxiao：鼠
+  season：冬
+  canggan：
+    - 癸
+  sanhe：申子辰
+  liuhe：丑
+  chong：午
+  direction：北
+丑：
+  wuxing：土
+  yinyang：阴
+  hour：01-03
+  month：12
+  shengxiao：牛
+  season：冬
+  canggan：
+    - 己
+    - 癸
+    - 辛
+  sanhe：巳酉丑
+  liuhe：子
+  chong：未
+  direction：东北
+寅：
+  wuxing：木
+  yinyang：阳
+  hour：03-05
+  month：1
+  shengxiao：虎
+  season：春
+  canggan：
+    - 甲
+    - 丙
+    - 戊
+  sanhe：寅午戌
+  liuhe：亥
+  chong：申
+  direction：东北
+卯：
+  wuxing：木
+  yinyang：阴
+  hour：05-07
+  month：2
+  shengxiao：兔
+  season：春
+  canggan：
+    - 乙
+  sanhe：亥卯未
+  liuhe：戌
+  chong：酉
+  direction：东
+辰：
+  wuxing：土
+  yinyang：阳
+  hour：07-09
+  month：3
+  shengxiao：龙
+  season：春
+  canggan：
+    - 戊
+    - 乙
+    - 癸
+  sanhe：申子辰
+  liuhe：酉
+  chong：戌
+  direction：东南
+巳：
+  wuxing：火
+  yinyang：阴
+  hour：09-11
+  month：4
+  shengxiao：蛇
+  season：夏
+  canggan：
+    - 丙
+    - 戊
+    - 庚
+  sanhe：巳酉丑
+  liuhe：申
+  chong：亥
+  direction：东南
+午：
+  wuxing：火
+  yinyang：阳
+  hour：11-13
+  month：5
+  shengxiao：马
+  season：夏
+  canggan：
+    - 丁
+    - 己
+  sanhe：寅午戌
+  liuhe：未
+  chong：子
+  direction：南
+未：
+  wuxing：土
+  yinyang：阴
+  hour：13-15
+  month：6
+  shengxiao：羊
+  season：夏
+  canggan：
+    - 己
+    - 丁
+    - 乙
+  sanhe：亥卯未
+  liuhe：午
+  chong：丑
+  direction：西南
+申：
+  wuxing：金
+  yinyang：阳
+  hour：15-17
+  month：7
+  shengxiao：猴
+  season：秋
+  canggan：
+    - 庚
+    - 壬
+    - 戊
+  sanhe：申子辰
+  liuhe：巳
+  chong：寅
+  direction：西南
+酉：
+  wuxing：金
+  yinyang：阴
+  hour：17-19
+  month：8
+  shengxiao：鸡
+  season：秋
+  canggan：
+    - 辛
+  sanhe：巳酉丑
+  liuhe：辰
+  chong：卯
+  direction：西
+戌：
+  wuxing：土
+  yinyang：阳
+  hour：19-21
+  month：9
+  shengxiao：狗
+  season：秋
+  canggan：
+    - 戊
+    - 辛
+    - 丁
+  sanhe：寅午戌
+  liuhe：卯
+  chong：辰
+  direction：西北
+亥：
+  wuxing：水
+  yinyang：阴
+  hour：21-23
+  month：10
+  shengxiao：猪
+  season：冬
+  canggan：
+    - 壬
+    - 甲
+  sanhe：亥卯未
+  liuhe：寅
+  chong：巳
+  direction：西北
+
+## HEXAGRAM_64
+
+  num：1
+  name：乾
+  upper：乾
+  lower：乾
+  symbol：䷀
+  judgment：元亨利贞
+  image：天行健，君子以自强不息
+  nature：纯阳至刚
+  num：2
+  name：坤
+  upper：坤
+  lower：坤
+  symbol：䷁
+  judgment：元亨，利牝马之贞
+  image：地势坤，君子以厚德载物
+  nature：纯阴至柔
+  num：3
+  name：屯
+  upper：坎
+  lower：震
+  symbol：䷂
+  judgment：元亨利贞，勿用有攸往
+  image：云雷屯，君子以经纶
+  nature：万物始生
+  num：4
+  name：蒙
+  upper：艮
+  lower：坎
+  symbol：䷃
+  judgment：亨，匪我求童蒙，童蒙求我
+  image：山下出泉，蒙，君子以果行育德
+  nature：蒙昧启智
+  num：5
+  name：需
+  upper：坎
+  lower：乾
+  symbol：䷄
+  judgment：有孚，光亨，贞吉，利涉大川
+  image：云上于天，需，君子以饮食宴乐
+  nature：等待时机
+  num：6
+  name：讼
+  upper：乾
+  lower：坎
+  symbol：䷅
+  judgment：有孚窒惕，中吉，终凶
+  image：天与水违行，讼，君子以作事谋始
+  nature：争讼之道
+  num：7
+  name：师
+  upper：坤
+  lower：坎
+  symbol：䷆
+  judgment：贞，丈人吉，无咎
+  image：地中有水，师，君子以容民畜众
+  nature：统兵之道
+  num：8
+  name：比
+  upper：坎
+  lower：坤
+  symbol：䷇
+  judgment：吉，原筮元永贞，无咎
+  image：地上有水，比，先王以建万国亲诸侯
+  nature：亲比团结
+  num：9
+  name：小畜
+  upper：巽
+  lower：乾
+  symbol：䷈
+  judgment：亨，密云不雨，自我西郊
+  image：风行天上，小畜，君子以懿文德
+  nature：小有蓄止
+  num：10
+  name：履
+  upper：乾
+  lower：兑
+  symbol：䷉
+  judgment：履虎尾，不咥人，亨
+  image：上天下泽，履，君子以辨上下定民志
+  nature：履行礼仪
+  num：11
+  name：泰
+  upper：坤
+  lower：乾
+  symbol：䷊
+  judgment：小往大来，吉，亨
+  image：天地交，泰，后以财成天地之道
+  nature：天地交泰
+  num：12
+  name：否
+  upper：乾
+  lower：坤
+  symbol：䷋
+  judgment：否之匪人，不利君子贞
+  image：天地不交，否，君子以俭德辟难
+  nature：天地不交
+  num：13
+  name：同人
+  upper：乾
+  lower：离
+  symbol：䷌
+  judgment：同人于野，亨，利涉大川
+  image：天与火，同人，君子以类族辨物
+  nature：志同道合
+  num：14
+  name：大有
+  upper：离
+  lower：乾
+  symbol：䷍
+  judgment：元亨
+  image：火在天上，大有，君子以遏恶扬善
+  nature：大有所获
+  num：15
+  name：谦
+  upper：坤
+  lower：艮
+  symbol：䷎
+  judgment：亨，君子有终
+  image：地中有山，谦，君子以裒多益寡
+  nature：谦逊之德
+  num：16
+  name：豫
+  upper：震
+  lower：坤
+  symbol：䷏
+  judgment：利建侯行师
+  image：雷出地奋，豫，先王以作乐崇德
+  nature：喜悦豫乐
+  num：17
+  name：随
+  upper：兑
+  lower：震
+  symbol：䷐
+  judgment：元亨利贞，无咎
+  image：泽中有雷，随，君子以向晦入宴息
+  nature：随顺时势
+  num：18
+  name：蛊
+  upper：艮
+  lower：巽
+  symbol：䷑
+  judgment：元亨，利涉大川
+  image：山下有风，蛊，君子以振民育德
+  nature：整治腐败
+  num：19
+  name：临
+  upper：坤
+  lower：兑
+  symbol：䷒
+  judgment：元亨利贞，至于八月有凶
+  image：泽上有地，临，君子以教思无穷
+  nature：居上临下
+  num：20
+  name：观
+  upper：巽
+  lower：坤
+  symbol：䷓
+  judgment：盥而不荐，有孚颙若
+  image：风行地上，观，先王以省方观民设教
+  nature：观察省察
+  num：21
+  name：噬嗑
+  upper：离
+  lower：震
+  symbol：䷔
+  judgment：亨，利用狱
+  image：雷电噬嗑，先王以明罚敕法
+  nature：明罚敕法
+  num：22
+  name：贲
+  upper：艮
+  lower：离
+  symbol：䷕
+  judgment：亨，小利有攸往
+  image：山下有火，贲，君子以明庶政
+  nature：文饰之美
+  num：23
+  name：剥
+  upper：艮
+  lower：坤
+  symbol：䷖
+  judgment：不利有攸往
+  image：山附于地，剥，上以厚下安宅
+  nature：剥落衰落
+  num：24
+  name：复
+  upper：坤
+  lower：震
+  symbol：䷗
+  judgment：亨，出入无疾，朋来无咎
+  image：雷在地中，复，先王以至日闭关
+  nature：一阳来复
+  num：25
+  name：无妄
+  upper：乾
+  lower：震
+  symbol：䷘
+  judgment：元亨利贞，其匪正有眚
+  image：天下雷行，物与无妄
+  nature：无妄之行
+  num：26
+  name：大畜
+  upper：艮
+  lower：乾
+  symbol：䷙
+  judgment：利贞，不家食吉，利涉大川
+  image：天在山中，大畜，君子以多识前言往行
+  nature：大有蓄积
+  num：27
+  name：颐
+  upper：艮
+  lower：震
+  symbol：䷚
+  judgment：贞吉，观颐，自求口实
+  image：山下有雷，颐，君子以慎言语节饮食
+  nature：养正之道
+  num：28
+  name：大过
+  upper：兑
+  lower：巽
+  symbol：䷛
+  judgment：栋桡，利有攸往，亨
+  image：泽灭木，大过，君子以独立不惧
+  nature：大过之时
+  num：29
+  name：坎
+  upper：坎
+  lower：坎
+  symbol：䷜
+  judgment：习坎，有孚维心亨
+  image：水洊至，习坎，君子以常德行习教事
+  nature：重重险难
+  num：30
+  name：离
+  upper：离
+  lower：离
+  symbol：䷝
+  judgment：利贞亨，畜牝牛吉
+  image：明两作离，大人以继明照于四方
+  nature：光明附丽
+  num：31
+  name：咸
+  upper：兑
+  lower：艮
+  symbol：䷞
+  judgment：亨利贞，取女吉
+  image：山上有泽，咸，君子以虚受人
+  nature：感应相通
+  num：32
+  name：恒
+  upper：震
+  lower：巽
+  symbol：䷟
+  judgment：亨，无咎利贞，利有攸往
+  image：雷风恒，君子以立不易方
+  nature：恒久之道
+  num：33
+  name：遁
+  upper：乾
+  lower：艮
+  symbol：䷠
+  judgment：亨，小利贞
+  image：天下有山，遁，君子以远小人
+  nature：退避隐遁
+  num：34
+  name：大壮
+  upper：震
+  lower：乾
+  symbol：䷡
+  judgment：利贞
+  image：雷在天上，大壮，君子以非礼弗履
+  nature：阳刚壮盛
+  num：35
+  name：晋
+  upper：离
+  lower：坤
+  symbol：䷢
+  judgment：康侯用锡马蕃庶
+  image：明出地上，晋，君子以自昭明德
+  nature：光明上进
+  num：36
+  name：明夷
+  upper：坤
+  lower：离
+  symbol：䷣
+  judgment：利艰贞
+  image：明入地中，明夷，君子以莅众用晦而明
+  nature：韬光养晦
+  num：37
+  name：家人
+  upper：巽
+  lower：离
+  symbol：䷤
+  judgment：利女贞
+  image：风自火出，家人，君子以言有物而行有恒
+  nature：家道正伦
+  num：38
+  name：睽
+  upper：离
+  lower：兑
+  symbol：䷥
+  judgment：小事吉
+  image：上火下泽，睽，君子以同而异
+  nature：乖违背离
+  num：39
+  name：蹇
+  upper：坎
+  lower：艮
+  symbol：䷦
+  judgment：利西南，不利东北
+  image：山上有水，蹇，君子以反身修德
+  nature：行路艰难
+  num：40
+  name：解
+  upper：震
+  lower：坎
+  symbol：䷧
+  judgment：利西南，无所往
+  image：雷雨作，解，君子以赦过宥罪
+  nature：解除困难
+  num：41
+  name：损
+  upper：艮
+  lower：兑
+  symbol：䷨
+  judgment：有孚元吉无咎
+  image：山下有泽，损，君子以惩忿窒欲
+  nature：减损克己
+  num：42
+  name：益
+  upper：巽
+  lower：震
+  symbol：䷩
+  judgment：利有攸往，利涉大川
+  image：风雷益，君子以见善则迁
+  nature：增益进取
+  num：43
+  name：夬
+  upper：兑
+  lower：乾
+  symbol：䷪
+  judgment：扬于王庭，孚号有厉
+  image：泽上于天，夬，君子以施禄及下
+  nature：决断刚毅
+  num：44
+  name：姤
+  upper：乾
+  lower：巽
+  symbol：䷫
+  judgment：女壮，勿用取女
+  image：天下有风，姤，后以施命诰四方
+  nature：不期而遇
+  num：45
+  name：萃
+  upper：兑
+  lower：坤
+  symbol：䷬
+  judgment：亨，王假有庙
+  image：泽上于地，萃，君子以除戎器戒不虞
+  nature：聚合萃集
+  num：46
+  name：升
+  upper：坤
+  lower：巽
+  symbol：䷭
+  judgment：元亨，用见大人
+  image：地中生木，升，君子以顺德积小以高大
+  nature：上升进步
+  num：47
+  name：困
+  upper：兑
+  lower：坎
+  symbol：䷮
+  judgment：亨，贞大人吉
+  image：泽无水，困，君子以致命遂志
+  nature：困穷之境
+  num：48
+  name：井
+  upper：坎
+  lower：巽
+  symbol：䷯
+  judgment：改邑不改井，无丧无得
+  image：木上有水，井，君子以劳民劝相
+  nature：养人之源
+  num：49
+  name：革
+  upper：兑
+  lower：离
+  symbol：䷰
+  judgment：己日乃孚，元亨利贞
+  image：泽中有火，革，君子以治历明时
+  nature：变革创新
+  num：50
+  name：鼎
+  upper：离
+  lower：巽
+  symbol：䷱
+  judgment：元吉亨
+  image：木上有火，鼎，君子以正位凝命
+  nature：鼎新革故
+  num：51
+  name：震
+  upper：震
+  lower：震
+  symbol：䷲
+  judgment：亨，震来虩虩
+  image：洊雷震，君子以恐惧修省
+  nature：震动奋起
+  num：52
+  name：艮
+  upper：艮
+  lower：艮
+  symbol：䷳
+  judgment：艮其背不获其身
+  image：兼山艮，君子以思不出其位
+  nature：止而能止
+  num：53
+  name：渐
+  upper：巽
+  lower：艮
+  symbol：䷴
+  judgment：女归吉，利贞
+  image：山上有木，渐，君子以居贤德善俗
+  nature：循序渐进
+  num：54
+  name：归妹
+  upper：震
+  lower：兑
+  symbol：䷵
+  judgment：征凶，无攸利
+  image：泽上有雷，归妹，君子以永终知敝
+  nature：少女归嫁
+  num：55
+  name：丰
+  upper：震
+  lower：离
+  symbol：䷶
+  judgment：亨，王假之
+  image：雷电皆至，丰，君子以折狱致刑
+  nature：丰盛光大
+  num：56
+  name：旅
+  upper：离
+  lower：艮
+  symbol：䷷
+  judgment：小亨，旅贞吉
+  image：山上有火，旅，君子以明慎用刑
+  nature：旅行羁旅
+  num：57
+  name：巽
+  upper：巽
+  lower：巽
+  symbol：䷸
+  judgment：小亨，利有攸往
+  image：随风巽，君子以申命行事
+  nature：柔顺入微
+  num：58
+  name：兑
+  upper：兑
+  lower：兑
+  symbol：䷹
+  judgment：亨利贞
+  image：丽泽兑，君子以朋友讲习
+  nature：喜悦和乐
+  num：59
+  name：涣
+  upper：巽
+  lower：坎
+  symbol：䷺
+  judgment：亨，王假有庙
+  image：风行水上，涣，先王以享于帝立庙
+  nature：涣散离散
+  num：60
+  name：节
+  upper：坎
+  lower：兑
+  symbol：䷻
+  judgment：亨，苦节不可贞
+  image：泽上有水，节，君子以制数度议德行
+  nature：节制有度
+  num：61
+  name：中孚
+  upper：巽
+  lower：兑
+  symbol：䷼
+  judgment：豚鱼吉，利涉大川
+  image：泽上有风，中孚，君子以议狱缓死
+  nature：诚信中正
+  num：62
+  name：小过
+  upper：震
+  lower：艮
+  symbol：䷽
+  judgment：亨利贞，可小事
+  image：山上有雷，小过，君子以行过乎恭
+  nature：小有过越
+  num：63
+  name：既济
+  upper：坎
+  lower：离
+  symbol：䷾
+  judgment：亨小利贞，初吉终乱
+  image：水在火上，既济，君子以思患而预防之
+  nature：事已成就
+  num：64
+  name：未济
+  upper：离
+  lower：坎
+  symbol：䷿
+  judgment：亨，小狐汔济
+  image：火在水上，未济，君子以慎辨物居方
+  nature：事未完成
+
+## HETU
+
+一六共宗：
+  number：
+    - 1
+    - 6
+  wuxing：水
+  direction：北
+二七同道：
+  number：
+    - 2
+    - 7
+  wuxing：火
+  direction：南
+三八为朋：
+  number：
+    - 3
+    - 8
+  wuxing：木
+  direction：东
+四九为友：
+  number：
+    - 4
+    - 9
+  wuxing：金
+  direction：西
+五十同途：
+  number：
+    - 5
+    - 10
+  wuxing：土
+  direction：中
+
+## LUOSHU
+
+magic_square：
+    - 4
+    - 9
+    - 2
+    - 3
+    - 5
+    - 7
+    - 8
+    - 1
+    - 6
+center：5
+sum：15
+九宫飞星：
+  1：
+    name：一白贪狼
+    wuxing：水
+    direction：北
+    nature：桃花·智慧
+  2：
+    name：二黑巨门
+    wuxing：土
+    direction：西南
+    nature：病符·困厄
+  3：
+    name：三碧禄存
+    wuxing：木
+    direction：东
+    nature：是非·口舌
+  4：
+    name：四绿文曲
+    wuxing：木
+    direction：东南
+    nature：文昌·学业
+  5：
+    name：五黄廉贞
+    wuxing：土
+    direction：中
+    nature：灾煞·凶星
+  6：
+    name：六白武曲
+    wuxing：金
+    direction：西北
+    nature：权贵·武职
+  7：
+    name：七赤破军
+    wuxing：金
+    direction：西
+    nature：口舌·破败
+  8：
+    name：八白左辅
+    wuxing：土
+    direction：东北
+    nature：财运·吉星
+  9：
+    name：九紫右弼
+    wuxing：火
+    direction：南
+    nature：喜庆·桃花

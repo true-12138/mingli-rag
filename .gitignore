@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+*.ipynb_checkpoints
+*.faiss
+*.pkl
+huggingface_cache/
+# 环境
+.venv/
+env/
+corpus-derived
+01-classics
+# chunk 生成的临时文件
+data/chunks/*.tmp
+# 第三方包解压目录（用 vendor/oss/*.tgz 现解现用）
+vendor/oss/extracted-*/
+.env
+
+

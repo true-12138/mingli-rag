@@ -1,0 +1,8 @@
+# manager.py
+# 来源：Sudo-Biao/Chinese-Metaphysics-Platform（MIT License）
+
+## 模块说明
+knowledge/manager.py
+====================
+Knowledge query manager — replaces the missing knowledge_base.knowledge_manager.
+

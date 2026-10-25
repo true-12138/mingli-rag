@@ -1,0 +1,168 @@
+{"category":"天干","term":"甲","text":"甲：Jia；拼音 jiǎ；五行 wood；阴阳 yang；Yang Wood — a towering tree; growth, initiative and uprightness."}
+{"category":"天干","term":"乙","text":"乙：Yi；拼音 yǐ；五行 wood；阴阳 yin；Yin Wood — flowering plants and vines; flexibility and adaptability."}
+{"category":"天干","term":"丙","text":"丙：Bing；拼音 bǐng；五行 fire；阴阳 yang；Yang Fire — the sun; brightness, generosity and visibility."}
+{"category":"天干","term":"丁","text":"丁：Ding；拼音 dīng；五行 fire；阴阳 yin；Yin Fire — a candle or lamp flame; focus, warmth and refinement."}
+{"category":"天干","term":"戊","text":"戊：Wu；拼音 wù；五行 earth；阴阳 yang；Yang Earth — a mountain or city wall; stability and reliability."}
+{"category":"天干","term":"己","text":"己：Ji；拼音 jǐ；五行 earth；阴阳 yin；Yin Earth — garden soil; nourishment, patience and practicality."}
+{"category":"天干","term":"庚","text":"庚：Geng；拼音 gēng；五行 metal；阴阳 yang；Yang Metal — a sword or axe; decisiveness, justice and resolve."}
+{"category":"天干","term":"辛","text":"辛：Xin；拼音 xīn；五行 metal；阴阳 yin；Yin Metal — jewelry and fine ornaments; precision, elegance and sensitivity."}
+{"category":"天干","term":"壬","text":"壬：Ren；拼音 rén；五行 water；阴阳 yang；Yang Water — the ocean or a great river; movement, ambition and resourcefulness."}
+{"category":"天干","term":"癸","text":"癸：Gui；拼音 guǐ；五行 water；阴阳 yin；Yin Water — rain, dew and springs; intuition, gentleness and permeation."}
+{"category":"地支","term":"子","text":"子：Zi；拼音 zǐ；五行 water；Rat branch — cardinal Water; midnight, winter solstice, hidden beginnings."}
+{"category":"地支","term":"丑","text":"丑：Chou；拼音 chǒu；五行 earth；Ox branch — moist Earth; late winter, quiet accumulation."}
+{"category":"地支","term":"寅","text":"寅：Yin；拼音 yín；五行 wood；Tiger branch — Yang Wood; early spring, the start of the zodiac year."}
+{"category":"地支","term":"卯","text":"卯：Mao；拼音 mǎo；五行 wood；Rabbit branch — Yin Wood; mid-spring, sunrise and expansion."}
+{"category":"地支","term":"辰","text":"辰：Chen；拼音 chén；五行 earth；Dragon branch — wet Earth; late spring, the water reservoir."}
+{"category":"地支","term":"巳","text":"巳：Si；拼音 sì；五行 fire；Snake branch — Yin Fire; early summer, hidden heat."}
+{"category":"地支","term":"午","text":"午：Wu；拼音 wǔ；五行 fire；Horse branch — cardinal Fire; noon, summer solstice, peak Yang."}
+{"category":"地支","term":"未","text":"未：Wei；拼音 wèi；五行 earth；Goat branch — dry Earth; late summer, the wood reservoir."}
+{"category":"地支","term":"申","text":"申：Shen；拼音 shēn；五行 metal；Monkey branch — Yang Metal; early autumn, the water birthplace."}
+{"category":"地支","term":"酉","text":"酉：You；拼音 yǒu；五行 metal；Rooster branch — cardinal Metal; mid-autumn, sunset and precision."}
+{"category":"地支","term":"戌","text":"戌：Xu；拼音 xū；五行 earth；Dog branch — dry Earth; late autumn, the fire reservoir."}
+{"category":"地支","term":"亥","text":"亥：Hai；拼音 hài；五行 water；Pig branch — Yang Water; early winter, the wood birthplace."}
+{"category":"五行","term":"木","text":"木：Wood；拼音 mù；Growth, expansion and benevolence; associated with spring and the east."}
+{"category":"五行","term":"火","text":"火：Fire；拼音 huǒ；Heat, illumination and propriety; associated with summer and the south."}
+{"category":"五行","term":"土","text":"土：Earth；拼音 tǔ；Stability, nourishment and trust; associated with the late-season transitions and the center."}
+{"category":"五行","term":"金","text":"金：Metal；拼音 jīn；Structure, decisiveness and righteousness; associated with autumn and the west."}
+{"category":"五行","term":"水","text":"水：Water；拼音 shuǐ；Flow, wisdom and adaptability; associated with winter and the north."}
+{"category":"十神","term":"比肩","text":"比肩：Friend；拼音 bǐ jiān；Same element, same polarity as the Day Master: peers, siblings, competitors and self-reliance."}
+{"category":"十神","term":"劫财","text":"劫财：Rob Wealth；拼音 jié cái；Same element, opposite polarity: rivals who share your resources; boldness and spending."}
+{"category":"十神","term":"食神","text":"食神：Eating God；拼音 shí shén；Element the Day Master generates, same polarity: creativity, enjoyment, expression and fertility."}
+{"category":"十神","term":"伤官","text":"伤官：Hurting Officer；拼音 shāng guān；Element the Day Master generates, opposite polarity: talent, rebellion and rule-breaking brilliance."}
+{"category":"十神","term":"偏财","text":"偏财：Indirect Wealth；拼音 piān cái；Element the Day Master controls, same polarity: windfall money, business acumen and generosity."}
+{"category":"十神","term":"正财","text":"正财：Direct Wealth；拼音 zhèng cái；Element the Day Master controls, opposite polarity: stable income, savings and (traditionally) the wife star."}
+{"category":"十神","term":"七杀","text":"七杀：Seven Killings；拼音 qī shā；Element that controls the Day Master, same polarity: pressure, authority, courage and fierce ambition."}
+{"category":"十神","term":"正官","text":"正官：Direct Officer；拼音 zhèng guān；Element that controls the Day Master, opposite polarity: career, discipline, reputation and (traditionally) the husband star."}
+{"category":"十神","term":"偏印","text":"偏印：Indirect Resource；拼音 piān yìn；Element that generates the Day Master, same polarity: unconventional learning, intuition and solitude."}
+{"category":"十神","term":"正印","text":"正印：Direct Resource；拼音 zhèng yìn；Element that generates the Day Master, opposite polarity: education, protection, motherly support and credentials."}
+{"category":"十神","term":"日主","text":"日主：Day Master；拼音 rì zhǔ；The Heavenly Stem of the Day Pillar — the reference point of the whole chart, representing the self."}
+{"category":"十二长生","term":"长生","text":"长生：Birth；拼音 cháng shēng；Newly born energy; the element enters its most promising phase."}
+{"category":"十二长生","term":"沐浴","text":"沐浴：Bathing；拼音 mù yù；Infancy and washing; vulnerable, romantic and unstable energy."}
+{"category":"十二长生","term":"冠带","text":"冠带：Crowning；拼音 guàn dài；Coming of age; the element dresses up and starts to show capability."}
+{"category":"十二长生","term":"临官","text":"临官：Officiating；拼音 lín guān；Taking office; mature, productive energy approaching its peak."}
+{"category":"十二长生","term":"帝旺","text":"帝旺：Peak；拼音 dì wàng；Imperial prosperity; the element at maximum strength."}
+{"category":"十二长生","term":"衰","text":"衰：Decline；拼音 shuāi；Energy past its prime, gradually weakening."}
+{"category":"十二长生","term":"病","text":"病：Illness；拼音 bìng；Weakened energy, like sickness; low vitality."}
+{"category":"十二长生","term":"死","text":"死：Death；拼音 sǐ；Dormant energy; quiet, still and inactive."}
+{"category":"十二长生","term":"墓","text":"墓：Tomb；拼音 mù；Stored energy locked in the tomb; latent, hoarded, awaiting a key."}
+{"category":"十二长生","term":"绝","text":"绝：Extinction；拼音 jué；The lowest point; energy seemingly gone but about to turn."}
+{"category":"十二长生","term":"胎","text":"胎：Gestation；拼音 tāi；Conception; a new cycle forming in secret."}
+{"category":"十二长生","term":"养","text":"养：Nurturing；拼音 yǎng；Nourishment before birth; gentle preparation for the next cycle."}
+{"category":"神煞","term":"天乙贵人","text":"天乙贵人：Heavenly Nobleman；拼音 tiān yǐ guì rén；The most auspicious star: helpful people and timely rescue in difficulty."}
+{"category":"神煞","term":"太极贵人","text":"太极贵人：Taiji Nobleman；拼音 tài jí guì rén；Affinity with metaphysics, philosophy and deep research."}
+{"category":"神煞","term":"天德贵人","text":"天德贵人：Heavenly Virtue；拼音 tiān dé guì rén；Heaven-sent protection that softens disasters."}
+{"category":"神煞","term":"月德贵人","text":"月德贵人：Monthly Virtue；拼音 yuè dé guì rén；Gentle protective virtue; calming influence on misfortune."}
+{"category":"神煞","term":"天德合","text":"天德合：Heavenly Virtue Union；拼音 tiān dé hé；Companion star of Heavenly Virtue; reinforces protection."}
+{"category":"神煞","term":"月德合","text":"月德合：Monthly Virtue Union；拼音 yuè dé hé；Companion star of Monthly Virtue; reinforces protection."}
+{"category":"神煞","term":"德秀贵人","text":"德秀贵人：Virtue-Elegance Nobleman；拼音 dé xiù guì rén；Refined character and talent; turns danger into fortune."}
+{"category":"神煞","term":"福星贵人","text":"福星贵人：Blessing Nobleman；拼音 fú xīng guì rén；Everyday blessings, comfort and a smooth life path."}
+{"category":"神煞","term":"文昌贵人","text":"文昌贵人：Literary Star；拼音 wén chāng guì rén；Academic success, writing talent and examination luck."}
+{"category":"神煞","term":"学堂","text":"学堂：School Hall；拼音 xué táng；Scholarly star favoring study and intellectual growth."}
+{"category":"神煞","term":"词馆","text":"词馆：Literary Bureau；拼音 cí guǎn；Eloquence and literary accomplishment."}
+{"category":"神煞","term":"天医","text":"天医：Heavenly Doctor；拼音 tiān yī；Affinity with medicine, healing and health work."}
+{"category":"神煞","term":"驿马","text":"驿马：Traveling Horse；拼音 yì mǎ；Movement: travel, relocation, overseas ties and restless change."}
+{"category":"神煞","term":"桃花","text":"桃花：Peach Blossom；拼音 táo huā；Romance, charm and social magnetism."}
+{"category":"神煞","term":"红艳","text":"红艳：Red Beauty；拼音 hóng yàn；Intense romantic allure; passion that can outshine caution."}
+{"category":"神煞","term":"红鸾","text":"红鸾：Red Phoenix；拼音 hóng luán；Marriage and celebration star; joyous occasions."}
+{"category":"神煞","term":"天喜","text":"天喜：Heavenly Joy；拼音 tiān xǐ；Happiness, weddings and festive events."}
+{"category":"神煞","term":"华盖","text":"华盖：Elegant Canopy；拼音 huá gài；Artistic genius and spiritual depth, tinged with solitude."}
+{"category":"神煞","term":"金舆","text":"金舆：Golden Carriage；拼音 jīn yú；Comfort, spousal support and an easy ride through life."}
+{"category":"神煞","term":"将星","text":"将星：General Star；拼音 jiàng xīng；Leadership, authority and command over others."}
+{"category":"神煞","term":"羊刃","text":"羊刃：Blade；拼音 yáng rèn；Sharp, aggressive edge just past the peak; courage mixed with risk of injury."}
+{"category":"神煞","term":"飞刃","text":"飞刃：Flying Blade；拼音 fēi rèn；The opposite-facing blade; sudden conflicts and impulsive force."}
+{"category":"神煞","term":"禄神","text":"禄神：Prosperity Star；拼音 lù shén；Steady income and self-earned wealth; the stem at its own root."}
+{"category":"神煞","term":"流霞","text":"流霞：Flowing Mist；拼音 liú xiá；Blood-related caution star; watch for injuries and inflammation."}
+{"category":"神煞","term":"孤辰","text":"孤辰：Solitary Star；拼音 gū chén；Emotional distance and preference for solitude."}
+{"category":"神煞","term":"寡宿","text":"寡宿：Widowed Star；拼音 guǎ sù；Loneliness in close relationships; inner detachment."}
+{"category":"神煞","term":"劫煞","text":"劫煞：Robbery Star；拼音 jié shà；Sudden loss or seizure; act with caution in risky matters."}
+{"category":"神煞","term":"灾煞","text":"灾煞：Disaster Star；拼音 zāi shà；External misfortune; traditionally linked to accidents and setbacks."}
+{"category":"神煞","term":"亡神","text":"亡神：Lost Spirit；拼音 wáng shén；Hidden schemes and mental drain; can sharpen strategy when controlled."}
+{"category":"神煞","term":"披麻","text":"披麻：Mourning Veil；拼音 pī má；Family worries and melancholy events."}
+{"category":"神煞","term":"童子煞","text":"童子煞：Child Star；拼音 tóng zǐ shà；Folk belief of a celestial child identity; a youthful, otherworldly temperament."}
+{"category":"神煞","term":"六秀日","text":"六秀日：Six Elegance Day；拼音 liù xiù rì；Day pillar known for talent and refined appearance."}
+{"category":"神煞","term":"九丑日","text":"九丑日：Nine Ugly Day；拼音 jiǔ chǒu rì；Day pillar linked to romantic entanglements; name misleads, effect is relational friction."}
+{"category":"神煞","term":"空亡","text":"空亡：Void；拼音 kōng wáng；The two branches outside the current decade cycle; energy that feels hollow or deferred."}
+{"category":"神煞","term":"国印","text":"国印：State Seal；拼音 guó yìn；Officialdom, seals of office and institutional power."}
+{"category":"神煞","term":"天罗地网","text":"天罗地网：Sky Net & Earth Net；拼音 tiān luó dì wǎng；Confining combinations (戌亥 / 辰巳) that feel like being trapped."}
+{"category":"神煞","term":"阴差阳错","text":"阴差阳错：Yin-Yang Mismatch；拼音 yīn chā yáng cuò；Day pillar linked to misunderstandings in family and marriage matters."}
+{"category":"神煞","term":"十恶大败","text":"十恶大败：Ten Evils Great Defeat；拼音 shí è dà bài；Classic inauspicious day pillar group; tradition advises careful money management."}
+{"category":"纳音","term":"海中金","text":"海中金：Sea Gold；Gold hidden in the sea: talent waiting to be discovered."}
+{"category":"纳音","term":"炉中火","text":"炉中火：Furnace Fire；Fire in the furnace: energy that forges and transforms."}
+{"category":"纳音","term":"大林木","text":"大林木：Forest Wood；Great forest wood: abundant, sheltering growth."}
+{"category":"纳音","term":"路旁土","text":"路旁土：Roadside Earth；Earth by the roadside: practical, trodden, serviceable."}
+{"category":"纳音","term":"剑锋金","text":"剑锋金：Sword-edge Gold；Sharpened blade metal: precision and cutting brilliance."}
+{"category":"纳音","term":"山头火","text":"山头火：Mountaintop Fire；Fire on the summit: visible, far-reaching light."}
+{"category":"纳音","term":"涧下水","text":"涧下水：Stream Water；Water in the ravine: clear, quiet, persistent flow."}
+{"category":"纳音","term":"城头土","text":"城头土：City-wall Earth；Rampart earth: defensive strength and boundaries."}
+{"category":"纳音","term":"白蜡金","text":"白蜡金：Wax Gold；White wax metal: formable value needing refinement."}
+{"category":"纳音","term":"杨柳木","text":"杨柳木：Willow Wood；Willow wood: graceful flexibility and resilience."}
+{"category":"纳音","term":"泉中水","text":"泉中水：Spring Water；Water in the well: inexhaustible, hidden source."}
+{"category":"纳音","term":"屋上土","text":"屋上土：Rooftop Earth；Earth on the roof: shelter and protection."}
+{"category":"纳音","term":"霹雳火","text":"霹雳火：Thunderbolt Fire；Lightning fire: sudden, dramatic power."}
+{"category":"纳音","term":"松柏木","text":"松柏木：Pine Wood；Pine and cypress: endurance through seasons."}
+{"category":"纳音","term":"长流水","text":"长流水：Long-flowing Water；Ever-flowing water: momentum that never stagnates."}
+{"category":"纳音","term":"沙中金","text":"沙中金：Sand Gold；Gold in sand: value requiring patient sifting."}
+{"category":"纳音","term":"山下火","text":"山下火：Foothill Fire；Fire below the mountain: warmth close to home."}
+{"category":"纳音","term":"平地木","text":"平地木：Plain Wood；Wood on the plain: steady, unpretentious growth."}
+{"category":"纳音","term":"壁上土","text":"壁上土：Wall Earth；Earth on the wall: quiet support and structure."}
+{"category":"纳音","term":"金箔金","text":"金箔金：Gold Foil；Gilt foil: beauty, ornament and surface brilliance."}
+{"category":"纳音","term":"覆灯火","text":"覆灯火：Lamp Fire；Covered lamp flame: small light that guides in darkness."}
+{"category":"纳音","term":"天河水","text":"天河水：River of Heaven Water；Celestial river: the Milky Way; inspiration from above."}
+{"category":"纳音","term":"大驿土","text":"大驿土：Highway Earth；Great post-road earth: connection, travel and commerce."}
+{"category":"纳音","term":"钗钏金","text":"钗钏金：Hairpin Gold；Ornamental jewelry metal: adornment and refined value."}
+{"category":"纳音","term":"桑柘木","text":"桑柘木：Mulberry Wood；Mulberry wood: cultivation, silkworms and useful craft."}
+{"category":"纳音","term":"大溪水","text":"大溪水：Great Stream Water；Rushing stream: vigorous, purposeful movement."}
+{"category":"纳音","term":"沙中土","text":"沙中土：Desert Earth；Earth in sand: loose foundation needing consolidation."}
+{"category":"纳音","term":"天上火","text":"天上火：Celestial Fire；Fire in the sky: the sun itself; universal warmth."}
+{"category":"纳音","term":"石榴木","text":"石榴木：Pomegranate Wood；Pomegranate wood: hard wood bearing many fruits."}
+{"category":"纳音","term":"大海水","text":"大海水：Ocean Water；The open ocean: vastness, depth and inclusiveness."}
+{"category":"通用术语","term":"八字","text":"八字：BaZi (Four Pillars)；拼音 bā zì；The Eight Characters: a destiny chart built from the year, month, day and hour of birth."}
+{"category":"通用术语","term":"四柱","text":"四柱：Four Pillars；拼音 sì zhù；The four stem-branch pairs — year, month, day and hour — that make up a chart."}
+{"category":"通用术语","term":"年柱","text":"年柱：Year Pillar；拼音 nián zhù；The first pillar; roots, ancestry and early life."}
+{"category":"通用术语","term":"月柱","text":"月柱：Month Pillar；拼音 yuè zhù；The second pillar; parents, career environment and youth."}
+{"category":"通用术语","term":"日柱","text":"日柱：Day Pillar；拼音 rì zhù；The third pillar; the self (stem) and the spouse palace (branch)."}
+{"category":"通用术语","term":"时柱","text":"时柱：Hour Pillar；拼音 shí zhù；The fourth pillar; children, later life and ambitions."}
+{"category":"通用术语","term":"天干","text":"天干：Heavenly Stem；拼音 tiān gān；One of ten yang/yin symbols; the visible, active layer of a pillar."}
+{"category":"通用术语","term":"地支","text":"地支：Earthly Branch；拼音 dì zhī；One of twelve symbols (the zodiac animals); the hidden, receptive layer of a pillar."}
+{"category":"通用术语","term":"干支","text":"干支：Stem-Branch (GanZhi)；拼音 gān zhī；A stem paired with a branch; one unit of the sexagenary cycle."}
+{"category":"通用术语","term":"藏干","text":"藏干：Hidden Stems；拼音 cáng gān；The stems concealed inside each branch, giving it layered meaning."}
+{"category":"通用术语","term":"大运","text":"大运：Luck Pillar；拼音 dà yùn；A ten-year fortune cycle overlaid on the natal chart."}
+{"category":"通用术语","term":"流年","text":"流年：Annual Fortune；拼音 liú nián；The influence of a specific calendar year on the chart."}
+{"category":"通用术语","term":"小运","text":"小运：Minor Cycle；拼音 xiǎo yùn；A one-year cycle used before the first Luck Pillar begins."}
+{"category":"通用术语","term":"起运","text":"起运：Luck Onset；拼音 qǐ yùn；The age at which the first Luck Pillar cycle starts."}
+{"category":"通用术语","term":"命宫","text":"命宫：Life Palace；拼音 mìng gōng；An auxiliary pillar describing the core life theme."}
+{"category":"通用术语","term":"身宫","text":"身宫：Body Palace；拼音 shēn gōng；An auxiliary pillar describing how life is lived out in practice."}
+{"category":"通用术语","term":"胎元","text":"胎元：Conception Pillar；拼音 tāi yuán；The stem-branch of conception; inherited and prenatal influence."}
+{"category":"通用术语","term":"胎息","text":"胎息：Prenatal Breath；拼音 tāi xī；A pillar paired with the Conception Pillar; subtle life force."}
+{"category":"通用术语","term":"阴阳","text":"阴阳：Yin & Yang；拼音 yīn yáng；The two complementary polarities underlying every stem and branch."}
+{"category":"通用术语","term":"五行","text":"五行：Five Elements；拼音 wǔ xíng；Wood, Fire, Earth, Metal and Water — the phases of transforming energy."}
+{"category":"通用术语","term":"十神","text":"十神：Ten Gods；拼音 shí shén；Relationship labels between each stem and the Day Master."}
+{"category":"通用术语","term":"神煞","text":"神煞：Shen Sha (Symbolic Stars)；拼音 shén shà；Auspicious and inauspicious symbolic stars overlaid on the chart."}
+{"category":"通用术语","term":"纳音","text":"纳音：Na Yin (Melodic Element)；拼音 nà yīn；The thirty melodic elements assigned to each stem-branch pair."}
+{"category":"通用术语","term":"刑冲合会","text":"刑冲合会：Interactions；拼音 xíng chōng hé huì；The clashes, combinations, punishments, harms and destructions between stems and branches."}
+{"category":"通用术语","term":"生肖","text":"生肖：Chinese Zodiac；拼音 shēng xiào；The twelve animals mapped to the Earthly Branches."}
+{"category":"通用术语","term":"旬","text":"旬：Decade (Xun)；拼音 xún；A ten-day group of the sexagenary cycle; determines the void branches."}
+{"category":"通用术语","term":"星运","text":"星运：Growth Stage；拼音 xīng yùn；One of the twelve lifecycle stages of an element across the branches."}
+{"category":"通用术语","term":"自坐","text":"自坐：Self-sitting；拼音 zì zuò；The branch directly beneath the Day Stem and the ten god it forms."}
+{"category":"通用术语","term":"五行分值","text":"五行分值：Element Score；拼音 wǔ xíng fēn zhí；Weighted strength of each of the Five Elements in the chart."}
+{"category":"通用术语","term":"主星","text":"主星：Main Star；拼音 zhǔ xīng；The primary ten god of a pillar (usually its hidden main stem)."}
+{"category":"通用术语","term":"副星","text":"副星：Secondary Star；拼音 fù xīng；The additional ten gods contributed by other hidden stems."}
+{"category":"通用术语","term":"日主五行","text":"日主五行：Day Master Element；拼音 rì zhǔ wǔ xíng；The Five Element of the Day Stem — the self element of the chart."}
+{"category":"通用术语","term":"真太阳时","text":"真太阳时：True Solar Time；拼音 zhēn tài yáng shí；Local apparent solar time, corrected for longitude and season; the basis of the Hour Pillar."}
+{"category":"通用术语","term":"时辰","text":"时辰：Double-hour；拼音 shí chén；A traditional two-hour period; twelve of them span a day."}
+{"category":"通用术语","term":"农历","text":"农历：Lunar Calendar；拼音 nóng lì；The traditional Chinese lunisolar calendar."}
+{"category":"通用术语","term":"公历","text":"公历：Gregorian Calendar；拼音 gōng lì；The international solar calendar."}
+{"category":"通用术语","term":"性别","text":"性别：Gender；拼音 xìng bié；Male or female; determines the direction of the Luck Pillar cycles."}
+{"category":"通用术语","term":"男","text":"男：Male；Male gender input for chart calculation."}
+{"category":"通用术语","term":"女","text":"女：Female；Female gender input for chart calculation."}
+{"category":"通用术语","term":"顺行","text":"顺行：Forward；拼音 shùn xíng；Luck Pillars advancing in the natural cycle order."}
+{"category":"通用术语","term":"逆行","text":"逆行：Backward；拼音 nì xíng；Luck Pillars advancing in the reverse cycle order."}
+{"category":"通用术语","term":"当前","text":"当前：Current；拼音 dāng qián；Marks the Luck Pillar or year that is active now."}
+{"category":"刑冲合会","term":"天干五合","text":"天干五合：Stem Combination；拼音 tiān gān wǔ hé；Five Heavenly Stem pairings that bond and may transform: 甲己, 乙庚, 丙辛, 丁壬, 戊癸."}
+{"category":"刑冲合会","term":"六合","text":"六合：Six Harmony；拼音 liù hé；Six branch pairings of mutual affinity and support: 子丑, 寅亥, 卯戌, 辰酉, 巳申, 午未."}
+{"category":"刑冲合会","term":"三合","text":"三合：Three Harmony；拼音 sān hé；Triads that combine into one element: 申子辰(water), 亥卯未(wood), 寅午戌(fire), 巳酉丑(metal)."}
+{"category":"刑冲合会","term":"三会","text":"三会：Directional Combination；拼音 sān huì；Three adjacent branches of one seasonal direction: 寅卯辰(east), 巳午未(south), 申酉戌(west), 亥子丑(north)."}
+{"category":"刑冲合会","term":"六冲","text":"六冲：Clash；拼音 liù chōng；Six opposing branch pairings that collide and disrupt: 子午, 丑未, 寅申, 卯酉, 辰戌, 巳亥."}
+{"category":"刑冲合会","term":"相刑","text":"相刑：Punishment；拼音 xiāng xíng；Branch punishments that grind and injure: 寅巳申, 丑戌未, 子卯, and the self-punishments 辰/午/酉/亥."}
+{"category":"刑冲合会","term":"相害","text":"相害：Harm；拼音 xiāng hài；Six branch pairings of hidden injury and betrayal: 子未, 丑午, 寅巳, 卯辰, 申亥, 酉戌."}
+{"category":"刑冲合会","term":"相破","text":"相破：Destruction；拼音 xiāng pò；Six branch pairings of breakage and erosion: 子酉, 卯午, 辰丑, 未戌, 寅亥, 巳申."}
