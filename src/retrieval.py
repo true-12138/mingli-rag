@@ -1,9 +1,14 @@
 import json
+import os
+from pathlib import Path
 import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
-data_chunk="/workspace/data/chunks/punct.jsonl"
-data_emb="/workspace/data/embeddings.npy"
+# 默认用仓库自带的 data/，部署到别的目录时用 MINGLI_DATA_DIR 覆盖。
+# 之前这里硬编码 /workspace，本地克隆下来直接跑会 FileNotFoundError。
+DATA_DIR = Path(os.environ.get("MINGLI_DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
+data_chunk = str(DATA_DIR / "chunks" / "punct.jsonl")
+data_emb = str(DATA_DIR / "embeddings.npy")
 rrf_k=60
 top_k=5
 candidate_k=20  # 融合前每路先取这么多，再截 top_k

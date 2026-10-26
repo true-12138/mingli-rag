@@ -1,0 +1,2 @@
+deploy:
+  entry_file: src/app.py

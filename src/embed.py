@@ -1,10 +1,14 @@
 import json
+import os
+from pathlib import Path
 import numpy as np
 import pickle
 from sentence_transformers import SentenceTransformer
 
-input_path = "/workspace/data/chunks/punct.jsonl"
-output_npy = "/workspace/data/embeddings.npy"
+# 与 retrieval.py 一致：默认仓库自带 data/，可用 MINGLI_DATA_DIR 覆盖
+DATA_DIR = Path(os.environ.get("MINGLI_DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
+input_path = str(DATA_DIR / "chunks" / "punct.jsonl")
+output_npy = str(DATA_DIR / "embeddings.npy")
 batch_size = 64
 model_id = "BAAI/bge-m3"
 
@@ -38,7 +42,7 @@ emb_batch = np.concatenate(embed_list, axis=0)
 np.save(output_npy, emb_batch)
 print(f"输出 shape={emb_batch.shape}")
 
-with open("/workspace/data/all_records.pkl", "wb") as f:
+with open(str(DATA_DIR / "all_records.pkl"), "wb") as f:
     pickle.dump(rows, f)
 
 print("已经保存 pkl")
