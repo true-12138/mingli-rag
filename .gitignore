@@ -13,6 +13,8 @@ corpus-derived
 data/chunks/*.tmp
 # 第三方包解压目录（用 vendor/oss/*.tgz 现解现用）
 vendor/oss/extracted-*/
+# 早期嵌套克隆的残留，没有 .gitmodules，别再用 git add -A 把它当成子模块提交
+src/mingli-rag/
 .env
 
 
