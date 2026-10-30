@@ -1,14 +1,19 @@
-import json
 import os
+import sys
 from pathlib import Path
 import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
-# 默认用仓库自带的 data/，部署到别的目录时用 MINGLI_DATA_DIR 覆盖。
-# 之前这里硬编码 /workspace，本地克隆下来直接跑会 FileNotFoundError。
-DATA_DIR = Path(os.environ.get("MINGLI_DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
-data_chunk = str(DATA_DIR / "chunks" / "punct.jsonl")
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import corpus
+
+# 语料顺序与编号由 src/corpus.py 统一决定（标点组在前、无标点组顺延），
+# 和 src/embed.py 用的是同一个 loader，不会出现两边顺序不一致。
+# 部署到别的目录时用 MINGLI_DATA_DIR 覆盖；用本地权重时设 MINGLI_MODEL_DIR。
+DATA_DIR = corpus.data_dir()
 data_emb = str(DATA_DIR / "embeddings.npy")
+MODEL_ID = os.environ.get("MINGLI_MODEL_DIR", "BAAI/bge-m3")
 rrf_k=60
 top_k=5
 candidate_k=20  # 融合前每路先取这么多，再截 top_k
@@ -19,25 +24,20 @@ def tokenize(text):
     if len(s)<2:
         return list(s)
     return [s[i:i+2] for i in range(len(s)-1)]
-def load_chunks(path):
-    chunks=[]
-    texts_bm25=[]
-    with open(path,"r",encoding="utf-8") as f:
-        for line in f:
-            obj=json.loads(line)
-            chunks.append(obj)
-            texts_bm25.append(tokenize(obj["chunk_text"]))
-        return chunks, texts_bm25
-chunks,tokenized_corpus=load_chunks(data_chunk)
+chunks=corpus.load_chunks(DATA_DIR)
+tokenized_corpus=[tokenize(c["chunk_text"]) for c in chunks]
 embeds=np.load(data_emb).astype(np.float32)
 print(f"chunks:{len(chunks)}|embeds shape:{embeds.shape}")
-assert len(chunks)==embeds.shape[0]
+assert len(chunks)==embeds.shape[0], (
+    f"语料 {len(chunks)} 条，但 embeddings 只有 {embeds.shape[0]} 行——"
+    "改过 src/corpus.py 的语料顺序或新增了语料文件后，必须重跑 python src/embed.py"
+)
 # 统一归一化，保证 embeds @ q_emb 就是余弦相似度（不依赖 embedding 脚本是否归一化过）
 norms=np.linalg.norm(embeds,axis=1,keepdims=True)
 norms[norms==0]=1.0
 embeds=embeds/norms
 bm25=BM25Okapi(tokenized_corpus)
-model=SentenceTransformer("BAAI/bge-m3")
+model=SentenceTransformer(MODEL_ID)
 def dense_search(query,topk=top_k):
     q_emb=model.encode(query,normalize_embeddings=True)
     sims=embeds@q_emb
@@ -124,6 +124,6 @@ if __name__=="__main__":
             print(line)
             log_lines.append(line)
     # 保存日志
-    with open("data\retrieval_log.txt", "w", encoding="utf-8") as f:
+    with open(DATA_DIR / "retrieval_log.txt", "w", encoding="utf-8") as f:
         f.write("\n".join(log_lines))
     print("\n✅全部检索日志已经保存至 data/retrieval_log.txt")

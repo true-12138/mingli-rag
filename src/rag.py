@@ -45,9 +45,10 @@ def build_context(hits):
     lines = []
     for i, h in enumerate(hits, 1):
         m = h["meta"]
-        title = "《{}·{}·{}》".format(
-            m.get("book", ""), m.get("volume", ""), m.get("chapter", "")
-        )
+        # 无标点组的 volume / chapter 全部为空，标点组也有 1500+ 条没有卷名，
+        # 固定拼三个字段会渲染成《太乙金镜式经··》。只拼非空的部分。
+        parts = [str(m.get(k) or "").strip() for k in ("book", "volume", "chapter")]
+        title = "《{}》".format("·".join(p for p in parts if p))
         lines.append("[{}] {}\n{}".format(i, title, h["text"]))
     return "\n\n".join(lines)
 def _parse_json(raw):

@@ -5,24 +5,19 @@ import json
 import sys
 sys.path.append("../src")
 from rag import answer
+import corpus
 QUESTION_PATH = "./questions.jsonl"
-CHUNK_PATH = "../data/chunks/punct.jsonl"
 OUTPUT_CSV = "./refusal_results.csv"
 def load_chunks():
-    """chunk_id -> (sourcefile, line_start, line_end)"""
+    """chunk_id -> (sourcefile, line_start, line_end)，语料顺序与编号共用 corpus"""
     chunks = {}
-    with open(CHUNK_PATH, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            obj = json.loads(line)
-            m = obj["meta"]
-            chunks[obj["chunk_id"]] = (
-                m.get("sourcefile"),
-                m.get("line_start"),
-                m.get("line_end"),
-            )
+    for obj in corpus.load_chunks():
+        m = obj["meta"]
+        chunks[obj["chunk_id"]] = (
+            m.get("sourcefile"),
+            m.get("line_start"),
+            m.get("line_end"),
+        )
     return chunks
 def line_overlap(a, b):
     if a[0] is None or b[0] is None or a[0] != b[0]:

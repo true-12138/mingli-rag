@@ -3,9 +3,9 @@ import json
 import sys
 sys.path.append("../src")
 from retrieval import retrieve_one
+import corpus
 # -------------------------- 配置区 --------------------------
 QUESTION_PATH = "./questions.jsonl"
-CHUNK_PATH = "../data/chunks/punct.jsonl"
 OUTPUT_CSV = "./results_v2.csv"
 TOP_K = 5
 STRATEGIES = ["dense", "bm25", "rrf"]
@@ -13,20 +13,16 @@ def load_chunks():
     """chunk_id -> (sourcefile, line_start, line_end)
     行号是书内行号，不同书的行号都从 1 开始，**必须带 sourcefile 一起比**，
     否则两本不相关的书只要行号碰巧重叠就会被误判为命中。
+    语料顺序与编号跟 retrieval 共用 corpus.load_chunks，新增语料文件后这里不用改。
     """
     chunks = {}
-    with open(CHUNK_PATH, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            obj = json.loads(line)
-            meta = obj["meta"]
-            chunks[obj["chunk_id"]] = (
-                meta.get("sourcefile"),
-                meta.get("line_start"),
-                meta.get("line_end"),
-            )
+    for obj in corpus.load_chunks():
+        meta = obj["meta"]
+        chunks[obj["chunk_id"]] = (
+            meta.get("sourcefile"),
+            meta.get("line_start"),
+            meta.get("line_end"),
+        )
     return chunks
 def load_questions():
     questions = []

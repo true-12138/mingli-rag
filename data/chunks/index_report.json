@@ -1,0 +1,37 @@
+{
+  "generated_by": "src/build_index.py",
+  "corpus_files": [
+    "punct.jsonl",
+    "unpunct.jsonl"
+  ],
+  "chunks": {
+    "total": 8681,
+    "by_source": {
+      "punct": 2830,
+      "unpunct": 5851
+    },
+    "books": {
+      "punct": 16,
+      "unpunct": 29
+    }
+  },
+  "chars_by_source": {
+    "punct": 1168327,
+    "unpunct": 2231003
+  },
+  "chars_total": 3399330,
+  "empty_meta": {
+    "volume": 7409,
+    "chapter": 5851
+  },
+  "id_range": {
+    "punct": "1..2830",
+    "unpunct": "2831..8681"
+  },
+  "eval": {
+    "questions": 30,
+    "gold_refs": 24
+  },
+  "errors": [],
+  "warnings": []
+}
