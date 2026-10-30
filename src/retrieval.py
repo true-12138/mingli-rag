@@ -28,10 +28,21 @@ chunks=corpus.load_chunks(DATA_DIR)
 tokenized_corpus=[tokenize(c["chunk_text"]) for c in chunks]
 embeds=np.load(data_emb).astype(np.float32)
 print(f"chunks:{len(chunks)}|embeds shape:{embeds.shape}")
-assert len(chunks)==embeds.shape[0], (
-    f"语料 {len(chunks)} 条，但 embeddings 只有 {embeds.shape[0]} 行——"
-    "改过 src/corpus.py 的语料顺序或新增了语料文件后，必须重跑 python src/embed.py"
-)
+# embeddings 是一段**前缀**时（索引还没覆盖新增语料）只检索已编码的部分，
+# 否则直接报错。corpus.load_chunks 的顺序是标点组在前，所以前缀正好是 v1 的 16 部。
+# 要让全部语料可检索：python src/embed.py
+if embeds.shape[0] > len(chunks):
+    raise SystemExit(
+        f"embeddings 有 {embeds.shape[0]} 行，但语料只有 {len(chunks)} 条——"
+        "语料文件被删过，必须重跑 python src/embed.py"
+    )
+if embeds.shape[0] < len(chunks):
+    print(
+        f"[warn] 索引只覆盖前 {embeds.shape[0]} 条语料（共 {len(chunks)} 条），"
+        "本次只检索这部分；重跑 python src/embed.py 可覆盖全部。"
+    )
+    chunks = chunks[: embeds.shape[0]]
+    tokenized_corpus = tokenized_corpus[: embeds.shape[0]]
 # 统一归一化，保证 embeds @ q_emb 就是余弦相似度（不依赖 embedding 脚本是否归一化过）
 norms=np.linalg.norm(embeds,axis=1,keepdims=True)
 norms[norms==0]=1.0

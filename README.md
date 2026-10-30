@@ -202,7 +202,8 @@ export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
 ```
 
-- `data/embeddings.npy`（2,830 × 1024，约 12 MB）**已随仓库提供**，不需要重新编码；要重跑：`python src/embed.py`
+- `data/embeddings.npy`（2,830 × 1024，约 12 MB）**已随仓库提供**，开箱即用。它目前只覆盖 v1 的标点组：语料已扩到 8,681 条，索引尚未重建，启动时会打印 `[warn] 索引只覆盖前 2830 条语料`，只检索已编码的部分。
+- 要让无标点组也进入检索：先 `python src/build_index.py` 校验语料，再 `python src/embed.py` 重新编码（8,681 条，GPU 上十几分钟，纯 CPU 要数小时）
 - BGE-M3 权重首次加载需要下载（几 GB）。大陆网络可先设 `HF_ENDPOINT=https://hf-mirror.com`，或用 ModelScope 下载后指向本地目录
 - 重跑检索评测（**不调用 LLM**，只测检索）：`cd eval && python eval_matrics.py`
 - 重画结果图：`python eval/make_chart.py`
@@ -219,8 +220,10 @@ streamlit run app.py
 ├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
 ├── src/
 │   ├── app.py                 # 界面：检索策略、Top-k、召回与引用对照
+│   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
 │   ├── rag.py                 # DeepSeek 调用、JSON 强制、引用校验、拒答
+│   ├── build_index.py         # 建索引前校验（编号连续、gold 有效、无重复）
 │   ├── embed.py               # BGE-M3 离线编码 → data/embeddings.npy
 │   ├── chunk_*.py             # 语料切分（细节见 docs/corpus_pipeline.md）
 │   └── validate_chunks.py     # chunk 数据契约校验
@@ -232,8 +235,9 @@ streamlit run app.py
 │   ├── refusal_results.csv    # 拒答明细（含模型原始回答）
 │   └── make_chart.py          # 由 results_v2.csv 生成对比图
 ├── data/
-│   ├── chunks/punct.jsonl     # v1 唯一 chunk 产物（2,830 行）
-│   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，v2 才索引）
+│   ├── chunks/punct.jsonl     # 标点组（2,830 行，chunk_id 1..2830）
+│   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681，待编码）
+│   ├── chunks/index_report.json # build_index.py 产出的校验报告
 │   └── embeddings.npy         # 2,830 × 1024
 ├── docs/
 │   ├── corpus_pipeline.md     # 语料工程说明（原 README）
