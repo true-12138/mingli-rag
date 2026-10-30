@@ -1,3 +1,4 @@
+import argparse
 import csv
 import json
 import sys
@@ -24,9 +25,9 @@ def load_chunks():
             meta.get("line_end"),
         )
     return chunks
-def load_questions():
+def load_questions(path=QUESTION_PATH):
     questions = []
-    with open(QUESTION_PATH, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -89,8 +90,17 @@ def score_one(q, retrieved_ids, chunks, mode):
     mrr = 1.0 / first if first else 0.0
     return recall, mrr, len(covered), len(golds)
 def main():
+    global TOP_K
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--questions", default=QUESTION_PATH, help="题目文件")
+    ap.add_argument("--out", default=OUTPUT_CSV, help="明细输出路径；换语料时请换个文件名，别覆盖旧基线")
+    ap.add_argument("--top-k", type=int, default=TOP_K, help="Recall@k 的 k")
+    args = ap.parse_args()
+    TOP_K = args.top_k
+
     chunks = load_chunks()
-    questions = load_questions()
+    questions = load_questions(args.questions)
+    print(f"语料 {len(chunks)} 条｜题目 {len(questions)} 条｜Top-{TOP_K}｜输出 {args.out}")
     rows = []
     # agg[strategy][mode] -> list
     agg = {
@@ -127,12 +137,12 @@ def main():
                     by_cat[strat].setdefault(q["category"], []).append(recall)
         rows.append(row)
     fieldnames = list(rows[0].keys())
-    with open(OUTPUT_CSV, "w", encoding="utf-8-sig", newline="") as f:
+    with open(args.out, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-    print(f"明细结果：{OUTPUT_CSV}")
-    print("\n===== 总指标（20 条可答） =====")
+    print(f"明细结果：{args.out}")
+    print(f"\n===== 总指标（{len(agg['rrf']['line'])} 条可答） =====")
     print(f"{'strategy':<8}{'exact_R@5':>12}{'line_R@5':>12}{'line_MRR':>12}")
     for s in STRATEGIES:
         exact_r = sum(agg[s]["exact"]) / len(agg[s]["exact"]) if agg[s]["exact"] else 0
