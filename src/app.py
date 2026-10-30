@@ -15,11 +15,13 @@ with st.sidebar:
     mode=st.radio("检索策略",["rrf","bm25","dense"],index=0)
     top_k=st.slider("召回Top-k",min_value=1,max_value=10,value=5)
     st.divider()
-    st.info("模型 Deepsee Chat | 强制JSON输出+引用校验")
+    st.info("模型 DeepSeek Chat | 强制JSON输出+引用校验")
 
 question=st.text_input("请输入你的问题")
 run_bnt=st.button("开始回答",type="primary")
-if run_bnt:
+if run_bnt and not question.strip():
+    st.warning("请输入问题")
+elif run_bnt:
     with st.spinner("检索古籍+大模型生成回答中，请稍后~"):
         res=answer(question,top_k=top_k,mode=mode)
     st.success("推理完成")
@@ -28,7 +30,7 @@ if run_bnt:
     with col1:
         st.subheader("模型回答")
         if res["can_answer"] is False:
-            st.warnning(res["answer"])
+            st.warning(res["answer"])
         elif res["can_answer"] is None:
             st.error("模型输出异常JSON解析失败")
             st.code(res.get("raw",""),language="json")
@@ -38,14 +40,10 @@ if run_bnt:
                 st.error(f"发现非法引用：{res['invalid_citations']}")
         with col2:
             st.subheader("本次召回chunk_id")
-            retrieved_ids=json.loads(res["retrieved_chunk_ids"])
-            st.write(retrieved_ids)
+            st.write(res["retrieved_chunk_ids"])
             st.subheader("模型有效引用chunk_id")
-            cited_ids=json.loads(res["citations_chunk_ids"])
-            st.write(cited_ids) 
+            st.write(res["citations_chunk_ids"])
         st.divider()
         with st.expander("查看原始返回JSON(调试用)"):
             st.json(res)
-elif run_bnt and not question.strip():
-    st.warning("请输入问题")
     
