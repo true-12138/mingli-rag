@@ -1,7 +1,10 @@
 # v1 运行依赖。BGE-M3 权重不在这里，首次运行由 sentence-transformers 下载。
 numpy>=1.24
 streamlit>=1.30
-sentence-transformers>=2.2
+# transformers 5.x 改了内部结构，sentence-transformers 导入时会 NameError: name 'nn' is not defined。
+# 压住上界；实测可用组合：sentence-transformers 2.7.0 + transformers 4.37.2
+sentence-transformers>=2.7,<4
+transformers>=4.37,<5
 rank-bm25>=0.2.2
 requests>=2.28
 python-dotenv>=1.0
