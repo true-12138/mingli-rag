@@ -14,9 +14,16 @@ import corpus
 DATA_DIR = corpus.data_dir()
 data_emb = str(DATA_DIR / "embeddings.npy")
 MODEL_ID = os.environ.get("MINGLI_MODEL_DIR", "BAAI/bge-m3")
-rrf_k=60
+# RRF 参数是在 8,681 条语料上重新扫出来的（见 eval/tune_rrf.py 与 eval/baselines.md）。
+# 原来 k=60 / candidate_k=20 是 2,830 条时调的，候选池扩大三倍后融合变得太钝：
+# 第 1 名和第 20 名的分差只有 1/61 : 1/80 ≈ 1.3 倍，等于没区分。
+rrf_k=10
 top_k=5
-candidate_k=20  # 融合前每路先取这么多，再截 top_k
+candidate_k=40  # 融合前每路先取这么多，再截 top_k
+# 两路等权。试过把 BM25 降到 0.7：单跳释义题涨 1 道、应用推理题掉 1 道，
+# 总 recall 不变却多了一个需要调的旋钮，20 道题的量样本上不划算。
+w_dense=1.0
+w_bm25=1.0
 def tokenize(text):
     # 中文用字二元组：比单字更有区分度，也不需要 jieba 词典。
     # v1.1 再换 jieba + data/terminology 自定义词典。
@@ -61,14 +68,14 @@ def bm25_search(query,topk=top_k):
     indices=np.argsort(scores)[::-1][:topk]
     res=[{"idx":i, "scores":float(scores[i])} for i in indices]
     return res
-def rrf_fuse(dense_list,bm25_list,k=rrf_k,topk=top_k):
+def rrf_fuse(dense_list,bm25_list,k=rrf_k,topk=top_k,w_d=w_dense,w_b=w_bm25):
     rrf_dict={}
     for rank,item in enumerate(dense_list,start=1):
         idx=item["idx"]
-        rrf_dict[idx]=rrf_dict.get(idx,0.0)+1.0/(rank+k)
+        rrf_dict[idx]=rrf_dict.get(idx,0.0)+w_d/(rank+k)
     for rank,item in enumerate(bm25_list,start=1):
         idx=item["idx"]
-        rrf_dict[idx]=rrf_dict.get(idx,0.0)+1.0/(rank+k)
+        rrf_dict[idx]=rrf_dict.get(idx,0.0)+w_b/(rank+k)
     sorted_idx=sorted(rrf_dict.items(),key=lambda x:x[1], reverse=True)
     out=[{"idx":i,"scores":s} for i,s in sorted_idx[:topk]]
     return out

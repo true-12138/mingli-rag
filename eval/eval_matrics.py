@@ -134,7 +134,10 @@ def main():
                 row[f"{strat}_{mode}_covered"] = f"{covered}/{n_gold}"
                 if q["answerable"]:
                     agg[strat][mode].append(recall)
-                    by_cat[strat].setdefault(q["category"], []).append(recall)
+                    # 只收 line 口径。以前这个 append 写在 for mode 里面，
+                    # 每道题会被记两次（exact + line），表头写着 line 其实是两者平均。
+                    if mode == "line":
+                        by_cat[strat].setdefault(q["category"], []).append(recall)
         rows.append(row)
     fieldnames = list(rows[0].keys())
     with open(args.out, "w", encoding="utf-8-sig", newline="") as f:
