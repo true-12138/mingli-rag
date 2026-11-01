@@ -21,6 +21,9 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import corpus
+from fortune.astro import natal_chart
+from fortune.bazi import paipan as _paipan_bazi
+from fortune.tarot import draw as _draw_tarot
 from retrieval import bm25, chunks, embeds, model, rrf_k, tokenize
 
 BOOK_FIELDS = ("book", "volume", "chapter")
@@ -234,11 +237,47 @@ def search_terms(term, limit=5):
     }
 
 
+def draw_bazi(year, month, day, hour=0, minute=0, gender="male"):
+    """排八字盘。纯历法计算，同样的输入永远同一个盘。"""
+    args = {"year": year, "month": month, "day": day,
+            "hour": hour, "minute": minute, "gender": gender}
+    try:
+        chart = _paipan_bazi(year, month, day, hour, minute, gender)
+    except ValueError as exc:
+        return {"ok": False, "tool": "draw_bazi", "args": args, "error": str(exc)}
+    return {"ok": True, "tool": "draw_bazi", "args": args, "result": chart}
+
+
+def draw_astro(year, month, day, hour=0, minute=0,
+               tz=8.0, lat=39.90, lon=116.40, city="北京"):
+    """排西方本命盘（整宫制）。行星位置是地心视黄经。"""
+    args = {"year": year, "month": month, "day": day, "hour": hour, "minute": minute,
+            "tz": tz, "lat": lat, "lon": lon, "city": city}
+    try:
+        chart = natal_chart(year, month, day, hour, minute, tz, lat, lon, city)
+    except ValueError as exc:
+        return {"ok": False, "tool": "draw_astro", "args": args, "error": str(exc)}
+    return {"ok": True, "tool": "draw_astro", "args": args, "result": chart}
+
+
+def draw_tarot(n=3, seed=None, spread=None):
+    """抽塔罗牌。seed 固定时结果可复现，用于测试。"""
+    args = {"n": n, "seed": seed, "spread": spread}
+    try:
+        result = _draw_tarot(n, seed, spread)
+    except ValueError as exc:
+        return {"ok": False, "tool": "draw_tarot", "args": args, "error": str(exc)}
+    return {"ok": True, "tool": "draw_tarot", "args": args, "result": result}
+
+
 TOOLS = {
     "search_classics": search_classics,
     "fetch_chunk": fetch_chunk,
     "list_books": list_books,
     "search_terms": search_terms,
+    "draw_bazi": draw_bazi,
+    "draw_astro": draw_astro,
+    "draw_tarot": draw_tarot,
 }
 
 
