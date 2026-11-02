@@ -32,13 +32,18 @@ JSON 格式：
 - answer 固定为 "语料中没有足够的依据回答这个问题。"
 - citations 为 []
 """
-def _get_api_key():
-    key = os.environ.get("DEEPSEEK_API_KEY")
+def _get_api_key(api_key=None):
+    """取 key：调用方显式传入的优先，其次环境变量。
+
+    这里抛 RuntimeError 而不是 SystemExit——Streamlit 的 `except Exception`
+    接不住 SystemExit，公网没配 key 时整页会断在半路，看起来像前端坏了。
+    """
+    key = api_key or os.environ.get("DEEPSEEK_API_KEY")
     if not key:
-        raise SystemExit(
+        raise RuntimeError(
             "没有找到 DEEPSEEK_API_KEY。先执行：\n"
             "  export DEEPSEEK_API_KEY=sk-xxxx\n"
-            "再运行。不要把 key 写进代码或提交到 git。"
+            "或把 key 配到运行环境里。不要把 key 写进代码或提交到 git。"
         )
     return key
 def build_context(hits):
@@ -63,11 +68,11 @@ def _parse_json(raw):
         # 白白浪费一步。退化为只取第一个对象：后面那个留给下一轮。
         obj, _end = json.JSONDecoder().raw_decode(raw)
         return obj
-def _chat(messages, temperature=0.0):
+def _chat(messages, temperature=0.0, api_key=None):
     resp = requests.post(
         DEEPSEEK_URL,
         headers={
-            "Authorization": "Bearer {}".format(_get_api_key()),
+            "Authorization": "Bearer {}".format(_get_api_key(api_key)),
             "Content-Type": "application/json",
         },
         json={
@@ -80,9 +85,10 @@ def _chat(messages, temperature=0.0):
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
-def answer(question, top_k=5, mode="rrf"):
+def answer(question, top_k=5, mode="rrf", api_key=None):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。
+    api_key 用于公网访客自带 key 的场景，不传就读环境变量。
     """
     hits = retrieve_one(question, top_k=top_k, mode=mode)
     user = "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), question)
@@ -93,7 +99,8 @@ def answer(question, top_k=5, mode="rrf"):
             [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user},
-            ]
+            ],
+            api_key=api_key,
         )
         try:
             data = _parse_json(last_raw)

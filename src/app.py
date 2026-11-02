@@ -187,24 +187,68 @@ def _chips(items, seal=False):
     )
 
 
-def _show_reading(chart, question, note, key):
-    """排完盘后点「生成解读」才调模型——排盘本身不花钱。"""
-    if not has_api_key():
-        st.info("没有配置 DEEPSEEK_API_KEY，暂时只能看盘面，不能生成解读。")
+TOPIC_PROMPTS = (
+    ("感情", "请结合盘面，重点讲讲我的感情与相处方式。"),
+    ("事业", "请结合盘面，重点讲讲我的事业方向与适合的工作方式。"),
+    ("学业", "请结合盘面，重点讲讲我的学业与适合的学习方式。"),
+    ("财运", "请结合盘面，重点讲讲我的财务倾向与用钱方式。"),
+)
+
+
+def _read_block(chart, key):
+    """排完盘后的问答区。
+
+    盘面本身是算出来的，不花钱；解读才调模型。所以这里先让用户把问题问清楚
+    （感情/事业是绝大多数人真正想知道的），再点一次按钮花一次调用。
+    公网没配服务端 Key 时，让访客填自己的 Key——key 只存在 session_state，
+    不写日志、不落盘，也不会带给别的访客（Streamlit 的 session 是隔离的）。
+    """
+    qkey = key + "_q"
+    pending = key + "_pending"
+    # 话题按钮是在输入框已经渲染之后才被点中的，这时不能直接改 qkey
+    # （Streamlit 不允许改动已实例化的 widget）。先写进 pending，
+    # 下一次 rerun 在输入框创建之前搬过去。
+    if pending in st.session_state:
+        st.session_state[qkey] = st.session_state.pop(pending)
+    st.session_state.setdefault(qkey, "")
+
+    st.markdown('<div class="section-title">问自己的盘</div>', unsafe_allow_html=True)
+    st.text_input("想问什么", key=qkey, label_visibility="collapsed",
+                  placeholder="例如：今年适合换工作吗？感情上要注意什么？")
+    cols = st.columns(len(TOPIC_PROMPTS))
+    for i, (label, prompt) in enumerate(TOPIC_PROMPTS):
+        if cols[i].button(label, key="%s_t%d" % (key, i), use_container_width=True):
+            st.session_state[pending] = prompt
+            st.rerun()
+
+    server_key = has_api_key()
+    api_key = None
+    if not server_key:
+        st.markdown(
+            '<div class="note">公网 Demo 没有配置服务端 Key。填入自己的 DeepSeek Key '
+            '只用于本次会话，不写日志、不落盘；不填也能看盘，只是不能生成解读。</div>',
+            unsafe_allow_html=True)
+        api_key = st.text_input("DeepSeek API Key", type="password",
+                                key=key + "_key") or None
+
+    if not st.button("生成解读", type="primary", key=key + "_go"):
         return
-    if st.button("生成解读", type="primary", key=key):
-        with st.spinner("正在解读盘面…"):
-            try:
-                res = read(chart, question=question, user_note=note)
-            except Exception as exc:
-                st.error("解读失败：%s" % exc)
-                return
-        if res["summary"]:
-            st.success(res["summary"])
-        for sec in res["sections"]:
-            st.subheader(sec["title"])
-            st.markdown(sec["content"])
-        st.caption(res["disclaimer"])
+    if not (server_key or api_key):
+        st.warning("没有可用的 Key：先在上面填入自己的 DeepSeek Key，再点一次。")
+        return
+
+    with st.spinner("正在解读盘面…"):
+        try:
+            res = read(chart, question=st.session_state.get(qkey) or None, api_key=api_key)
+        except Exception as exc:
+            st.error("解读失败：%s" % exc)
+            return
+    if res["summary"]:
+        st.success(res["summary"])
+    for sec in res["sections"]:
+        st.subheader(sec["title"])
+        st.markdown(sec["content"])
+    st.caption(res["disclaimer"])
 
 
 # ---------- 古籍问答 ----------
@@ -224,6 +268,13 @@ def _qa_tab():
                         horizontal=True, help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
         top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5)
         run_btn = st.button("开始回答", type="primary")
+        # 公网 Demo 不一定配了服务端 key，让访客能自带一个；只存在本次会话
+        if has_api_key():
+            api_key = None
+        else:
+            st.markdown('<div class="note">公网未配置服务端 Key，可填自己的 DeepSeek Key'
+                        '（仅本次会话，不落盘）。</div>', unsafe_allow_html=True)
+            api_key = st.text_input("DeepSeek API Key", type="password", key="qa_key") or None
 
     with right:
         st.markdown('<div class="section-title">可以这样问</div>', unsafe_allow_html=True)
@@ -241,10 +292,13 @@ def _qa_tab():
     if not question.strip():
         st.warning("请先输入问题")
         return
+    if not (has_api_key() or api_key):
+        st.warning("没有可用的 Key：填入自己的 DeepSeek Key 后再点一次。")
+        return
 
     with st.spinner("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"):
         try:
-            res = answer(question, top_k=top_k, mode=mode)
+            res = answer(question, top_k=top_k, mode=mode, api_key=api_key)
         except Exception as exc:
             st.error("生成失败：{}".format(exc))
             st.info("排盘 / 星盘 / 塔罗不依赖检索模型，那几个页签可以正常使用。")
@@ -382,7 +436,6 @@ def _bazi_tab():
             gender = col3.selectbox("性别", ["male", "female"],
                                     format_func=lambda g: "男" if g == "male" else "女",
                                     key="bazi_g")
-            question = st.text_input("想问什么（可留空）", key="bazi_q")
             submitted = st.form_submit_button("排盘", type="primary")
         st.caption("按出生地当地时间排，节气与干支由历法库计算；同一份输入永远得到同一个盘。")
 
@@ -438,7 +491,7 @@ def _bazi_tab():
         st.json(chart)
 
     st.divider()
-    _show_reading(chart, st.session_state.get("bazi_q"), None, "bazi_read")
+    _read_block(chart, "bazi_read")
 
 
 # ---------- 星盘 ----------
@@ -534,7 +587,6 @@ def _astro_tab():
             else:
                 lat, lon = CITIES[city]
                 tz = 8.0
-            question = st.text_input("想问什么（可留空）", key="as_q")
             submitted = st.form_submit_button("排盘", type="primary")
         st.caption("地心视黄经、整宫制。出生时间越准，上升和宫位越准——差 2 小时上升会偏一个星座。")
 
@@ -595,7 +647,7 @@ def _astro_tab():
         st.json(chart)
 
     st.divider()
-    _show_reading(chart, st.session_state.get("as_q"), None, "astro_read")
+    _read_block(chart, "astro_read")
 
 
 # ---------- 塔罗 ----------
@@ -608,7 +660,6 @@ def _tarot_tab():
             spread = col1.selectbox("牌阵", list(SPREADS),
                                     format_func=lambda k: SPREADS[k][0], key="tt_s")
             seed_text = col2.text_input("固定种子（可留空，填了结果可复现）", key="tt_seed")
-            question = st.text_input("想问什么", key="tt_q")
             submitted = st.form_submit_button("抽牌", type="primary")
         st.caption("抽到什么是随机的；怎么解释才是塔罗真正在做的部分，别反复抽到满意为止。")
 
@@ -643,7 +694,7 @@ def _tarot_tab():
         st.json(chart)
 
     st.divider()
-    _show_reading(chart, st.session_state.get("tt_q"), None, "tarot_read")
+    _read_block(chart, "tarot_read")
 
 
 def main():

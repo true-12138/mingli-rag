@@ -83,13 +83,14 @@ def _payload(chart):
     return chart
 
 
-def read(chart, question=None, user_note=None, temperature=0.7):
+def read(chart, question=None, user_note=None, temperature=0.7, api_key=None):
     """生成解读。返回 {summary, sections, disclaimer, kind}。
 
     Args:
         chart: 排盘结果（bazi / astro / tarot 三个函数返回的 dict）。
         question: 用户具体想问的事，可以为空。
         user_note: 用户补充的处境（比如"正在准备实习"），会一起给模型。
+        api_key: 访客自带的 key；不传就读环境变量。公网 Demo 没配服务端 key 时用。
     """
     kind = chart.get("kind", "")
     if kind not in SECTION_HINTS:
@@ -111,6 +112,7 @@ def read(chart, question=None, user_note=None, temperature=0.7):
             {"role": "user", "content": "\n\n".join(parts)},
         ],
         temperature=temperature,
+        api_key=api_key,
     )
     try:
         data = _parse_json(raw)

@@ -217,8 +217,8 @@ export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
 ```
 
-- `data/embeddings.npy`（2,830 × 1024，约 12 MB）**已随仓库提供**，开箱即用。它目前只覆盖 v1 的标点组：语料已扩到 8,681 条，索引尚未重建，启动时会打印 `[warn] 索引只覆盖前 2830 条语料`，只检索已编码的部分。
-- 要让无标点组也进入检索：先 `python src/build_index.py` 校验语料，再 `python src/embed.py` 重新编码（8,681 条，GPU 上十几分钟，纯 CPU 要数小时）
+- `data/embeddings.npy`（**8,681 × 1024，约 34 MB**）**已随仓库提供**，开箱即用，覆盖标点组 + 无标点组全部语料。若文件行数少于 chunk 数，启动时会打印 `[warn] 索引只覆盖前 N 条语料`，此时只检索已编码的部分。
+- 重建索引：先 `python src/build_index.py` 校验语料，再 `python src/embed.py` 重新编码（8,681 条，GPU 上十几分钟，纯 CPU 要数小时）
 - BGE-M3 权重首次加载需要下载（几 GB）。大陆网络可先设 `HF_ENDPOINT=https://hf-mirror.com`，或用 ModelScope 下载后指向本地目录
 - 排盘测试（**不调用 LLM**，纯计算，0.1 秒跑完）：`python -m pytest tests/ -q`
 - 重跑检索评测（**不调用 LLM**，只测检索）：`cd eval && python eval_matrics.py`
@@ -226,6 +226,8 @@ streamlit run app.py
 - 语料路径默认 `<repo>/data`，可用环境变量覆盖：`MINGLI_DATA_DIR=/path/to/data`
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
+
+**公网 Demo 的问答与解读**：若部署环境没有配置 `DEEPSEEK_API_KEY`，页面会在「古籍问答」和排盘页提供「填入自己的 DeepSeek Key」入口——key 只存在当前会话，不写日志、不落盘，也不会作用于其他访客。要在公网让所有访客免填直接可用，请在创空间的环境变量里配置该 key（注意它会被任意访客消耗额度），或在 DeepSeek 控制台给这把 key 设消费上限。
 
 ---
 
