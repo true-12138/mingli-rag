@@ -488,19 +488,30 @@ def _astro_wheel(chart, size=440):
                  'text-anchor="middle" dominant-baseline="middle">%s</text>'
                  % (lx, ly, label))
 
-    ring, last = 0, None
+    # 星体挤在一起会叠字：按「两串标签的字宽约占多少度」判断，
+    # 挤了的往内圈退一层，最多退三层。写死角度阈值不行——
+    # 「太阳」两个字和「海王星」三个字需要的余量差一倍。
+    placed = []
     for body in sorted(chart["planets"], key=lambda x: x["lon"] % 360):
         lon = body["lon"] % 360
-        # 两颗星黄经太近会叠字，交替往内圈退一层
-        ring = 1 - ring if (last is not None and lon - last < 11) else 0
-        last = lon
-        x, y = pt(lon, r_planet - ring * 20)
+        label = body["name"] + ("ᴿ" if body["retrograde"] else "")
+        ring = 0
+        while ring < 3 and any(
+            same_ring == ring
+            and abs(((lon - other + 180.0) % 360.0) - 180.0) < (len(label) + len(other_label)) * 3.0 + 0.8
+            for other, same_ring, other_label in placed
+        ):
+            ring += 1
+        placed.append((lon, ring, label))
+        x, y = pt(lon, r_planet - ring * 26)
         tx, ty = pt(lon, r_sign - 2)
         p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#c9bfae" '
                  'stroke-dasharray="2 3"/>' % (x, y, tx, ty))
-        p.append('<text x="%.1f" y="%.1f" font-size="12" fill="#201b16" '
-                 'text-anchor="middle" dominant-baseline="middle">%s%s</text>'
-                 % (x, y, body["name"], "ᴿ" if body["retrograde"] else ""))
+        # 描一圈纸色描边：万一一两颗星实在挤到一起，字仍然读得出来
+        p.append('<text x="%.1f" y="%.1f" font-size="11" fill="#201b16" '
+                 'text-anchor="middle" dominant-baseline="middle" '
+                 'style="paint-order:stroke;stroke:#faf7f1;stroke-width:3px">%s</text>'
+                 % (x, y, label))
 
     p.append("</svg>")
     return "".join(p)
