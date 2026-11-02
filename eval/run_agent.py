@@ -42,21 +42,17 @@ try:
 except ModuleNotFoundError as e:  # pragma: no cover
     die("导入 corpus 失败：{}\n请确认在项目根目录运行，且已 pip install -r requirements.txt".format(e))
 
-try:
-    from agent import agent_answer
-except ModuleNotFoundError as e:  # pragma: no cover
-    missing = getattr(e, "name", None) or str(e)
-    die(
-        "导入 agent 失败：缺少依赖 `{}`。\n"
-        "\n"
-        "注意：agent 的导入链会连带加载 tools→fortune（ephem / lunar_python）、\n"
-        "rag→python-dotenv、retrieval→rank_bm25+sentence-transformers，\n"
-        "少装任何一个都会在这里报错。一次装全：\n"
-        "\n"
-        "    pip install -r requirements.txt\n"
-        "\n"
-        "只单独装 sentence-transformers / torch 是不够的。".format(missing)
-    )
+_AGENT_GUARD = (
+    "导入 agent 失败：缺少依赖 `{}`。\n"
+    "\n"
+    "注意：agent 的导入链会连带加载 tools→fortune（ephem / lunar_python）、\n"
+    "rag→python-dotenv、retrieval→rank_bm25+sentence-transformers，\n"
+    "少装任何一个都会在这里报错。一次装全：\n"
+    "\n"
+    "    pip install -r requirements.txt\n"
+    "\n"
+    "只单独装 sentence-transformers / torch 是不够的。"
+)
 
 
 # ---------- 任务与判据 ----------
@@ -142,7 +138,13 @@ def check_citations(res: dict, evidence_books: list[str], id2book: dict[int, str
 
 
 def auto_judge(task: dict, res: dict, id2book: dict[int, str]) -> dict:
-    """能机器判的判掉，判不了的放进 needs_human。"""
+    """能机器判的判掉，判不了的放进 needs_human。
+
+    diagnostics 不参与通过判定，只记录过程质量：
+    dual_book_explicit = 判据里点名的每一本书，是不是都用 book= 显式检索过。
+    单 Agent 常靠一次全局检索顺带命中两本书（via=citation），形式上过、实质上没做多跳，
+    这个字段就是为了把这种情况显出来。
+    """
     checks = []
     needs_human = list(task.get("pass_criteria") or [])
 
@@ -180,18 +182,36 @@ def auto_judge(task: dict, res: dict, id2book: dict[int, str]) -> dict:
         checks.append({"name": "answered", "ok": answered,
                        "detail": "can_answer={} invalid={}".format(res.get("can_answer"), res.get("invalid_output"))})
 
+    book_specs = [tc for tc in tool_checks if parse_tool_spec(tc["need"])["book"]]
     return {
         "auto_pass": all(c["ok"] for c in checks),
         "checks": checks,
         "needs_human": needs_human,
         "cited_books": cit["books"],
+        "diagnostics": {
+            "dual_book_explicit": bool(book_specs) and all(tc["via"] == "book_arg" for tc in book_specs),
+            "book_specs": [{k: tc[k] for k in ("need", "ok", "via")} for tc in book_specs],
+        },
     }
 
 
 # ---------- 主流程 ----------
 
+def get_agent(name: str):
+    """延迟导入：--rescore 只判旧结果，不需要加载 embedding 模型和排盘依赖。"""
+    try:
+        if name == "multi":
+            from agent_multi import agent_answer as fn
+        else:
+            from agent import agent_answer as fn
+    except ModuleNotFoundError as e:  # pragma: no cover
+        die(_AGENT_GUARD.format(getattr(e, "name", None) or str(e)))
+    return fn
+
+
 def run(tasks: list[dict], args) -> dict:
     id2book = build_id2book()
+    solve = get_agent(args.agent)
     results = []
     t0 = time.time()
 
@@ -202,7 +222,7 @@ def run(tasks: list[dict], args) -> dict:
         record = {"id": tid, "type": task.get("type"), "name": task.get("name"),
                   "question": task.get("question")}
         try:
-            res = agent_answer(task["question"], max_steps=int(task.get("max_steps", 6)))
+            res = solve(task["question"], max_steps=int(task.get("max_steps", 6)))
             record.update({
                 "can_answer": res.get("can_answer"),
                 "answer": res.get("answer"),
@@ -211,6 +231,9 @@ def run(tasks: list[dict], args) -> dict:
                 "invalid_output": res.get("invalid_output"),
                 "refusal_reason": res.get("refusal_reason"),
                 "steps": res.get("steps"),
+                "llm_calls": res.get("llm_calls"),
+                "plan": res.get("plan"),
+                "verdict": res.get("verdict"),
                 "trace": res.get("trace"),
             })
             record["judge"] = auto_judge(task, res, id2book)
@@ -228,10 +251,15 @@ def run(tasks: list[dict], args) -> dict:
                     t.get("step"), t.get("action"),
                     (t.get("thought") or "")[:36], t.get("chunk_ids")), flush=True)
 
+    duals = [((r.get("judge") or {}).get("diagnostics") or {}) for r in results]
+    duals = [d for d in duals if d.get("book_specs")]  # 只统计点名了书的题
     summary = {
         "tag": args.tag,
+        "agent": args.agent,
         "total": len(results),
         "auto_pass": sum(1 for r in results if (r.get("judge") or {}).get("auto_pass")),
+        "dual_book_explicit": sum(1 for d in duals if d["dual_book_explicit"]),
+        "dual_book_applicable": len(duals),
         "errors": sum(1 for r in results if r.get("error")),
         "elapsed_seconds": round(time.time() - t0, 1),
         "by_type": {},
@@ -241,18 +269,56 @@ def run(tasks: list[dict], args) -> dict:
         s["n"] += 1
         if (r.get("judge") or {}).get("auto_pass"):
             s["pass"] += 1
+    calls = [r["llm_calls"] for r in results if isinstance(r.get("llm_calls"), int)]
+    if calls:
+        summary["llm_calls"] = {"total": sum(calls), "mean": round(sum(calls) / len(calls), 1)}
 
     out = {"summary": summary, "tasks": results}
     out_path = ROOT / "eval" / "results_agent_{}.json".format(args.tag)
     out_path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print("\n===== 汇总 =====")
-    print("通过 {}/{}，报错 {}，用时 {}s".format(
-        summary["auto_pass"], summary["total"], summary["errors"], summary["elapsed_seconds"]))
+    print("[{}] 通过 {}/{}，报错 {}，用时 {}s".format(
+        args.agent, summary["auto_pass"], summary["total"],
+        summary["errors"], summary["elapsed_seconds"]))
+    print("  双书显式检索 {}/{}（只算点了名的题；诊断项，不计入通过）".format(
+        summary["dual_book_explicit"], summary["dual_book_applicable"]))
+    if "llm_calls" in summary:
+        print("  LLM 调用 {} 次，均值 {}".format(
+            summary["llm_calls"]["total"], summary["llm_calls"]["mean"]))
     for typ, s in summary["by_type"].items():
         print("  {:<4} {}/{}".format(typ, s["pass"], s["n"]))
     print("明细：{}".format(out_path))
     return out
+
+
+def rescore(path: Path, tasks: list[dict]) -> None:
+    """不重跑 API，用已有结果重新判一遍（加了新判据/诊断项时用）。"""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    id2book = build_id2book()
+    by_id = {t["id"]: t for t in tasks}
+    rows = []
+    for rec in data.get("tasks") or []:
+        task = by_id.get(rec["id"])
+        if not task:
+            continue
+        if rec.get("error"):
+            rows.append((rec["id"], "ERR", None))
+            continue
+        # 结果文件里存的是 citations，auto_judge 认的是 citations_chunk_ids
+        res = dict(rec, citations_chunk_ids=rec.get("citations") or [])
+        judge = auto_judge(task, res, id2book)
+        rec["judge"] = judge
+        rows.append((rec["id"], "PASS" if judge["auto_pass"] else "FAIL", judge))
+    base = path.with_name(path.stem + "_rescored.json")
+    base.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    n_pass = sum(1 for _, s, _ in rows if s == "PASS")
+    duals = [j["diagnostics"] for _, _, j in rows
+             if j and j["diagnostics"].get("book_specs")]
+    n_dual = sum(1 for d in duals if d["dual_book_explicit"])
+    print("{} 条，通过 {}/{}，双书显式 {}/{}（只算点了名的题）".format(
+        path.name, n_pass, len(rows), n_dual, len(duals)))
+    print("写出：{}".format(base))
 
 
 def main() -> None:
@@ -261,10 +327,17 @@ def main() -> None:
     ap.add_argument("--only", default="", help="逗号分隔的任务 id，如 a01,b02")
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 条")
     ap.add_argument("--tag", default="baseline", help="结果文件名后缀，用于区分基线/多 Agent")
+    ap.add_argument("--agent", default="single", choices=("single", "multi"),
+                    help="single=src/agent.py，multi=src/agent_multi.py")
+    ap.add_argument("--rescore", default="",
+                    help="不跑 API，用已有结果文件重新判一遍（加新诊断项时用）")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
 
     tasks = load_tasks(Path(args.tasks))
+    if args.rescore:
+        rescore(Path(args.rescore), tasks)
+        return
     if args.only:
         wanted = {x.strip() for x in args.only.split(",") if x.strip()}
         tasks = [t for t in tasks if t["id"] in wanted]
