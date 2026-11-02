@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 import numpy as np
 from rank_bm25 import BM25Okapi
-from sentence_transformers import SentenceTransformer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import corpus
@@ -55,7 +54,51 @@ norms=np.linalg.norm(embeds,axis=1,keepdims=True)
 norms[norms==0]=1.0
 embeds=embeds/norms
 bm25=BM25Okapi(tokenized_corpus)
-model=SentenceTransformer(MODEL_ID)
+
+
+class _LazyModel:
+    """延迟到第一次检索才加载 BGE-M3。
+
+    以前这里是模块导入时就 SentenceTransformer(MODEL_ID)：Streamlit 先把整个脚本
+    跑完才渲染页面，于是首次打开（尤其 ModelScope 上的新环境还要下 2GB 权重）
+    一直是一片白板，看起来像「前端没写」。改成懒加载后界面立刻出来，
+    模型在第一次检索时才载入。
+
+    调用方（tools.py / rag.py）用的是 model.encode，所以这里只要代理 encode 即可，
+    其余属性透传给真实模型。
+    """
+
+    def __init__(self, model_id):
+        self.model_id = model_id
+        self._m = None
+
+    @property
+    def loaded(self):
+        return self._m is not None
+
+    def _load(self):
+        # 大陆网络直连 huggingface 多数会失败。用户没显式配置时默认走镜像，
+        # 想直连就把 HF_ENDPOINT 设成 https://huggingface.co。
+        os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+        try:
+            from sentence_transformers import SentenceTransformer
+            self._m = SentenceTransformer(self.model_id)
+        except Exception as exc:
+            raise RuntimeError(
+                "加载检索模型失败（{}）：{}\n"
+                "  1) 大陆网络先设 HF_ENDPOINT=https://hf-mirror.com 再重试；\n"
+                "  2) 或把权重放到本地，设 MINGLI_MODEL_DIR=/path/to/bge-m3".format(
+                    self.model_id, exc)) from exc
+        return self._m
+
+    def encode(self, *args, **kwargs):
+        return self._load().encode(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._load(), name)
+
+
+model=_LazyModel(MODEL_ID)
 def dense_search(query,topk=top_k):
     q_emb=model.encode(query,normalize_embeddings=True)
     sims=embeds@q_emb

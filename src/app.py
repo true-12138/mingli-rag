@@ -146,8 +146,13 @@ def _qa_tab():
     if run_bnt and not question.strip():
         st.warning("请输入问题")
     elif run_bnt:
-        with st.spinner("检索古籍+大模型生成回答中，请稍后~"):
-            res = answer(question, top_k=top_k, mode=mode)
+        with st.spinner("检索古籍+大模型生成回答中；首次使用要先加载检索模型，可能需要一两分钟~"):
+            try:
+                res = answer(question, top_k=top_k, mode=mode)
+            except Exception as exc:
+                st.error("生成失败：{}".format(exc))
+                st.info("排盘 / 星盘 / 塔罗不依赖检索模型，那几个页签可以正常使用。")
+                st.stop()
         st.success("推理完成")
         st.divider()
         col1, col2 = st.columns([0.6, 0.4])
