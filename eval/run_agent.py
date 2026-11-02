@@ -45,10 +45,17 @@ except ModuleNotFoundError as e:  # pragma: no cover
 try:
     from agent import agent_answer
 except ModuleNotFoundError as e:  # pragma: no cover
+    missing = getattr(e, "name", None) or str(e)
     die(
-        "导入 agent 失败：{}\n"
-        "缺依赖时先装：pip install -r requirements.txt\n"
-        "注意 sentence-transformers 需要 transformers 4.x（见 requirements.txt 的注释）。".format(e)
+        "导入 agent 失败：缺少依赖 `{}`。\n"
+        "\n"
+        "注意：agent 的导入链会连带加载 tools→fortune（ephem / lunar_python）、\n"
+        "rag→python-dotenv、retrieval→rank_bm25+sentence-transformers，\n"
+        "少装任何一个都会在这里报错。一次装全：\n"
+        "\n"
+        "    pip install -r requirements.txt\n"
+        "\n"
+        "只单独装 sentence-transformers / torch 是不够的。".format(missing)
     )
 
 
