@@ -3,11 +3,16 @@ import csv
 import io
 import json
 import sys
-sys.path.append("../src")
+import os
+# 获取当前这个eval_refusal.py文件所在文件夹
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 拼出src文件夹的绝对路径
+src_dir = os.path.join(current_dir, "..", "src")
+sys.path.append(src_dir)
 from rag import answer
 import corpus
-QUESTION_PATH = "./questions.jsonl"
-OUTPUT_CSV = "./refusal_results.csv"
+QUESTION_PATH = os.path.join(current_dir, "questions.jsonl")
+OUTPUT_CSV = os.path.join(current_dir, "refusal_results.csv")
 def load_chunks():
     """chunk_id -> (sourcefile, line_start, line_end)，语料顺序与编号共用 corpus"""
     chunks = {}
