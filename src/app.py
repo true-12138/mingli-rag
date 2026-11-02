@@ -1,3 +1,13 @@
+# -*- coding: utf-8 -*-
+"""命理古籍问答 · 排盘：Streamlit 界面。
+
+设计上刻意只做「宣纸 + 墨色 + 朱砂」三种颜色：
+- 底色是纸，正文是墨，强调色只给按钮和引用标记，避免把古籍界面做得花哨。
+- 八字渲染成一张命盘图（四柱竖排 + 五行比例条 + 大运横排），
+  星盘画成圆盘（上升定在左侧），排盘结果先给图再给文字。
+
+功能与旧版一致：古籍问答（三种检索策略）、八字、星盘、塔罗，四个页签。
+"""
 import sys
 from datetime import date, time
 from pathlib import Path
@@ -7,7 +17,7 @@ import streamlit as st
 # 无论从仓库根目录还是 src/ 内部启动，都能找到同级模块
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from fortune.astro import format_chart, natal_chart
+from fortune.astro import SIGNS, format_chart, natal_chart
 from fortune.bazi import format_bazi, paipan
 from fortune.interpret import has_api_key, read
 from fortune.tarot import SPREADS, draw as draw_tarot
@@ -24,6 +34,157 @@ CITIES = {
     "武汉": (30.59, 114.31),
     "西安": (34.34, 108.94),
 }
+
+EXAMPLES = (
+    "七杀和偏官是同一个神吗？",
+    "伤官见官，为祸百端，是不是一定不好？",
+    "纳音五行和正五行，谁说了算？",
+)
+
+CSS = """
+<style>
+:root {
+  --paper: #faf7f1;
+  --paper-2: #f2ece1;
+  --ink: #201b16;
+  --ink-soft: #5b5348;
+  --seal: #8c2f26;
+  --rule: #ddd3c2;
+}
+html, body, [class*="css"] {
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
+}
+.stApp { background: var(--paper); }
+
+/* 顶部装饰条 */
+.stApp::before {
+  content: "";
+  position: fixed; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--seal), #c98a4b 55%, transparent);
+  z-index: 999;
+}
+[data-testid="stHeader"] { background: transparent; }
+
+/* 标题区 */
+.hero { padding: 1.2rem 0 1.4rem; border-bottom: 1px solid var(--rule); margin-bottom: 1.4rem; }
+.hero h1 {
+  font-size: 2.35rem; line-height: 1.25; margin: 0 0 .45rem;
+  letter-spacing: .12em; color: var(--ink); font-weight: 700;
+}
+.hero .sub { color: var(--ink-soft); font-size: .98rem; letter-spacing: .04em; }
+.hero .sub b { color: var(--seal); font-weight: 600; }
+.stats { margin-top: 1rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+.stat {
+  border: 1px solid var(--rule); background: #fff; border-radius: 999px;
+  padding: .28rem .86rem; font-size: .85rem; color: var(--ink-soft);
+}
+.stat b { color: var(--ink); font-size: 1rem; margin-right: .3rem; }
+
+/* 卡片 */
+[data-testid="stVerticalBlockBorderWrapper"] {
+  background: #fff; border-radius: 14px;
+  border: 1px solid var(--rule) !important;
+  box-shadow: 0 1px 2px rgba(32,27,22,.04);
+}
+
+/* 页签 */
+.stTabs [data-baseweb="tab-list"] { gap: 1.6rem; border-bottom: 1px solid var(--rule); }
+.stTabs [data-baseweb="tab"] {
+  height: 2.9rem; background: transparent; padding: 0 .1rem;
+  font-size: 1rem; letter-spacing: .08em; color: var(--ink-soft);
+}
+.stTabs [aria-selected="true"] { color: var(--seal) !important; font-weight: 600; }
+.stTabs [data-baseweb="tab-highlight"] { background: var(--seal); height: 2px; }
+
+/* 按钮 */
+.stButton > button, .stFormSubmitButton > button {
+  border-radius: 8px; border: 1px solid var(--seal);
+  background: var(--seal); color: #fff; letter-spacing: .08em;
+  padding: .42rem 1.1rem; transition: all .15s ease;
+}
+.stButton > button:hover, .stFormSubmitButton > button:hover {
+  background: #741f18; border-color: #741f18; color: #fff;
+}
+.stButton > button:focus { box-shadow: 0 0 0 2px rgba(140,47,38,.18); }
+
+/* 输入框 */
+.stTextInput input, .stNumberInput input { background: #fff; border-radius: 8px; }
+
+/* 四柱 */
+.pillars { display: flex; gap: .8rem; margin: .4rem 0 1rem; flex-wrap: wrap; }
+.pillar {
+  flex: 1 1 0; min-width: 130px; background: #fff; border: 1px solid var(--rule);
+  border-radius: 12px; padding: .9rem .6rem; text-align: center;
+}
+.pillar .label { font-size: .8rem; color: var(--ink-soft); letter-spacing: .18em; }
+.pillar .ganzhi {
+  font-size: 1.85rem; letter-spacing: .14em; color: var(--ink);
+  margin: .35rem 0 .3rem; font-weight: 600; white-space: nowrap;
+}
+.pillar .meta { font-size: .8rem; color: var(--ink-soft); line-height: 1.6; }
+.pillar .meta em { font-style: normal; color: var(--seal); }
+
+/* 标签 */
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chip {
+  display: inline-block; padding: .2rem .62rem; border-radius: 6px;
+  background: var(--paper-2); color: var(--ink-soft);
+  font-size: .82rem; border: 1px solid var(--rule);
+}
+.chip.seal { background: #f7e9e6; border-color: #e3c4be; color: var(--seal); }
+
+/* 回答正文 */
+.answer { font-size: 1.02rem; line-height: 1.95; color: var(--ink); }
+.answer p { margin: .55rem 0; }
+.answer blockquote {
+  border-left: 3px solid var(--seal); background: var(--paper-2);
+  margin: .8rem 0; padding: .55rem .9rem; color: var(--ink-soft);
+}
+.section-title {
+  font-size: .82rem; letter-spacing: .2em; color: var(--ink-soft);
+  text-transform: uppercase; margin: .2rem 0 .6rem;
+}
+.note { color: var(--ink-soft); font-size: .85rem; }
+
+/* 命盘图 */
+.chart { border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; background: #fff; }
+.chart-grid { display: grid; grid-template-columns: 78px repeat(4, 1fr); }
+.chart-grid > div {
+  padding: .5rem .35rem; text-align: center; border-bottom: 1px solid var(--rule);
+  font-size: .85rem; color: var(--ink-soft);
+}
+.chart-grid .rowlabel {
+  text-align: right; padding-right: .75rem; background: var(--paper-2);
+  letter-spacing: .12em; font-size: .75rem;
+}
+.chart-grid .pillarhead { font-size: .8rem; letter-spacing: .22em; color: var(--ink); }
+.chart-grid .gan, .chart-grid .zhi { font-size: 1.65rem; font-weight: 600; line-height: 1.3; }
+.chart-grid .day { background: #fbf3f1; }
+.chart-grid .lbl-day { color: var(--seal); }
+
+/* 五行比例条 */
+.wxbar { display: flex; height: 10px; border-radius: 999px; overflow: hidden;
+         background: var(--paper-2); margin: .35rem 0 .55rem; }
+.wxbar span { display: block; height: 100%; }
+
+/* 大运 */
+.dayun { display: flex; gap: .45rem; overflow-x: auto; padding-bottom: .25rem; }
+.dayun .pill {
+  flex: 0 0 auto; min-width: 66px; text-align: center; background: #fff;
+  border: 1px solid var(--rule); border-radius: 10px; padding: .4rem .25rem;
+}
+.dayun .pill.cur { border-color: var(--seal); background: #fbf3f1; }
+.dayun .gz { font-size: 1.12rem; letter-spacing: .08em; color: var(--ink); }
+.dayun .yr { font-size: .72rem; color: var(--ink-soft); margin-top: .15rem; }
+</style>
+"""
+
+
+def _chips(items, seal=False):
+    cls = "chip seal" if seal else "chip"
+    return '<div class="chips">%s</div>' % "".join(
+        '<span class="%s">%s</span>' % (cls, x) for x in items
+    )
 
 
 def _show_reading(chart, question, note, key):
@@ -46,15 +207,184 @@ def _show_reading(chart, question, note, key):
         st.caption(res["disclaimer"])
 
 
+# ---------- 古籍问答 ----------
+
+def _qa_tab():
+    if not st.session_state.get("qa_q"):
+        st.session_state["qa_q"] = ""
+
+    left, right = st.columns([0.62, 0.38], gap="large")
+
+    with left:
+        question = st.text_input(
+            "你的问题", key="qa_q", placeholder="例如：取格以月令为主，还是以透出的天干为主？",
+        )
+        c1, c2 = st.columns([0.55, 0.45])
+        mode = c1.radio("检索策略", ["rrf", "bm25", "dense"], index=0,
+                        horizontal=True, help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
+        top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5)
+        run_btn = st.button("开始回答", type="primary")
+
+    with right:
+        st.markdown('<div class="section-title">可以这样问</div>', unsafe_allow_html=True)
+        for i, ex in enumerate(EXAMPLES):
+            if st.button(ex, key="ex%d" % i, use_container_width=True):
+                st.session_state["qa_q"] = ex
+                st.rerun()
+
+    st.markdown('<div class="note">仅依据入库古籍片段作答；片段只是主题相近、不能正面回答时，'
+                '会明确拒答而不是硬凑。</div>', unsafe_allow_html=True)
+    st.divider()
+
+    if not run_btn:
+        return
+    if not question.strip():
+        st.warning("请先输入问题")
+        return
+
+    with st.spinner("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"):
+        try:
+            res = answer(question, top_k=top_k, mode=mode)
+        except Exception as exc:
+            st.error("生成失败：{}".format(exc))
+            st.info("排盘 / 星盘 / 塔罗不依赖检索模型，那几个页签可以正常使用。")
+            st.stop()
+
+    body, side = st.columns([0.62, 0.38], gap="large")
+
+    with body:
+        with st.container(border=True):
+            st.markdown('<div class="section-title">回答</div>', unsafe_allow_html=True)
+            if res["can_answer"] is False:
+                st.markdown('<div class="answer">%s</div>' % res["answer"], unsafe_allow_html=True)
+                if res.get("refusal_reason"):
+                    st.caption("拒答理由：%s" % res["refusal_reason"])
+            elif res["can_answer"] is None:
+                st.error("模型输出的 JSON 解析失败")
+                st.code(res.get("raw", ""), language="json")
+            else:
+                st.markdown(res["answer"])
+                if res["invalid_citations"]:
+                    st.error("发现非法引用：%s" % res["invalid_citations"])
+
+    with side:
+        with st.container(border=True):
+            st.markdown('<div class="section-title">有效引用</div>', unsafe_allow_html=True)
+            if res["citations_chunk_ids"]:
+                st.markdown(_chips(res["citations_chunk_ids"], seal=True), unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="note">本次无有效引用</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title" style="margin-top:1rem">本次召回</div>',
+                        unsafe_allow_html=True)
+            st.markdown(_chips(res["retrieved_chunk_ids"]), unsafe_allow_html=True)
+            st.caption("检索策略 %s · Top-%d" % (mode, top_k))
+
+    with st.expander("查看原始返回 JSON（调试用）"):
+        st.json(res)
+
+
+# ---------- 八字 ----------
+
+PILLARS = ("年柱", "月柱", "日柱", "时柱")
+
+# 五行配色：不追求鲜艳，只要在纸色上能一眼分出五行即可。
+WX_COLOR = {"木": "#3f7a4f", "火": "#a8392c", "土": "#96702f",
+            "金": "#8a8378", "水": "#2f5b86"}
+GAN_WX = {"甲": "木", "乙": "木", "丙": "火", "丁": "火", "戊": "土",
+          "己": "土", "庚": "金", "辛": "金", "壬": "水", "癸": "水"}
+ZHI_WX = {"寅": "木", "卯": "木", "巳": "火", "午": "火", "申": "金",
+          "酉": "金", "亥": "水", "子": "水", "辰": "土", "戌": "土",
+          "丑": "土", "未": "土"}
+
+
+def _txt(v):
+    """支神有的是 list（地支藏干各自一个十神），有的库版本给逗号串，统一成顿号。"""
+    if isinstance(v, (list, tuple)):
+        return "、".join(str(x) for x in v)
+    return str(v or "").replace(",", "、").replace("，", "、")
+
+
+def _colored(ch, table):
+    color = WX_COLOR.get(table.get(ch, ""), "inherit")
+    return '<span style="color:%s">%s</span>' % (color, ch)
+
+
+def _bazi_chart(chart):
+    """命盘图：四柱竖排成一张盘，日柱高亮。
+
+    行序按传统命书的读法——十神在上，干支在中，藏干/支神在下，
+    纳音和旬空是附注。用 HTML 网格而不是 st.dataframe，
+    因为 df 会把「日柱」当成普通一列，丢掉它才是命主本体这层意思。
+    """
+    sizhu = chart["sizhu"]
+
+    def cols(fn, cls=""):
+        out = []
+        for i, name in enumerate(PILLARS):
+            out.append('<div class="%s%s">%s</div>' % (
+                cls, " day" if i == 2 else "", fn(name)))
+        return "".join(out)
+
+    rows = ['<div class="rowlabel"></div>' + cols(lambda n: n, "pillarhead")]
+
+    def push(label, fn, cls=""):
+        rows.append('<div class="rowlabel">%s</div>' % label)
+        rows.append(cols(fn, cls))
+
+    push("十神", lambda n: chart["shishen_gan"].get(n) or "—")
+    push("天干", lambda n: _colored(sizhu.get(n, "")[:1], GAN_WX), "gan")
+    push("地支", lambda n: _colored(sizhu.get(n, "")[1:2], ZHI_WX), "zhi")
+    push("藏干", lambda n: "、".join(chart["canggan"].get(n) or []) or "—")
+    push("支神", lambda n: _txt(chart["shishen_zhi"].get(n)) or "—")
+    push("纳音", lambda n: chart["nayin"].get(n) or "—")
+    push("旬空", lambda n: chart["xunkong"].get(n) or "—")
+    return '<div class="chart"><div class="chart-grid">%s</div></div>' % "".join(rows)
+
+
+def _wuxing_bar(chart):
+    """八字的五行比例条 + 图例（只数八个字，和 paipan 的口径一致）。"""
+    wx = chart["wuxing"]
+    total = sum(wx.values()) or 1
+    segs = "".join(
+        '<span style="width:%.2f%%;background:%s"></span>' % (v / total * 100, WX_COLOR[k])
+        for k, v in wx.items() if v
+    )
+    legend = "".join(
+        '<span style="color:%s">■</span>&nbsp;%s %d&nbsp;&nbsp;&nbsp;' % (WX_COLOR[k], k, v)
+        for k, v in wx.items()
+    )
+    miss = chart.get("wuxing_missing") or []
+    tail = '&nbsp;&nbsp;<span style="color:#8c2f26">缺 %s</span>' % "、".join(miss) if miss else ""
+    return ('<div class="wxbar">%s</div><div class="note">%s%s</div>' % (segs, legend, tail))
+
+
+def _dayun_strip(chart):
+    """大运横排，当前大运描红。比表格好读：一眼看出走到第几步。"""
+    cur = chart.get("current_dayun") or {}
+    pills = []
+    for d in chart["dayun"]:
+        now = (d["ganzhi"] == cur.get("ganzhi")
+               and d["start_year"] == cur.get("start_year")) if cur else False
+        pills.append(
+            '<div class="pill%s"><div class="gz">%s</div><div class="yr">%d · %d岁</div></div>'
+            % (" cur" if now else "", d["ganzhi"], d["start_year"], d["start_age"]))
+    return '<div class="dayun">%s</div>' % "".join(pills)
+
+
 def _bazi_tab():
-    st.markdown("八字按**出生地当地时间**排，节气与干支由历法库计算，同一份输入永远得到同一个盘。")
-    with st.form("bazi_form"):
-        col1, col2, col3 = st.columns(3)
-        d = col1.date_input("出生日期", value=date(2000, 1, 1), min_value=date(1900, 1, 1), key="bazi_d")
-        t = col2.time_input("出生时间（不确定就填 12:00）", value=time(12, 0), key="bazi_t")
-        gender = col3.selectbox("性别", ["male", "female"], key="bazi_g")
-        question = st.text_input("想问什么（可留空）", key="bazi_q")
-        submitted = st.form_submit_button("排盘", type="primary")
+    with st.container(border=True):
+        st.markdown('<div class="section-title">出生信息</div>', unsafe_allow_html=True)
+        with st.form("bazi_form"):
+            col1, col2, col3 = st.columns(3)
+            d = col1.date_input("出生日期", value=date(2000, 1, 1),
+                                min_value=date(1900, 1, 1), key="bazi_d")
+            t = col2.time_input("出生时间（不确定就填 12:00）", value=time(12, 0), key="bazi_t")
+            gender = col3.selectbox("性别", ["male", "female"],
+                                    format_func=lambda g: "男" if g == "male" else "女",
+                                    key="bazi_g")
+            question = st.text_input("想问什么（可留空）", key="bazi_q")
+            submitted = st.form_submit_button("排盘", type="primary")
+        st.caption("按出生地当地时间排，节气与干支由历法库计算；同一份输入永远得到同一个盘。")
 
     if submitted:
         try:
@@ -66,30 +396,136 @@ def _bazi_tab():
             st.session_state.pop("bazi_chart", None)
 
     chart = st.session_state.get("bazi_chart")
-    if chart:
+    if not chart:
+        return
+
+    st.markdown(_bazi_chart(chart), unsafe_allow_html=True)
+    st.caption("日柱为命主本体，底色标红；干支按五行着色（木绿 火赤 土黄 金灰 水蓝）。")
+
+    info = chart["input"]
+    st.markdown(_chips([
+        "公历 %s" % info["solar"], "农历 %s" % info["lunar"],
+        "日主 %s" % chart["day_master"], "生肖 %s" % chart["shengxiao"],
+        "命宫 %s" % chart["minggong"], "胎元 %s" % chart["taiyuan"],
+        "身宫 %s" % chart["shengong"],
+    ]), unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.markdown('<div class="section-title">五行分布</div>', unsafe_allow_html=True)
+        st.markdown(_wuxing_bar(chart), unsafe_allow_html=True)
+
+    qiyun = chart["qiyun"]
+    with st.container(border=True):
+        st.markdown('<div class="section-title">大运</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="note">%s，出生后 %d 年 %d 个月 %d 天起运</div>' % (
+                "顺排" if qiyun["forward"] else "逆排",
+                qiyun["years"], qiyun["months"], qiyun["days"]),
+            unsafe_allow_html=True)
+        if chart["dayun"]:
+            st.markdown(_dayun_strip(chart), unsafe_allow_html=True)
+            if chart.get("current_dayun"):
+                cur = chart["current_dayun"]
+                st.caption("红框为当前大运：%s（%d 岁起，%d 年起运）" % (
+                    cur["ganzhi"], cur["start_age"], cur["start_year"]))
+        st.markdown('<div class="section-title" style="margin-top:1rem">旬空</div>',
+                    unsafe_allow_html=True)
+        st.markdown(_chips(["%s %s" % (k, v) for k, v in chart["xunkong"].items()]),
+                    unsafe_allow_html=True)
+
+    with st.expander("查看完整排盘文本 / 结构化数据"):
         st.code(format_bazi(chart), language=None)
-        with st.expander("查看结构化数据"):
-            st.json(chart)
-        _show_reading(chart, st.session_state.get("bazi_q"), None, "bazi_read")
+        st.json(chart)
+
+    st.divider()
+    _show_reading(chart, st.session_state.get("bazi_q"), None, "bazi_read")
+
+
+# ---------- 星盘 ----------
+
+def _astro_wheel(chart, size=440):
+    """本命盘圆盘。
+
+    上升点固定在左侧（盘面 9 点方向）——这是占星软件的通行画法，
+    好处是同一张盘无论何时打开，宫位方向都一样，不用重新找上升。
+    黄经逆时针增加；外圈是十二星座，内圈是星体。
+    """
+    import math
+
+    asc_lon = chart["asc"]["lon"]
+    cx = cy = size / 2.0
+    r_out = size / 2.0 - 26
+    r_sign = r_out - 34
+    r_planet = r_sign - 44
+
+    def pt(lon, r):
+        a = math.radians(180.0 - (lon - asc_lon))
+        return cx + r * math.cos(a), cy + r * math.sin(a)
+
+    p = ['<svg viewBox="0 0 %d %d" width="100%%" style="max-width:440px;display:block;margin:0 auto" '
+         'xmlns="http://www.w3.org/2000/svg">' % (size, size)]
+    p.append('<circle cx="%g" cy="%g" r="%g" fill="#fff" stroke="#ddd3c2"/>' % (cx, cy, r_out))
+    p.append('<circle cx="%g" cy="%g" r="%g" fill="none" stroke="#ddd3c2"/>' % (cx, cy, r_sign))
+
+    for i in range(12):
+        lon = i * 30.0
+        x1, y1 = pt(lon, r_sign)
+        x2, y2 = pt(lon, r_out)
+        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#ddd3c2"/>'
+                 % (x1, y1, x2, y2))
+        mx, my = pt(lon + 15, (r_sign + r_out) / 2.0)
+        p.append('<text x="%.1f" y="%.1f" font-size="12" fill="#5b5348" '
+                 'text-anchor="middle" dominant-baseline="middle">%s</text>'
+                 % (mx, my, SIGNS[i]))
+
+    for label, lon in (("ASC", asc_lon), ("MC", chart["mc"]["lon"])):
+        x1, y1 = pt(lon, r_sign)
+        x2, y2 = pt(lon, r_out)
+        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#8c2f26" '
+                 'stroke-width="2"/>' % (x1, y1, x2, y2))
+        lx, ly = pt(lon, r_sign - 18)
+        p.append('<text x="%.1f" y="%.1f" font-size="10" fill="#8c2f26" '
+                 'text-anchor="middle" dominant-baseline="middle">%s</text>'
+                 % (lx, ly, label))
+
+    ring, last = 0, None
+    for body in sorted(chart["planets"], key=lambda x: x["lon"] % 360):
+        lon = body["lon"] % 360
+        # 两颗星黄经太近会叠字，交替往内圈退一层
+        ring = 1 - ring if (last is not None and lon - last < 11) else 0
+        last = lon
+        x, y = pt(lon, r_planet - ring * 20)
+        tx, ty = pt(lon, r_sign - 2)
+        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#c9bfae" '
+                 'stroke-dasharray="2 3"/>' % (x, y, tx, ty))
+        p.append('<text x="%.1f" y="%.1f" font-size="12" fill="#201b16" '
+                 'text-anchor="middle" dominant-baseline="middle">%s%s</text>'
+                 % (x, y, body["name"], "ᴿ" if body["retrograde"] else ""))
+
+    p.append("</svg>")
+    return "".join(p)
 
 
 def _astro_tab():
-    st.markdown("星盘用**地心视黄经**计算，宫位为**整宫制**。出生时间越准，上升和宫位越准（差 2 小时上升会偏一个星座）。")
-    with st.form("astro_form"):
-        col1, col2, col3 = st.columns(3)
-        d = col1.date_input("出生日期", value=date(2000, 1, 1), min_value=date(1900, 1, 1), key="as_d")
-        t = col2.time_input("出生时间", value=time(12, 0), key="as_t")
-        city = col3.selectbox("出生城市", list(CITIES) + ["其他（手填经纬度）"], key="as_c")
-        if city == "其他（手填经纬度）":
-            c1, c2, c3 = st.columns(3)
-            lat = c1.number_input("纬度（北纬为正）", value=39.90, format="%.2f")
-            lon = c2.number_input("经度（东经为正）", value=116.40, format="%.2f")
-            tz = c3.number_input("时区偏移", value=8.0, format="%.1f")
-        else:
-            lat, lon = CITIES[city]
-            tz = 8.0
-        question = st.text_input("想问什么（可留空）", key="as_q")
-        submitted = st.form_submit_button("排盘", type="primary")
+    with st.container(border=True):
+        st.markdown('<div class="section-title">出生信息</div>', unsafe_allow_html=True)
+        with st.form("astro_form"):
+            col1, col2, col3 = st.columns(3)
+            d = col1.date_input("出生日期", value=date(2000, 1, 1),
+                                min_value=date(1900, 1, 1), key="as_d")
+            t = col2.time_input("出生时间", value=time(12, 0), key="as_t")
+            city = col3.selectbox("出生城市", list(CITIES) + ["其他（手填经纬度）"], key="as_c")
+            if city == "其他（手填经纬度）":
+                c1, c2, c3 = st.columns(3)
+                lat = c1.number_input("纬度（北纬为正）", value=39.90, format="%.2f")
+                lon = c2.number_input("经度（东经为正）", value=116.40, format="%.2f")
+                tz = c3.number_input("时区偏移", value=8.0, format="%.1f")
+            else:
+                lat, lon = CITIES[city]
+                tz = 8.0
+            question = st.text_input("想问什么（可留空）", key="as_q")
+            submitted = st.form_submit_button("排盘", type="primary")
+        st.caption("地心视黄经、整宫制。出生时间越准，上升和宫位越准——差 2 小时上升会偏一个星座。")
 
     if submitted:
         try:
@@ -101,21 +537,69 @@ def _astro_tab():
             st.session_state.pop("astro_chart", None)
 
     chart = st.session_state.get("astro_chart")
-    if chart:
-        st.code(format_chart(chart), language=None)
-        with st.expander("查看结构化数据"):
-            st.json(chart)
-        _show_reading(chart, st.session_state.get("as_q"), None, "astro_read")
+    if not chart:
+        return
 
+    asc, mc = chart["asc"], chart["mc"]
+    wheel, info = st.columns([0.58, 0.42], gap="large")
+    with wheel:
+        with st.container(border=True):
+            st.markdown('<div class="section-title">本命盘</div>', unsafe_allow_html=True)
+            st.markdown(_astro_wheel(chart), unsafe_allow_html=True)
+            st.caption("上升点固定在盘面左侧，逆时针为黄经增加方向；"
+                       "虚线指向星体所在黄经，ᴿ 为逆行。")
+    with info:
+        with st.container(border=True):
+            st.markdown('<div class="section-title">四轴</div>', unsafe_allow_html=True)
+            st.markdown('<div class="pillar"><div class="label">上升 ASC</div>'
+                        '<div class="ganzhi">%s</div><div class="meta">%s°</div></div>'
+                        % (asc["sign"], asc["degree"]), unsafe_allow_html=True)
+            st.markdown('<div class="pillar"><div class="label">天顶 MC</div>'
+                        '<div class="ganzhi">%s</div><div class="meta">%s°</div></div>'
+                        % (mc["sign"], mc["degree"]), unsafe_allow_html=True)
+
+    with st.container(border=True):
+        st.markdown('<div class="section-title">星体位置</div>', unsafe_allow_html=True)
+        st.dataframe(
+            [{"星体": p["name"], "星座": p["sign"], "度数": p["degree"],
+              "逆行": "逆" if p["retrograde"] else ""} for p in chart["planets"]],
+            hide_index=True, use_container_width=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        with st.container(border=True):
+            st.markdown('<div class="section-title">元素分布</div>', unsafe_allow_html=True)
+            st.markdown(_chips(["%s %d" % (k, v) for k, v in chart["elements"].items()]),
+                        unsafe_allow_html=True)
+    with c2:
+        with st.container(border=True):
+            st.markdown('<div class="section-title">三态分布</div>', unsafe_allow_html=True)
+            st.markdown(_chips(["%s %d" % (k, v) for k, v in chart["modalities"].items()]),
+                        unsafe_allow_html=True)
+
+    with st.expander("查看星盘文本 / 相位 / 结构化数据"):
+        st.code(format_chart(chart), language=None)
+        if chart.get("aspects"):
+            st.dataframe(chart["aspects"], hide_index=True, use_container_width=True)
+        st.json(chart)
+
+    st.divider()
+    _show_reading(chart, st.session_state.get("as_q"), None, "astro_read")
+
+
+# ---------- 塔罗 ----------
 
 def _tarot_tab():
-    st.markdown("抽到什么是随机的；**同一组牌怎么解释**才是塔罗真正在做的部分，所以别反复抽到满意为止。")
-    with st.form("tarot_form"):
-        col1, col2 = st.columns(2)
-        spread = col1.selectbox("牌阵", list(SPREADS), format_func=lambda k: SPREADS[k][0], key="tt_s")
-        seed_text = col2.text_input("固定种子（可留空，填了结果可复现）", key="tt_seed")
-        question = st.text_input("想问什么", key="tt_q")
-        submitted = st.form_submit_button("抽牌", type="primary")
+    with st.container(border=True):
+        st.markdown('<div class="section-title">抽牌</div>', unsafe_allow_html=True)
+        with st.form("tarot_form"):
+            col1, col2 = st.columns(2)
+            spread = col1.selectbox("牌阵", list(SPREADS),
+                                    format_func=lambda k: SPREADS[k][0], key="tt_s")
+            seed_text = col2.text_input("固定种子（可留空，填了结果可复现）", key="tt_seed")
+            question = st.text_input("想问什么", key="tt_q")
+            submitted = st.form_submit_button("抽牌", type="primary")
+        st.caption("抽到什么是随机的；怎么解释才是塔罗真正在做的部分，别反复抽到满意为止。")
 
     if submitted:
         seed = None
@@ -127,54 +611,28 @@ def _tarot_tab():
         st.session_state["tarot_chart"] = draw_tarot(seed=seed, spread=spread)
 
     chart = st.session_state.get("tarot_chart")
-    if chart:
-        st.code(format_draw(chart["cards"]), language=None)
-        _show_reading(chart, st.session_state.get("tt_q"), None, "tarot_read")
+    if not chart:
+        return
 
+    cards = chart["cards"]
+    cols = st.columns(min(len(cards), 3))
+    for i, card in enumerate(cards):
+        with cols[i % len(cols)].container(border=True):
+            st.markdown(
+                '<div class="section-title">%s</div>'
+                '<div class="pillar"><div class="ganzhi" style="font-size:1.35rem">%s</div>'
+                '<div class="meta"><em>%s</em><br>%s</div></div>'
+                '<div class="note">%s</div>' % (
+                    card["position"], card["name"], card["orientation"],
+                    card["arcana"], card["meaning"]),
+                unsafe_allow_html=True)
 
-def _qa_tab():
-    with st.sidebar:
-        st.header("检索配置")
-        mode = st.radio("检索策略", ["rrf", "bm25", "dense"], index=0)
-        top_k = st.slider("召回Top-k", min_value=1, max_value=10, value=5)
-        st.divider()
-        st.info("模型 DeepSeek Chat | 强制JSON输出+引用校验")
+    with st.expander("查看牌面文本 / 结构化数据"):
+        st.code(format_draw(cards), language=None)
+        st.json(chart)
 
-    question = st.text_input("请输入你的问题")
-    run_bnt = st.button("开始回答", type="primary")
-
-    if run_bnt and not question.strip():
-        st.warning("请输入问题")
-    elif run_bnt:
-        with st.spinner("检索古籍+大模型生成回答中；首次使用要先加载检索模型，可能需要一两分钟~"):
-            try:
-                res = answer(question, top_k=top_k, mode=mode)
-            except Exception as exc:
-                st.error("生成失败：{}".format(exc))
-                st.info("排盘 / 星盘 / 塔罗不依赖检索模型，那几个页签可以正常使用。")
-                st.stop()
-        st.success("推理完成")
-        st.divider()
-        col1, col2 = st.columns([0.6, 0.4])
-        with col1:
-            st.subheader("模型回答")
-            if res["can_answer"] is False:
-                st.warning(res["answer"])
-            elif res["can_answer"] is None:
-                st.error("模型输出异常JSON解析失败")
-                st.code(res.get("raw", ""), language="json")
-            else:
-                st.markdown(res["answer"])
-                if len(res["invalid_citations"]) > 0:
-                    st.error(f"发现非法引用：{res['invalid_citations']}")
-        with col2:
-            st.subheader("本次召回chunk_id")
-            st.write(res["retrieved_chunk_ids"])
-            st.subheader("模型有效引用chunk_id")
-            st.write(res["citations_chunk_ids"])
-        st.divider()
-        with st.expander("查看原始返回JSON(调试用)"):
-            st.json(res)
+    st.divider()
+    _show_reading(chart, st.session_state.get("tt_q"), None, "tarot_read")
 
 
 def main():
@@ -183,13 +641,24 @@ def main():
         page_icon="📜",
         layout="wide",
     )
-    st.title("命理古籍知识库问答")
+    st.markdown(CSS, unsafe_allow_html=True)
+
     st.markdown(
-        ">知识库包含《张果星宗》《兰台妙选》等星命古籍，仅基于入库古籍片段作答，无资料时自动拒答。"
-        "排盘为历法计算，解读为文化娱乐内容，不构成任何决策建议。"
+        '<div class="hero">'
+        '<h1>命理古籍知识库</h1>'
+        '<div class="sub">只依据入库古籍片段作答，无据可查时<b>明确拒答</b>；'
+        '排盘为历法计算，解读属文化娱乐内容，不构成任何决策建议。</div>'
+        '<div class="stats">'
+        '<span class="stat"><b>45</b>部古籍</span>'
+        '<span class="stat"><b>8,681</b>段落</span>'
+        '<span class="stat"><b>3</b>种检索策略</span>'
+        '<span class="stat"><b>引用</b>逐条可核</span>'
+        '</div></div>',
+        unsafe_allow_html=True,
     )
 
-    tab_qa, tab_bazi, tab_astro, tab_tarot = st.tabs(["古籍问答", "八字排盘", "星盘", "塔罗"])
+    tab_qa, tab_bazi, tab_astro, tab_tarot = st.tabs(
+        ["古籍问答", "八字排盘", "星盘", "塔罗"])
     with tab_qa:
         _qa_tab()
     with tab_bazi:
