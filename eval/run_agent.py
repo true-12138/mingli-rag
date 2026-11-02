@@ -98,24 +98,37 @@ def parse_tool_spec(spec: str) -> dict:
     return {"action": action, "book": book}
 
 
-def check_tools(trace: list[dict], specs: list[str]) -> list[dict]:
-    """逐个必需工具检查：trace 里有没有一次成功的调用满足 action（和 book）。"""
+def _book_match(need: str, arg: str | None) -> bool:
+    """book 参数按书名片段匹配：系统提示明确允许传片段（「子平真诠」指《子平真诠评注》），
+    所以两个方向都算命中，不能只判 need in arg。"""
+    if not arg:
+        return False
+    return need in str(arg) or str(arg) in need
+
+
+def check_tools(trace: list[dict], specs: list[str], cited_books: list[str] | None = None) -> list[dict]:
+    """逐个必需工具检查。
+
+    search_classics(book=X) 的含义是「必须查到 X 这本书」，满足方式有两种：
+      1) 显式 book=X 检索成功；
+      2) 引用了来自 X 的 chunk（引用必须来自本次 trace，等价于查到了）。
+    记录 via 便于分辨是哪种，跑 A/B 时需要知道有多少条是「全局检索顺带命中」。
+    """
+    cited_books = cited_books or []
     out = []
     for spec in specs:
         need = parse_tool_spec(spec)
-        hit = None
+        hit, via = None, None
         for t in trace:
-            if t.get("action") != need["action"]:
+            if t.get("action") != need["action"] or t.get("ok") is False:
                 continue
-            if need["book"]:
-                arg_book = (t.get("args") or {}).get("book")
-                if not arg_book or need["book"] not in str(arg_book):
-                    continue
-            if t.get("ok") is False:
+            if need["book"] and not _book_match(need["book"], (t.get("args") or {}).get("book")):
                 continue
-            hit = t.get("step")
+            hit, via = t.get("step"), "book_arg"
             break
-        out.append({"need": spec, "ok": hit is not None, "at_step": hit})
+        if hit is None and need["book"] and need["book"] in cited_books:
+            hit, via = "cited", "citation"
+        out.append({"need": spec, "ok": hit is not None, "at_step": hit, "via": via})
     return out
 
 
@@ -140,19 +153,20 @@ def auto_judge(task: dict, res: dict, id2book: dict[int, str]) -> dict:
     if steps_ok:
         needs_human = [c for c in needs_human if "步" not in c]
 
-    # 2) 必需工具
-    tool_checks = check_tools(res.get("trace") or [], task.get("required_tools") or [])
-    for tc in tool_checks:
-        checks.append({"name": "tool:" + tc["need"], "ok": tc["ok"], "detail": tc["at_step"]})
-    used = {tc["need"] for tc in tool_checks}
-    needs_human = [c for c in needs_human if not any(u in c for u in used)]
-
-    # 3) 引用出处
+    # 2) 引用出处（先算，工具判据要用到「引用了哪本书」）
     cit = check_citations(res, task.get("evidence_books") or [], id2book)
     if cit["ok"] is not None:
         checks.append({"name": "citation_book", "ok": cit["ok"],
                        "detail": "{} -> {}".format(cit["cited"], cit["books"])})
         needs_human = [c for c in needs_human if "引用" not in c and "chunk_id" not in c]
+
+    # 3) 必需工具
+    tool_checks = check_tools(res.get("trace") or [], task.get("required_tools") or [], cit["books"])
+    for tc in tool_checks:
+        checks.append({"name": "tool:" + tc["need"], "ok": tc["ok"],
+                       "detail": {"at_step": tc["at_step"], "via": tc["via"]}})
+    used = {tc["need"] for tc in tool_checks}
+    needs_human = [c for c in needs_human if not any(u in c for u in used)]
 
     # 4) 拒答类任务：机器只能判「有没有拒」
     if task.get("type") == "拒答":

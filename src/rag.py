@@ -56,7 +56,13 @@ def _parse_json(raw):
     # 防止模型偶尔套 ```json 围栏
     raw = re.sub(r"^```(?:json)?\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw)
-    return json.loads(raw)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # 模型偶尔一次输出两个 JSON（观察到 a03/b03 里有），整段解析会失败、
+        # 白白浪费一步。退化为只取第一个对象：后面那个留给下一轮。
+        obj, _end = json.JSONDecoder().raw_decode(raw)
+        return obj
 def _chat(messages, temperature=0.0):
     resp = requests.post(
         DEEPSEEK_URL,

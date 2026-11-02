@@ -282,7 +282,11 @@ TOOLS = {
 
 
 def call(name, **kwargs):
-    """按名字调工具。未知工具名返回 ok=False，而不是抛异常——agent 可能拼错。"""
+    """按名字调工具。未知工具名或参数不合法都返回 ok=False，而不是抛异常。
+
+    agent 可能拼错工具名，也可能给工具塞不存在的参数（实测 draw_astro 被传过 gender）。
+    这两种情况都应该变成一条 observation 让模型自己纠正，而不是让整个循环崩掉。
+    """
     fn = TOOLS.get(name)
     if fn is None:
         return {
@@ -291,7 +295,17 @@ def call(name, **kwargs):
             "args": kwargs,
             "error": "未知工具，可用：%s" % ", ".join(sorted(TOOLS)),
         }
-    return fn(**kwargs)
+    try:
+        return fn(**kwargs)
+    except TypeError as exc:
+        import inspect
+        params = list(inspect.signature(fn).parameters)
+        return {
+            "ok": False,
+            "tool": name,
+            "args": kwargs,
+            "error": "参数不合法：{}。{} 接受的参数：{}".format(exc, name, ", ".join(params)),
+        }
 
 
 if __name__ == "__main__":
