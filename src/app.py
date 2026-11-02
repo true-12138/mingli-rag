@@ -8,8 +8,10 @@
 
 功能与旧版一致：古籍问答（三种检索策略）、八字、星盘、塔罗，四个页签。
 """
+import json
+import os
 import sys
-from datetime import date, time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 import streamlit as st
@@ -187,6 +189,68 @@ def _chips(items, seal=False):
     )
 
 
+# ---------- 额度闸门 ----------
+# 公网 Demo 没有登录态，谁都能点。真正要防的不是「人」，是脚本循环刷调用：
+# 单会话限制挡不住脚本（换个 session 就重置），全站每日上限才是硬闸门。
+# 只有用**服务端 key** 时才计数——访客自带 key 花的是他自己的钱。
+
+DAILY_LLM_LIMIT = int(os.environ.get("MINGLI_DAILY_LLM_LIMIT", "300"))
+SESSION_LLM_LIMIT = int(os.environ.get("MINGLI_SESSION_LLM_LIMIT", "6"))
+
+
+def _quota_path():
+    root = Path(os.environ.get("MINGLI_DATA_DIR") or (Path(__file__).resolve().parent.parent / "data"))
+    return root / ".quota.json"
+
+
+def _quota_used_today():
+    try:
+        data = json.loads(_quota_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0
+    return int((data or {}).get(datetime.now().strftime("%Y-%m-%d"), 0))
+
+
+def _quota_take():
+    """占用一次调用额度。返回 (是否放行, 提示语)。"""
+    used_session = int(st.session_state.get("llm_used", 0))
+    if used_session >= SESSION_LLM_LIMIT:
+        return False, "本次会话的免费解读次数已用完（%d 次）。刷新页面可重置，或填入自己的 Key。" % SESSION_LLM_LIMIT
+
+    day = datetime.now().strftime("%Y-%m-%d")
+    used = _quota_used_today()
+    if used >= DAILY_LLM_LIMIT:
+        return False, "今日全站免费额度已用完（%d 次/天）。明天再来，或填入自己的 Key。" % DAILY_LLM_LIMIT
+
+    path = _quota_path()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        if not isinstance(data, dict):
+            data = {}
+        data[day] = used + 1
+        # 只留最近 7 天，别让计数文件长成日志
+        keep = (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%d")
+        for k in [k for k in data if k < keep]:
+            data.pop(k, None)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data), encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        pass  # 写不了计数文件就不拦：宁可漏一次，也别把功能挡死
+    st.session_state["llm_used"] = used_session + 1
+    return True, ""
+
+
+def _quota_left_today():
+    return max(DAILY_LLM_LIMIT - _quota_used_today(), 0)
+
+
+def _quota_caption():
+    if has_api_key():
+        st.caption("今日全站剩余免费解读 %d 次（上限 %d）。" % (_quota_left_today(), DAILY_LLM_LIMIT))
+
+
 TOPIC_PROMPTS = (
     ("感情", "请结合盘面，重点讲讲我的感情与相处方式。"),
     ("事业", "请结合盘面，重点讲讲我的事业方向与适合的工作方式。"),
@@ -231,11 +295,19 @@ def _read_block(chart, key):
         api_key = st.text_input("DeepSeek API Key", type="password",
                                 key=key + "_key") or None
 
+    if server_key:
+        _quota_caption()
+
     if not st.button("生成解读", type="primary", key=key + "_go"):
         return
     if not (server_key or api_key):
         st.warning("没有可用的 Key：先在上面填入自己的 DeepSeek Key，再点一次。")
         return
+    if server_key:  # 服务端 key 才计额度；访客自带 key 花的是他自己的钱
+        ok, why = _quota_take()
+        if not ok:
+            st.warning(why)
+            return
 
     with st.spinner("正在解读盘面…"):
         try:
@@ -271,6 +343,7 @@ def _qa_tab():
         # 公网 Demo 不一定配了服务端 key，让访客能自带一个；只存在本次会话
         if has_api_key():
             api_key = None
+            _quota_caption()
         else:
             st.markdown('<div class="note">公网未配置服务端 Key，可填自己的 DeepSeek Key'
                         '（仅本次会话，不落盘）。</div>', unsafe_allow_html=True)
@@ -295,6 +368,11 @@ def _qa_tab():
     if not (has_api_key() or api_key):
         st.warning("没有可用的 Key：填入自己的 DeepSeek Key 后再点一次。")
         return
+    if has_api_key() and not api_key:
+        ok, why = _quota_take()
+        if not ok:
+            st.warning(why)
+            return
 
     with st.spinner("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"):
         try:
