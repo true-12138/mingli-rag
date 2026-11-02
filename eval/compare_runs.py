@@ -101,7 +101,8 @@ def main():
         n = len(rs)
         line = "{}（{} 次）：通过 {} / {}".format(
             agent, n, _span([r["pass"] for r in rs]), rs[0]["total"])
-        duals = [(r["dual"], r["dual_n"]) for r in rs if r["dual"] is not None]
+        # 加诊断列之前跑的老结果 dual_n 是 0，不能算进均值，否则会把分母和分数都拉低
+        duals = [(r["dual"], r["dual_n"]) for r in rs if r.get("dual_n")]
         if duals:
             line += "，双书显式 {}".format(
                 _span([d for d, _ in duals]) + " / " + str(duals[0][1]))
