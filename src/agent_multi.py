@@ -106,7 +106,26 @@ def _short(obj, n=600):
 
 # ---------- 三个角色 ----------
 
-PLANNER_PROMPT = """你是古籍问答流水线的调度者。不改写问题，只拆任务。
+_BOOK_CATALOG = None
+
+
+def _book_catalog():
+    """书目清单。直接调工具层，不占预算、不进 trace——它只是调度者的背景知识。"""
+    global _BOOK_CATALOG
+    if _BOOK_CATALOG is None:
+        r = tools.call("list_books")  # 走统一入口，工具改名/加参数时这里不用跟着改
+        books = (r.get("result") or {}).get("books") or []
+        _BOOK_CATALOG = "、".join(b["book"] for b in books) or "（书目读取失败）"
+    return _BOOK_CATALOG
+
+
+PLANNER_PROMPT = """你是古籍问答流水线的调度者。只拆任务，不改写问题，不写答案。
+
+可用工具的准确签名（参数名必须一致，写错会直接调用失败）：
+- draw_bazi(year, month, day, hour=0, minute=0, gender="male")   gender 只能是 "male" 或 "female"
+- draw_astro(year, month, day, hour=0, minute=0, tz=8.0, lat=39.90, lon=116.40, city="北京")
+- list_books()
+- search_terms(term, limit=5)
 
 输出 JSON：
 {
@@ -116,57 +135,71 @@ PLANNER_PROMPT = """你是古籍问答流水线的调度者。不改写问题，
   "reason": ""
 }
 
-pre 只放确定性的前置工具，没有就给空数组：
-- 问题给了出生时间 -> draw_bazi（要看星盘才用 draw_astro）
-- 提到「记得有本…」「名字带…」这类模糊书名 -> list_books
-- 要先查一个术语的定义 -> search_terms
-- 问题直接给了四柱 -> 不排盘
+pre 放确定性的前置工具，没有就给空数组：
+1. 问题给了公历出生时间（年月日，可能带时辰、性别）-> draw_bazi；提到「星盘」「命主星」-> draw_astro。
+   时间要拆成 year/month/day/hour/minute 五个参数，不要写成 birth 字符串；性别写 male/female。
+2. 问题说「记得有本书…」「名字里带…」这类模糊书名 -> list_books。
+3. 要先解释某个术语的定义（纳音、羊刃、咸池…）-> search_terms。
+4. 问题直接给了四柱 -> 不排盘。
 
-searches 是必须分别查的书写范围，规则：
-1. 问题点名了哪几本书，就全部列进 searches，不能少列。
-2. 问题要比较两种说法、却没说书名，就列两家都有该内容的不同书。
+searches 是必须分别去查的书，规则：
+1. 问题点名了哪几本书，就全部列进去，不能少列。
+2. 没点名时，只从【语料书目】里挑真实存在、且确实有该内容的书，最多 3 本。
+   书目里没有的书一律不许出现在 searches 里——那只会白白浪费预算。
 3. 同一概念在不同书里可能异名（例如《三命通会》全篇无「七杀」，只作「偏官」），
    检索词按每本书的实际用词写，不要一个词套所有书。
-4. 最多 4 条 searches。
+4. out_of_scope 为 true 时也要列 1~2 条 searches，用来确认语料里究竟有没有相关内容，不要留空。
 
 out_of_scope 只有在问题要求的东西语料根本不可能提供时才为 true：
 金融涨跌预测、现代医学诊断、语料里没有的术数门类（如奇门遁甲起局）、
-现代生活问题（考研、买房、考公）。不确定就填 false。
+现代生活问题（考研、买房、考公）。此时 pre 里加 list_books 确认书目。
+不确定就填 false。
 """
 
 RETRIEVER_PROMPT = """你是检索员，只负责一个子任务：把指定书里与子问题相关的原文找出来。
 
 输出 JSON，二选一：
-{"thought": "为什么这么搜", "action": "search_classics", "args": {"query": "...", "book": "指定书名", "k": 8, "mode": "rrf"}}
-{"thought": "已经拿到相关原文", "action": "done"}
+{"thought": "为什么这么搜", "action": "search_classics", "args": {"query": "...", "k": 8, "mode": "rrf"}}
+{"thought": "已经拿到能回答的原文", "action": "done"}
 
 规则：
-1. book 必须填任务里给的指定书名，不许省略 book 做全库检索。
+1. book 由系统填入任务指定的书名，你不用写，也不许改成别的书或做全库检索。
 2. mode：精确术语用 bm25，口语化转述用 dense，不确定用 rrf。
-3. 如果命中的片段看起来只是擦边、必须先读完整上下文才能判断，改调
-   {"action": "fetch_chunk", "args": {"chunk_id": 123, "with_neighbors": true}}
-4. 拿到 1~2 处直接相关的原文就 done，不要穷举。
+3. 一次检索拿到 3 条以上相关原文就 done，不要换个 mode 再搜一遍同样的词。
+4. 如果命中的片段只有结论（断语、条款、口诀），却没有前提条件，
+   必须调 {"action": "fetch_chunk", "args": {"chunk_id": 123, "with_neighbors": true}}
+   读完整上下文再 done。
 """
 
-VERIFIER_PROMPT = """你是校验员。只看证据原文，判断这些证据是否足以支撑回答，并找出缺口。
-你不写答案。
+VERIFIER_PROMPT = """你是校验员。只判断材料够不够支撑回答，不写答案。
+
+材料有两类，都算证据：
+- 前置工具的确定性输出（排盘四柱、星盘、书目、术语表条目）
+- 古籍原文片段
 
 输出 JSON：
 {
   "sufficient": true 或 false,
-  "gaps": [{"book": "缺的书名", "query": "该换什么检索词"}],
-  "notes": "证据实际支持到哪一步；哪些说法没有原文支撑"
+  "gaps": [...],
+  "notes": "材料实际支持到哪一步；哪些说法没有依据"
 }
 
+gaps 里每一项二选一：
+{"action": "search_classics", "book": "书名", "query": "检索词"}
+{"action": "fetch_chunk", "chunk_id": 123}
+
 判据：
-1. 子问题里指定的每本书都必须有证据；少一本就 sufficient=false，并在 gaps 里写清是哪本。
-2. 证据只是主题相近、没有正面回答问题的，不算数。
-3. 如果问题超出语料范围（金融预测、现代医学、语料没有的术数门类），
-   sufficient=false，notes 里写明「语料不支持该结论」，gaps 留空。
-4. gaps 最多 2 条。
+1. 问题点名的每本书都要有原文证据；少一本就 sufficient=false，并写进 gaps。
+2. 前置工具的输出本身就是证据。不要因为「古籍原文里没有排盘过程」判证据不足——
+   四柱是工具算出来的事实，不是该去古籍里找的东西。
+3. 古籍之间说法不一致时，只要分歧本身有原文支撑，就算 sufficient=true：
+   回答完全可以陈述「甲书这样说、乙书那样说」。
+4. 证据只有结论、没有前提条件时，用 fetch_chunk 的 gap 让检索员读上下文。
+5. out_of_scope=true 时 sufficient=false，notes 写明「语料不支持该结论」，gaps 留空。
+6. gaps 最多 2 条。
 """
 
-SYNTHESIZER_PROMPT = """你是古籍问答的终稿撰写者。只能使用给定证据里的信息，不得使用常识或记忆补充。
+SYNTHESIZER_PROMPT = """你是古籍问答的终稿撰写者。只能使用给定材料里的信息，不得使用常识或记忆补充。
 
 输出 JSON：
 {
@@ -177,23 +210,28 @@ SYNTHESIZER_PROMPT = """你是古籍问答的终稿撰写者。只能使用给�
 }
 
 规则：
-1. citations 只能填证据里出现过的 chunk_id，不许自己编号，不许猜。
+1. citations 只能填古籍证据里出现过的 chunk_id，不许自己编号，不许猜。
 2. 引用了多本书时，按书写明出处，例如「《渊海子平·论伤官》说……」。
-3. 证据不足、或证据只沾边不正面回答，必须 can_answer=false，
+3. 前置工具输出的四柱、行星度数、命主星是已经算好的事实：直接引用，不许重算、
+   不许补充盘里没有的星体或神煞。
+4. 材料不足、或材料只沾边不正面回答，必须 can_answer=false，
    answer 固定为「语料中没有足够的依据回答这个问题。」，citations 为 []。
-4. 古代概念不能套现代生活：科举/功名≠考研，田宅≠商品房，官星≠考公，财星≠工资。
-5. 不预测金融行情、现代医学结果，不判断生死疾病灾祸。
-6. 你自己的推断必须明确标成「推断」，不能和原文所述混在一起说。
-7. 同一概念在两本书里说法冲突时，分别陈述，不要强行统一。
+5. 古代概念不能套现代生活：科举/功名≠考研，田宅≠商品房，官星≠考公，财星≠工资。
+6. 不预测金融行情、现代医学结果，不判断生死疾病灾祸。
+7. 你自己的推断必须明确标成「推断」，不能和原文所述混在一起说。
+8. 不同书说法冲突时分别陈述，不要强行统一。
 """
 
 
-def _plan(question, counter):
-    data = _ask_json(PLANNER_PROMPT, "【问题】\n{}".format(question), counter) or {}
+def _plan(question, counter, feedback=""):
+    prompt = "【语料书目】\n{}\n\n【问题】\n{}".format(_book_catalog(), question)
+    if feedback:
+        prompt += "\n\n【上一次前置工具调用失败，请按准确签名重写】\n" + feedback
+    data = _ask_json(PLANNER_PROMPT, prompt, counter) or {}
     pre = [p for p in (data.get("pre") or [])
            if isinstance(p, dict) and p.get("action") in tools.TOOLS]
     searches = []
-    for s in (data.get("searches") or [])[:4]:
+    for s in (data.get("searches") or [])[:3]:
         if isinstance(s, dict) and s.get("book") and s.get("query"):
             searches.append({"book": str(s["book"]), "query": str(s["query"])})
     return {
@@ -204,9 +242,13 @@ def _plan(question, counter):
     }
 
 
-def _run_pre(plan, budget, trace, evidence, seen, counter):
-    """执行前置的确定性工具，返回给下游看的摘要。"""
-    notes = []
+def _run_pre(plan, budget, trace, evidence, seen):
+    """执行前置的确定性工具。返回 (摘要, 是否全部成功)。
+
+    摘要必须往下传：排盘/星盘的结果是证据的一部分，校验员和汇总员都要看到，
+    否则它们会以为「古籍原文里没有四柱」而判证据不足——这正是第一版的坑。
+    """
+    notes, ok_all = [], True
     for p in plan["pre"]:
         if not budget.take():
             break
@@ -224,10 +266,11 @@ def _run_pre(plan, budget, trace, evidence, seen, counter):
             "ok": result.get("ok"), "chunk_ids": got, "error": result.get("error"),
         })
         if result.get("ok"):
-            notes.append("{} -> {}".format(p["action"], _short(result.get("result"), 500)))
+            notes.append("{} -> {}".format(p["action"], _short(result.get("result"), 700)))
         else:
+            ok_all = False
             notes.append("{} 调用失败：{}".format(p["action"], result.get("error")))
-    return "\n".join(notes)
+    return "\n".join(notes), ok_all
 
 
 def _retrieve(task, context, budget, trace, evidence, seen, counter):
@@ -280,18 +323,24 @@ def _retrieve(task, context, budget, trace, evidence, seen, counter):
     return "检索未收口"
 
 
-def _verify(question, evidence, out_of_scope, counter):
-    block = _evidence_block(evidence) or "（无证据）"
+def _verify(question, evidence, pre_notes, out_of_scope, counter):
+    block = _evidence_block(evidence) or "（无原文证据）"
     data = _ask_json(
         VERIFIER_PROMPT,
-        "【问题】\n{}\n\n【是否已判定超出语料范围】{}\n\n【证据】\n{}".format(
-            question, "是" if out_of_scope else "否", block),
+        "【问题】\n{}\n\n【是否已判定超出语料范围】{}\n\n"
+        "【前置工具输出（算作证据）】\n{}\n\n【古籍原文证据】\n{}".format(
+            question, "是" if out_of_scope else "否", pre_notes or "（无）", block),
         counter,
     ) or {"sufficient": False, "gaps": [], "notes": "校验员未返回合法 JSON"}
     gaps = []
     for g in (data.get("gaps") or [])[:2]:
-        if isinstance(g, dict) and g.get("book") and g.get("query"):
-            gaps.append({"book": str(g["book"]), "query": str(g["query"])})
+        if not isinstance(g, dict):
+            continue
+        if g.get("action") == "fetch_chunk" and g.get("chunk_id") is not None:
+            gaps.append({"action": "fetch_chunk", "chunk_id": g["chunk_id"]})
+        elif g.get("book") and g.get("query"):
+            gaps.append({"action": "search_classics",
+                         "book": str(g["book"]), "query": str(g["query"])})
     return {
         "sufficient": bool(data.get("sufficient")),
         "gaps": gaps,
@@ -299,13 +348,15 @@ def _verify(question, evidence, out_of_scope, counter):
     }
 
 
-def _synthesize(question, evidence, verdict, out_of_scope, counter):
-    block = _evidence_block(evidence) or "（无证据）"
+def _synthesize(question, evidence, pre_notes, verdict, out_of_scope, counter):
+    block = _evidence_block(evidence) or "（无原文证据）"
     return _ask_json(
         SYNTHESIZER_PROMPT,
-        "【问题】\n{}\n\n【是否超出语料范围】{}\n\n【校验意见】\n{}{}\n\n【证据】\n{}".format(
+        "【问题】\n{}\n\n【是否超出语料范围】{}\n\n【前置工具输出】\n{}\n\n"
+        "【校验意见】\n{}{}\n\n【古籍原文证据】\n{}".format(
             question,
             "是（必须拒答）" if out_of_scope else "否",
+            pre_notes or "（无）",
             verdict.get("notes") or "",
             "\n校验员指出证据不足，缺口：" + json.dumps(verdict.get("gaps"), ensure_ascii=False)
             if not verdict.get("sufficient") else "",
@@ -314,6 +365,26 @@ def _synthesize(question, evidence, verdict, out_of_scope, counter):
         counter,
     ) or {"can_answer": False, "answer": "", "citations": [],
           "refusal_reason": "汇总阶段未返回合法 JSON"}
+
+
+def _fetch_gap(chunk_id, budget, trace, evidence, seen):
+    """按校验员点名的 chunk_id 读上下文。这一步不需要模型参与。"""
+    if not budget.take():
+        return
+    result = tools.call("fetch_chunk", chunk_id=chunk_id, with_neighbors=True)
+    got = [h["chunk_id"] for h in _harvest(result)]
+    seen.update(got)
+    for h in _harvest(result):
+        evidence.setdefault(h["chunk_id"], {
+            "chunk_id": h["chunk_id"], "book": h.get("book") or "",
+            "chapter": h.get("chapter") or "", "text": h.get("text") or "",
+        })
+    trace.append({
+        "step": len(trace) + 1, "agent": "supervisor(gap)",
+        "thought": "校验员要求读上下文", "action": "fetch_chunk",
+        "args": {"chunk_id": chunk_id, "with_neighbors": True},
+        "ok": result.get("ok"), "chunk_ids": got, "error": result.get("error"),
+    })
 
 
 # ---------- 入口 ----------
@@ -327,24 +398,35 @@ def agent_answer(question, max_steps=MAX_STEPS):
     seen = set()
 
     plan = _plan(question, counter)
-    context = _run_pre(plan, budget, trace, evidence, seen, counter)
+    context, ok_all = _run_pre(plan, budget, trace, evidence, seen)
+
+    # 前置工具参数写错时，把错误回给调度者按准确签名重写一次。
+    # 一次修复比让整题作废便宜得多。
+    if not ok_all and plan["pre"]:
+        retry = _plan(question, counter, feedback=context)
+        context += "\n" + _run_pre({"pre": retry["pre"]}, budget, trace, evidence, seen)[0]
 
     for task in plan["searches"]:
         if budget.left <= 0:
             break
         _retrieve(task, context, budget, trace, evidence, seen, counter)
 
-    verdict = _verify(question, list(evidence.values()), plan["out_of_scope"], counter)
+    verdict = _verify(question, list(evidence.values()), context,
+                      plan["out_of_scope"], counter)
 
-    # 缺口回补：只补校验员明确点名、且预算还够的一到两本
+    # 缺口回补：补检索，或按校验员指的 chunk_id 读上下文
     for gap in verdict["gaps"]:
         if budget.left <= 0:
             break
-        _retrieve(gap, context, budget, trace, evidence, seen, counter)
+        if gap.get("action") == "fetch_chunk":
+            _fetch_gap(gap["chunk_id"], budget, trace, evidence, seen)
+        else:
+            _retrieve(gap, context, budget, trace, evidence, seen, counter)
     if verdict["gaps"] and budget.used < max_steps:
-        verdict = _verify(question, list(evidence.values()), plan["out_of_scope"], counter)
+        verdict = _verify(question, list(evidence.values()), context,
+                          plan["out_of_scope"], counter)
 
-    data = _synthesize(question, list(evidence.values()), verdict,
+    data = _synthesize(question, list(evidence.values()), context, verdict,
                        plan["out_of_scope"], counter)
     res = _finalize(data, seen, trace)
     res["llm_calls"] = counter["llm_calls"]
