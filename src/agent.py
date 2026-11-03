@@ -136,8 +136,11 @@ def _finalize(data, seen, trace):
     }
 
 
-def agent_answer(question, max_steps=MAX_STEPS):
-    """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。"""
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
+    """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。
+
+    api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
+    """
     trace = []
     seen = set()
     messages = [
@@ -146,7 +149,7 @@ def agent_answer(question, max_steps=MAX_STEPS):
     ]
 
     for step in range(1, max_steps + 1):
-        raw = _chat(messages)
+        raw = _chat(messages, api_key=api_key)
         try:
             data = _parse_json(raw)
         except json.JSONDecodeError:

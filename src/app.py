@@ -11,6 +11,7 @@
 import json
 import os
 import sys
+import time as _time
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
@@ -325,6 +326,41 @@ def _read_block(chart, key):
 
 # ---------- 古籍问答 ----------
 
+def _render_agent_trace(res, elapsed):
+    """Agent 模式的执行轨迹：每一步做了什么、返回了哪些 chunk。"""
+    st.divider()
+    st.markdown('<div class="section-title">Agent 执行轨迹</div>', unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("步数", res.get("steps", 0))
+    c2.metric("LLM 调用", res.get("llm_calls", "—"))
+    c3.metric("总耗时", "%.1fs" % elapsed)
+    c4.metric("有效引用", len(res.get("citations_chunk_ids") or []))
+
+    plan = res.get("plan")
+    if plan:
+        with st.expander("Planner 计划", expanded=False):
+            st.json(plan)
+
+    for t in res.get("trace") or []:
+        ok = t.get("ok", True)
+        label = "Step %s · %s · %s" % (
+            t.get("step", "?"), t.get("agent") or "agent", t.get("action") or "?")
+        with st.expander(label, expanded=False):
+            if t.get("thought"):
+                st.caption(t["thought"])
+            if t.get("args"):
+                st.code(json.dumps(t["args"], ensure_ascii=False, indent=2), language="json")
+            if t.get("chunk_ids"):
+                st.caption("chunk_id：" + "、".join(str(x) for x in t["chunk_ids"]))
+            if not ok:
+                st.error(t.get("error") or "工具调用失败")
+
+    verdict = res.get("verdict")
+    if verdict:
+        with st.expander("Verifier 判定", expanded=False):
+            st.json(verdict)
+
+
 def _qa_tab():
     if not st.session_state.get("qa_q"):
         st.session_state["qa_q"] = ""
@@ -335,10 +371,19 @@ def _qa_tab():
         question = st.text_input(
             "你的问题", key="qa_q", placeholder="例如：取格以月令为主，还是以透出的天干为主？",
         )
+        mode_label = st.radio(
+            "回答模式", ["单 Agent", "多 Agent", "单轮 RAG"], index=0,
+            horizontal=True,
+            help="单 Agent：ReAct 工具调用（默认）；多 Agent：Supervisor/Retriever/Verifier；单轮 RAG：固定一次检索的基线",
+        )
         c1, c2 = st.columns([0.55, 0.45])
-        mode = c1.radio("检索策略", ["rrf", "bm25", "dense"], index=0,
-                        horizontal=True, help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
-        top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5)
+        if mode_label == "单轮 RAG":
+            mode = c1.radio("检索策略", ["rrf", "bm25", "dense"], index=0,
+                            horizontal=True, help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
+            top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5)
+        else:
+            mode, top_k = "rrf", 5
+            c1.caption("Agent 会自己决定检索策略与条数")
         run_btn = st.button("开始回答", type="primary")
         # 公网 Demo 不一定配了服务端 key，让访客能自带一个；只存在本次会话
         if has_api_key():
@@ -374,13 +419,25 @@ def _qa_tab():
             st.warning(why)
             return
 
-    with st.spinner("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"):
+    spinner = ("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"
+               if mode_label == "单轮 RAG"
+               else "Agent 规划 / 检索 / 校验中；首次使用要先加载检索模型…")
+    started = _time.perf_counter()
+    with st.spinner(spinner):
         try:
-            res = answer(question, top_k=top_k, mode=mode, api_key=api_key)
+            if mode_label == "单 Agent":
+                from agent import agent_answer as _agent_answer
+                res = _agent_answer(question, api_key=api_key)
+            elif mode_label == "多 Agent":
+                from agent_multi import agent_answer as _agent_answer
+                res = _agent_answer(question, api_key=api_key)
+            else:
+                res = answer(question, top_k=top_k, mode=mode, api_key=api_key)
         except Exception as exc:
             st.error("生成失败：{}".format(exc))
             st.info("排盘 / 星盘 / 塔罗不依赖检索模型，那几个页签可以正常使用。")
             st.stop()
+    elapsed = _time.perf_counter() - started
 
     body, side = st.columns([0.62, 0.38], gap="large")
 
@@ -392,12 +449,15 @@ def _qa_tab():
                 if res.get("refusal_reason"):
                     st.caption("拒答理由：%s" % res["refusal_reason"])
             elif res["can_answer"] is None:
-                st.error("模型输出的 JSON 解析失败")
-                st.code(res.get("raw", ""), language="json")
+                st.error("没有拿到可用回答（JSON 解析失败或缺少有效引用）")
+                if res.get("raw"):
+                    st.code(res["raw"], language="json")
             else:
                 st.markdown(res["answer"])
                 if res["invalid_citations"]:
                     st.error("发现非法引用：%s" % res["invalid_citations"])
+                if res.get("invalid_output"):
+                    st.warning("输出被标记为不合规：声称能答，但存在无效引用。")
 
     with side:
         with st.container(border=True):
@@ -409,7 +469,14 @@ def _qa_tab():
             st.markdown('<div class="section-title" style="margin-top:1rem">本次召回</div>',
                         unsafe_allow_html=True)
             st.markdown(_chips(res["retrieved_chunk_ids"]), unsafe_allow_html=True)
-            st.caption("检索策略 %s · Top-%d" % (mode, top_k))
+            if mode_label == "单轮 RAG":
+                st.caption("检索策略 %s · Top-%d" % (mode, top_k))
+            else:
+                st.caption("%s · 步数 %s · LLM 调用 %s · %.1fs" % (
+                    mode_label, res.get("steps", "-"), res.get("llm_calls", "-"), elapsed))
+
+    if mode_label != "单轮 RAG":
+        _render_agent_trace(res, elapsed)
 
     with st.expander("查看原始返回 JSON（调试用）"):
         st.json(res)

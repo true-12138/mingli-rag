@@ -52,13 +52,13 @@ class Budget:
         return True
 
 
-def _ask_json(system, prompt, counter=None):
+def _ask_json(system, prompt, counter=None, api_key=None):
     """调一次模型并解析 JSON；解析失败重试一次（实测模型偶尔吐两个对象）。"""
     for _ in range(2):
         raw = _chat([
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
-        ])
+        ], api_key=api_key)
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
         try:
@@ -223,11 +223,11 @@ SYNTHESIZER_PROMPT = """你是古籍问答的终稿撰写者。只能使用给�
 """
 
 
-def _plan(question, counter, feedback=""):
+def _plan(question, counter, feedback="", api_key=None):
     prompt = "【语料书目】\n{}\n\n【问题】\n{}".format(_book_catalog(), question)
     if feedback:
         prompt += "\n\n【上一次前置工具调用失败，请按准确签名重写】\n" + feedback
-    data = _ask_json(PLANNER_PROMPT, prompt, counter) or {}
+    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}
     pre = [p for p in (data.get("pre") or [])
            if isinstance(p, dict) and p.get("action") in tools.TOOLS]
     searches = []
@@ -273,7 +273,7 @@ def _run_pre(plan, budget, trace, evidence, seen):
     return "\n".join(notes), ok_all
 
 
-def _retrieve(task, context, budget, trace, evidence, seen, counter):
+def _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=None):
     """一个子任务：在指定书内检索，必要时翻原文。返回最后一次的 thought 供记录。"""
     messages = [
         {"role": "system", "content": RETRIEVER_PROMPT},
@@ -282,7 +282,7 @@ def _retrieve(task, context, budget, trace, evidence, seen, counter):
     ]
     calls = 0
     while calls < RETRIEVER_MAX_CALLS and budget.left > 0:
-        raw = _chat(messages)
+        raw = _chat(messages, api_key=api_key)
         counter["llm_calls"] = counter.get("llm_calls", 0) + 1
         try:
             data = _parse_json(raw)
@@ -323,7 +323,7 @@ def _retrieve(task, context, budget, trace, evidence, seen, counter):
     return "检索未收口"
 
 
-def _verify(question, evidence, pre_notes, out_of_scope, counter):
+def _verify(question, evidence, pre_notes, out_of_scope, counter, api_key=None):
     block = _evidence_block(evidence) or "（无原文证据）"
     data = _ask_json(
         VERIFIER_PROMPT,
@@ -331,6 +331,7 @@ def _verify(question, evidence, pre_notes, out_of_scope, counter):
         "【前置工具输出（算作证据）】\n{}\n\n【古籍原文证据】\n{}".format(
             question, "是" if out_of_scope else "否", pre_notes or "（无）", block),
         counter,
+        api_key=api_key,
     ) or {"sufficient": False, "gaps": [], "notes": "校验员未返回合法 JSON"}
     gaps = []
     for g in (data.get("gaps") or [])[:2]:
@@ -348,7 +349,7 @@ def _verify(question, evidence, pre_notes, out_of_scope, counter):
     }
 
 
-def _synthesize(question, evidence, pre_notes, verdict, out_of_scope, counter):
+def _synthesize(question, evidence, pre_notes, verdict, out_of_scope, counter, api_key=None):
     block = _evidence_block(evidence) or "（无原文证据）"
     return _ask_json(
         SYNTHESIZER_PROMPT,
@@ -363,6 +364,7 @@ def _synthesize(question, evidence, pre_notes, verdict, out_of_scope, counter):
             block,
         ),
         counter,
+        api_key=api_key,
     ) or {"can_answer": False, "answer": "", "citations": [],
           "refusal_reason": "汇总阶段未返回合法 JSON"}
 
@@ -389,30 +391,33 @@ def _fetch_gap(chunk_id, budget, trace, evidence, seen):
 
 # ---------- 入口 ----------
 
-def agent_answer(question, max_steps=MAX_STEPS):
-    """返回结构与 agent.agent_answer() 完全一致，另带 llm_calls / plan。"""
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
+    """返回结构与 agent.agent_answer() 完全一致，另带 llm_calls / plan。
+
+    api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
+    """
     counter = {"llm_calls": 0}
     budget = Budget(max_steps)
     trace = []
     evidence = {}
     seen = set()
 
-    plan = _plan(question, counter)
+    plan = _plan(question, counter, api_key=api_key)
     context, ok_all = _run_pre(plan, budget, trace, evidence, seen)
 
     # 前置工具参数写错时，把错误回给调度者按准确签名重写一次。
     # 一次修复比让整题作废便宜得多。
     if not ok_all and plan["pre"]:
-        retry = _plan(question, counter, feedback=context)
+        retry = _plan(question, counter, feedback=context, api_key=api_key)
         context += "\n" + _run_pre({"pre": retry["pre"]}, budget, trace, evidence, seen)[0]
 
     for task in plan["searches"]:
         if budget.left <= 0:
             break
-        _retrieve(task, context, budget, trace, evidence, seen, counter)
+        _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=api_key)
 
     verdict = _verify(question, list(evidence.values()), context,
-                      plan["out_of_scope"], counter)
+                      plan["out_of_scope"], counter, api_key=api_key)
 
     # 缺口回补：补检索，或按校验员指的 chunk_id 读上下文
     for gap in verdict["gaps"]:
@@ -421,13 +426,13 @@ def agent_answer(question, max_steps=MAX_STEPS):
         if gap.get("action") == "fetch_chunk":
             _fetch_gap(gap["chunk_id"], budget, trace, evidence, seen)
         else:
-            _retrieve(gap, context, budget, trace, evidence, seen, counter)
+            _retrieve(gap, context, budget, trace, evidence, seen, counter, api_key=api_key)
     if verdict["gaps"] and budget.used < max_steps:
         verdict = _verify(question, list(evidence.values()), context,
-                          plan["out_of_scope"], counter)
+                          plan["out_of_scope"], counter, api_key=api_key)
 
     data = _synthesize(question, list(evidence.values()), context, verdict,
-                       plan["out_of_scope"], counter)
+                       plan["out_of_scope"], counter, api_key=api_key)
     res = _finalize(data, seen, trace)
     res["llm_calls"] = counter["llm_calls"]
     res["plan"] = plan

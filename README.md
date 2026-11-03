@@ -1,11 +1,12 @@
-# 命理古籍 RAG · v1
+# 命理古籍 RAG Agent · v1.2
 
-一个「只回答古籍原文里写了什么」的检索增强问答系统：**16 部命理古籍 / 2,830 个 chunk / 116.8 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **强制引用 + 无依据拒答**。
+一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
 [公开 Demo（ModelScope 创空间）](https://modelscope.cn/studios/Trueful/mingli-rag) ·
 [直达 Streamlit](https://trueful-mingli-rag.ms.show) ·
-[检索评测明细](eval/results_v2.csv) ·
+[检索评测明细](eval/results_8681_tuned.csv) ·
 [拒答评测明细](eval/refusal_results.csv) ·
+[Agent A/B 报告](eval/REPORT.md) ·
 [排盘模块](#11-排盘模块v11) ·
 [语料工程说明](docs/corpus_pipeline.md) ·
 [开发日志](docs/daily_dev_journal.md)
@@ -37,8 +38,8 @@
 ```mermaid
 flowchart LR
     subgraph OFFLINE["离线：语料与索引"]
-        A["152 部清洗文本<br/>data/clean_text"] --> B["chunk 切分<br/>2,830 块 / 116.8 万字"]
-        B --> C["BGE-M3 编码<br/>2,830 × 1024 归一化向量"]
+        A["152 部清洗文本<br/>data/clean_text"] --> B["chunk 切分<br/>8,681 块 / 340 万字"]
+        B --> C["BGE-M3 编码<br/>8,681 × 1024 归一化向量"]
         B --> D["BM25 索引<br/>字二元组分词"]
     end
 
@@ -62,20 +63,20 @@ flowchart LR
 
 | 层 | 实现 | 位置 |
 |---|---|---|
-| 语料 | v1 只用 16 部标点组，2,830 chunk，目标 450 字 / 上限 700 / 句级重叠 60 | `data/chunks/punct.jsonl` |
+| 语料 | 45 部 / 8,681 chunk（标点组 16 部 2,830 + 无标点组 29 部 5,851），目标 450 字 / 上限 700 / 句级重叠 60 | `data/chunks/punct.jsonl`、`data/chunks/unpunct.jsonl` |
 | 向量化 | BGE-M3，1024 维，归一化后存 `.npy` | `src/embed.py` → `data/embeddings.npy` |
-| dense 检索 | 纯 numpy 矩阵乘；2,830 条暴力全量，毫秒级，不需要向量库 | `src/retrieval.py:41` |
+| dense 检索 | 纯 numpy 矩阵乘；8,681 条暴力全量，毫秒级，不需要向量库 | `src/retrieval.py:41` |
 | 稀疏检索 | `rank_bm25` + 字二元组分词（不依赖 jieba 词典） | `src/retrieval.py:47` |
-| 融合 | RRF，k=60，每路先取 20 再截 Top-5 | `src/retrieval.py:53` |
+| 融合 | RRF，k=10，每路先取 40 再截 Top-5 | `src/retrieval.py:53` |
 | 生成 | `deepseek-chat`，`temperature=0`，`response_format=json_object` | `src/rag.py:59` |
 | 约束 | 引用编号 → chunk_id 映射与校验；声称能答但零有效引用 → `invalid_output` | `src/rag.py:116` |
-| 界面 | Streamlit：三档检索切换、Top-k 调节、召回块/引用块左右对照 | `src/app.py` |
+| 界面 | Streamlit：单轮 RAG / 单 Agent / 多 Agent 切换、Top-k 调节、召回块/引用块左右对照、Agent 轨迹面板 | `src/app.py` |
 | 部署 | ModelScope 创空间，入口见 `modelscope.yml` | `app.py` |
 
 **一次请求发生了什么**
 
 1. 用户问题进 `retrieve_one(question, top_k, mode)`；
-2. dense 与 BM25 各取 20 条候选，RRF 融合后截 Top-5（`mode` 可强制只走单路，界面里就是那三个单选框）；
+2. dense 与 BM25 各取 40 条候选，RRF 融合后截 Top-5（`mode` 可强制只走单路，界面里就是那三个单选框）；
 3. 5 个片段按 `[1]…[5]` 编号拼进 prompt，每个片段带《书名·卷·章》；
 4. DeepSeek 返回 JSON：`can_answer / answer / citations / refusal_reason`；
 5. `citations` 里的编号校验在 1..5 之间，映射回 `chunk_id`；越界编号进 `invalid_citations`，界面红色报错。
@@ -133,6 +134,28 @@ flowchart LR
 | 首条引用即命中 gold | 11/19 | 57.9%——引用能对上，但排序不对 |
 | 不合规输出（`invalid_output`：声称能答却零有效引用） | 0/30 | 引用编号全部落在 1..5 内 |
 
+### 3.3 Agent 评测：单 Agent vs 多 Agent
+
+固定单轮检索的瓶颈在 §3.1 已经说明：一个全局 RRF 权重只能对题型取平均。v1.2 把检索改成 ReAct 工具调用，再进一步拆成 Supervisor / Retriever / Verifier 三个角色；两版用同一批 15 条任务、同一工具预算（6 步）、同一套引用白名单，各跑 3 次：
+
+| | 单 Agent | 多 Agent |
+|---|---:|---:|
+| 三次通过数 | 9、8、7 | 13、13、12 |
+| 均值（区间） | **8.0 / 15（7–9）** | **12.7 / 15（12–13）** |
+| 双书显式检索 | 2.5 / 10 | **9.0 / 10** |
+| 拒答正确 | 8 / 9 | **9 / 9** |
+| 复合题通过 | 0 / 6 | **5 / 6** |
+| LLM 调用 / 题 | ≈3.8 | 8.3 |
+| 单次跑完 15 题 | 150s | 204s |
+
+两个区间不重叠（单 Agent 最高 9 < 多 Agent 最低 12），但样本只有 15 条，**不作显著性推断**。
+
+多 Agent 的收益来自三个具体修复，而不是「多一个角色」本身：规划时枚举必须查的书、检索员的书名由代码强制覆写、Verifier 逐本核对并回补缺口。第一版多 Agent 只有 1/15，修完才到 13/15；`a02` 和 `b04` 是两条已知失效，判据本身有缺陷，报告里没有为了好看改判据。
+
+公网 Demo 的「古籍问答」页可以在「单轮 RAG / 单 Agent / 多 Agent」之间切换；Agent 模式会展开每一步的工具、参数、chunk_id 与总耗时，引用仍走同一套白名单校验。
+
+完整逐题配对、成本拆解与失效分析见 [`eval/REPORT.md`](eval/REPORT.md)。
+
 ---
 
 ## 4. 失败案例
@@ -187,19 +210,20 @@ gold 两段（`2750` 总论、`2751` 正月甲木），只召回 2751，Recall@5
 
 | # | 局限 | 影响 | 下一步 |
 |---|---|---|---|
-| 1 | 索引已覆盖 45 部 / 8,681 块（标点组 16 部 + 无标点组 29 部），但**评测集仍只按前 16 部出题** | 70.0% 只代表"问的书在库里"时的检索质量，29 部无标点组还没有对应题目，真实覆盖率未被测量 | 为无标点组补 30–40 道题，再重跑一次 |
+| 1 | 索引已覆盖 45 部 / 8,681 块（标点组 16 部 + 无标点组 29 部），但**评测集仍只按前 16 部出题** | 75.0% 只代表"问的书在库里"时的检索质量，29 部无标点组还没有对应题目，真实覆盖率未被测量 | 为无标点组补 30–40 道题，再重跑一次 |
 | 2 | 评测集 30 条、单人标注，可答 20 条 | 1 条题 = 5 个百分点；跨书对比只有 3 条、多跳 1 条，题型间差异不可靠 | 扩到 80 条 + 双人标注 |
 | 3 | exact / line 两个口径差 5–10 个点；line 口径偏松（共享一行即命中） | 只报一个数会误导；q03/q13 说明 exact 也会误伤 | 两个数一起报；补"引用段落包含答案要点"的人工核验 |
 | 4 | chunk 目标 450 字、句级重叠 60 字 | 定义跨块时仍会切断答案；相邻块内容重复，`exact` 判分不稳 | v2 调重叠与边界规则 |
 | 5 | BM25 用字二元组，**没有接 jieba 和 324 条术语词典**（词典已备好未接入） | 古汉语单字词多，二元组引入噪声；口语 query 字面零交集 | 接入 jieba + 术语词典 |
-| 6 | RRF 参数未调（k=60、每路 20 条），且没有 reranker | q01 说明融合会伤害单路强命中 | 加深候选池、上 bge-reranker |
+| 6 | RRF 参数已在 8,681 条上重扫（k=10 / 候选 40），但**没有 reranker** | q01 说明融合仍会伤害单路强命中；reranker 未做前后对比 | 上 bge-reranker-v2-m3，补一组同题对比 |
 | 7 | 生成侧只校验**引用编号是否合法**，不校验"这段原文是否支持这句话" | 4/19 题回答没有任何 gold 引用；没有忠实度指标 | 加 RAGAS faithfulness / 人工抽检 |
 | 8 | 没有查询改写，没有多轮对话 | 口语改写类最弱（50%） | query rewrite / HyDE 对比实验 |
 | 9 | 延迟与成本没有测量 | 无法回答"端到端多少秒、一次多少钱" | 加计时与 token 统计，README 补数字 |
-| 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无鉴权、无限流 | 本地复现原本会直接报错 | 用环境变量 + 部署文档 |
+| 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 上 FastAPI + Nginx 限流 + Langfuse |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
+| 12 | 多 Agent 只在 15 条任务上测，且未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 扩到 30 条 + 逐轮 token/耗时/成本 |
 
-> 关于"没做完"的部分：reranker、查询改写、多轮、微调、换 LangChain/LlamaIndex 重写，v1 明确**不做**。判断标准是"能不能让 11 月 1 日的简历多一个数字或一个链接"，不能就推迟到 v2。
+> 关于"没做完"的部分：reranker、查询改写、多轮、微调、换 LangChain/LlamaIndex 重写，v1.2 明确**不做**。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟到 v2。
 
 ---
 
@@ -255,26 +279,31 @@ streamlit run app.py
 │   ├── chunk_*.py             # 语料切分（细节见 docs/corpus_pipeline.md）
 │   ├── validate_chunks.py     # chunk 数据契约校验
 │   ├── tools.py               # Agent 工具层（检索 + 排盘，纯函数）
-│   ├── agent.py               # 工具调用循环 + 引用校验
+│   ├── agent.py               # 单 Agent：ReAct 工具调用 + 引用校验
+│   ├── agent_multi.py         # 多 Agent：Supervisor / Retriever / Verifier
 │   └── fortune/               # 排盘：纯计算，不经过大模型
 │       ├── bazi.py            #   八字（干支/藏干/十神/五行/大运）
 │       ├── astro.py           #   星盘（地心视黄经 + 整宫制）
 │       ├── tarot.py           #   塔罗（78 张，seed 可复现）
 │       └── interpret.py       #   解读（只解释盘面，不许改盘）
 ├── tests/
-│   └── test_fortune.py        # 排盘测试：结构、边界、可复现性
+│   ├── test_fortune.py        # 排盘测试：结构、边界、可复现性
+│   └── test_agent_guardrails.py # 引用白名单 / 拒答 / 预算（mock LLM）
 ├── eval/
-│   ├── questions.jsonl        # 30 题评测集（20 可答 + 10 语料外）
+│   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
+│   ├── agent_tasks.jsonl      # 15 题 Agent 评测集（多跳/换工具/拒答/复合）
 │   ├── eval_matrics.py        # 三档检索 × exact/line 两种口径
 │   ├── eval_refusal.py        # 拒答评测
-│   ├── results_v2.csv         # 检索明细（每题每题型的命中）
+│   ├── run_agent.py           # 单/多 Agent 批量跑批 + auto_judge
+│   ├── REPORT.md              # 单 Agent vs 多 Agent 实验报告
+│   ├── results_8681_tuned.csv # 8,681 条、k=10/cand=40 的检索明细
 │   ├── refusal_results.csv    # 拒答明细（含模型原始回答）
-│   └── make_chart.py          # 由 results_v2.csv 生成对比图
+│   └── make_chart.py          # 由评测明细生成对比图
 ├── data/
 │   ├── chunks/punct.jsonl     # 标点组（2,830 行，chunk_id 1..2830）
-│   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681，待编码）
+│   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681）
 │   ├── chunks/index_report.json # build_index.py 产出的校验报告
-│   └── embeddings.npy         # 2,830 × 1024
+│   └── embeddings.npy         # 8,681 × 1024
 ├── docs/
 │   ├── corpus_pipeline.md     # 语料工程说明（原 README）
 │   ├── daily_dev_journal.md   # 开发日志与踩坑
@@ -299,9 +328,10 @@ streamlit run app.py
 
 ## 9. 路线图
 
-- **v1.1（11 月）**：reranker（bge-reranker-v2-m3）、RRF 候选池加深、jieba + 术语词典、补一组前后对比数字
-- **v2（12 月）**：29 部无标点古籍入库（行款合并 + 断句）、评测扩到 80 条 + RAGAS 忠实度、FastAPI + Docker、延迟与成本测量
-- **明确不做**：微调、多轮对话、框架重写、向量库（2,830 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
+- **v1.1（已完成，11/02）**：RRF 候选池重扫（k=10 / cand=40，75.0%）、单/多 Agent 拆分与 3 次 A/B
+- **v1.2（11/15 前）**：FastAPI + Docker + ECS、Langfuse 全链路 trace、P50/P95 与单次 token/成本、30 条 Agent 评测、Demo 内 Agent trace 面板
+- **v2（12 月）**：reranker、query rewrite、评测扩到 80 条 + RAGAS 忠实度、多轮对话
+- **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
 ---
 
