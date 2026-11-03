@@ -9,6 +9,7 @@ import requests
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from retrieval import retrieve_one
 from conversation import history_block, normalize_history, rewrite_question
+import usage
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
 REFUSAL_TEXT = "语料中没有足够的依据回答这个问题。"
@@ -86,7 +87,10 @@ def _chat(messages, temperature=0.0, api_key=None):
         timeout=120,
     )
     resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"]
+    payload = resp.json()
+    # 旁路累计 token；没有 reset() 的调用方（脚本 / 测试）不记录，不影响行为
+    usage.add(payload.get("usage"))
+    return payload["choices"][0]["message"]["content"]
 def answer(question, top_k=5, mode="rrf", api_key=None, history=None):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。

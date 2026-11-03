@@ -42,6 +42,7 @@ import agent
 import agent_multi
 import rag
 import retrieval
+import usage
 
 API_VERSION = "1.0.0"
 logger = logging.getLogger("mingli.api")
@@ -102,6 +103,7 @@ class ChatResponse(BaseModel):
     rewritten_question: str | None = None
     history_turns: int = 0
     llm_calls: int = 0
+    usage: dict[str, Any] | None = None
     trace: list[dict[str, Any]] = Field(default_factory=list)
     steps: int | None = None
 
@@ -281,6 +283,7 @@ def chat(
     trace_id = uuid.uuid4().hex
     history = _history_payload(req.history)
     key = _api_key(x_deepseek_key)
+    usage.reset()
 
     try:
         if req.mode == "rag":
@@ -309,16 +312,19 @@ def chat(
 
     elapsed_ms = (time.perf_counter() - started) * 1000
     out = dict(result)
+    tokens = usage.snapshot()
     out.update({
         "trace_id": trace_id,
         "mode": req.mode,
         "question": req.question,
         "elapsed_ms": round(elapsed_ms, 1),
+        "usage": tokens,
     })
     _remember(trace_id, req.mode, req.question, elapsed_ms, out)
     logger.info(
-        "chat mode=%s elapsed_ms=%.0f llm_calls=%s can_answer=%s trace_id=%s",
-        req.mode, elapsed_ms, out.get("llm_calls"), out.get("can_answer"), trace_id,
+        "chat mode=%s elapsed_ms=%.0f llm_calls=%s tokens=%s can_answer=%s trace_id=%s",
+        req.mode, elapsed_ms, out.get("llm_calls"),
+        (tokens or {}).get("total_tokens"), out.get("can_answer"), trace_id,
     )
     return out
 

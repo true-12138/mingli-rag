@@ -141,6 +141,42 @@ def test_validation_and_auth(client, monkeypatch):
     assert r.status_code == 503
 
 
+def test_chat_reports_token_usage(client, monkeypatch):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        # 模拟 rag._chat 里 usage.add 的旁路采集：两次调用各记一次
+        api.usage.add({"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120})
+        api.usage.add({
+            "prompt_tokens": 50,
+            "completion_tokens": 10,
+            "total_tokens": 60,
+            "prompt_tokens_details": {"cached_tokens": 30},
+        })
+        return _rag_result()
+
+    monkeypatch.setattr(api.rag, "answer", fake_answer)
+    body = client.post("/chat", json={"question": "q"}).json()
+    assert body["usage"] == {
+        "prompt_tokens": 150,
+        "completion_tokens": 30,
+        "total_tokens": 180,
+        "cached_tokens": 30,
+        "llm_calls": 2,
+    }
+    # 用量不进 trace 之外的共享状态：下一个请求从零开始
+    monkeypatch.setattr(api.rag, "answer", lambda *a, **k: _rag_result())
+    assert client.post("/chat", json={"question": "q2"}).json()["usage"]["total_tokens"] == 0
+
+
+def test_usage_without_reset_is_inert():
+    # 脚本 / 测试直接调 rag 时不会 reset，采集器应当完全静默
+    import usage as usage_mod
+
+    if hasattr(usage_mod._local, "data"):
+        del usage_mod._local.data
+    usage_mod.add({"total_tokens": 5})
+    assert usage_mod.snapshot() is None
+
+
 def test_trace_404(client):
     assert client.get("/trace/not-found").status_code == 404
 

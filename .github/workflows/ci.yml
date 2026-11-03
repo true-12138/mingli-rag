@@ -14,9 +14,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install test deps
+        # 不装 torch / sentence-transformers / streamlit：
+        # 全部测试都不加载 BGE-M3 权重，dense 检索与 LLM 调用都走 mock。
         run: |
           python -m pip install --upgrade pip
-          pip install pytest numpy lunar_python ephem
+          pip install pytest numpy lunar_python ephem rank-bm25 requests python-dotenv \
+            fastapi uvicorn httpx
       - name: Run tests
-        # 只跑不依赖 BGE-M3 权重的测试；检索/Agent 端到端在 eval/ 里单独跑
-        run: pytest tests/test_fortune.py tests/test_agent_guardrails.py -q
+        run: pytest -q
