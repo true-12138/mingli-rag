@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import tools
 from agent import MAX_STEPS, _finalize
 from rag import _chat, _parse_json
+from conversation import history_block, normalize_history, rewrite_question
 
 EVIDENCE_CHAR = 420          # 喂给 Verifier / 汇总的每条证据截断长度
 RETRIEVER_MAX_CALLS = 2      # 单个检索子任务最多几次工具调用（先搜，必要时再翻原文）
@@ -223,8 +224,8 @@ SYNTHESIZER_PROMPT = """你是古籍问答的终稿撰写者。只能使用给�
 """
 
 
-def _plan(question, counter, feedback="", api_key=None):
-    prompt = "【语料书目】\n{}\n\n【问题】\n{}".format(_book_catalog(), question)
+def _plan(question, counter, feedback="", api_key=None, history=""):
+    prompt = (history + chr(10) + chr(10) if history else "") + "【语料书目】\n{}\n\n【问题】\n{}".format(_book_catalog(), question)
     if feedback:
         prompt += "\n\n【上一次前置工具调用失败，请按准确签名重写】\n" + feedback
     data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}
@@ -323,10 +324,11 @@ def _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=Non
     return "检索未收口"
 
 
-def _verify(question, evidence, pre_notes, out_of_scope, counter, api_key=None):
+def _verify(question, evidence, pre_notes, out_of_scope, counter, api_key=None, history=""):
     block = _evidence_block(evidence) or "（无原文证据）"
     data = _ask_json(
         VERIFIER_PROMPT,
+        (history + chr(10) + chr(10) if history else "") +
         "【问题】\n{}\n\n【是否已判定超出语料范围】{}\n\n"
         "【前置工具输出（算作证据）】\n{}\n\n【古籍原文证据】\n{}".format(
             question, "是" if out_of_scope else "否", pre_notes or "（无）", block),
@@ -349,10 +351,11 @@ def _verify(question, evidence, pre_notes, out_of_scope, counter, api_key=None):
     }
 
 
-def _synthesize(question, evidence, pre_notes, verdict, out_of_scope, counter, api_key=None):
+def _synthesize(question, evidence, pre_notes, verdict, out_of_scope, counter, api_key=None, history=""):
     block = _evidence_block(evidence) or "（无原文证据）"
     return _ask_json(
         SYNTHESIZER_PROMPT,
+        (history + chr(10) + chr(10) if history else "") +
         "【问题】\n{}\n\n【是否超出语料范围】{}\n\n【前置工具输出】\n{}\n\n"
         "【校验意见】\n{}{}\n\n【古籍原文证据】\n{}".format(
             question,
@@ -391,24 +394,29 @@ def _fetch_gap(chunk_id, budget, trace, evidence, seen):
 
 # ---------- 入口 ----------
 
-def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None):
     """返回结构与 agent.agent_answer() 完全一致，另带 llm_calls / plan。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
+    history 是多轮对话历史；先改写成独立问题，再交给各角色。
     """
     counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
+    question = standalone
+    hist_block = history_block(history)
     budget = Budget(max_steps)
     trace = []
     evidence = {}
     seen = set()
 
-    plan = _plan(question, counter, api_key=api_key)
+    plan = _plan(question, counter, api_key=api_key, history=hist_block)
     context, ok_all = _run_pre(plan, budget, trace, evidence, seen)
 
     # 前置工具参数写错时，把错误回给调度者按准确签名重写一次。
     # 一次修复比让整题作废便宜得多。
     if not ok_all and plan["pre"]:
-        retry = _plan(question, counter, feedback=context, api_key=api_key)
+        retry = _plan(question, counter, feedback=context, api_key=api_key, history=hist_block)
         context += "\n" + _run_pre({"pre": retry["pre"]}, budget, trace, evidence, seen)[0]
 
     for task in plan["searches"]:
@@ -417,7 +425,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
         _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=api_key)
 
     verdict = _verify(question, list(evidence.values()), context,
-                      plan["out_of_scope"], counter, api_key=api_key)
+                      plan["out_of_scope"], counter, api_key=api_key, history=hist_block)
 
     # 缺口回补：补检索，或按校验员指的 chunk_id 读上下文
     for gap in verdict["gaps"]:
@@ -429,12 +437,14 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
             _retrieve(gap, context, budget, trace, evidence, seen, counter, api_key=api_key)
     if verdict["gaps"] and budget.used < max_steps:
         verdict = _verify(question, list(evidence.values()), context,
-                          plan["out_of_scope"], counter, api_key=api_key)
+                          plan["out_of_scope"], counter, api_key=api_key, history=hist_block)
 
     data = _synthesize(question, list(evidence.values()), context, verdict,
-                       plan["out_of_scope"], counter, api_key=api_key)
+                       plan["out_of_scope"], counter, api_key=api_key, history=hist_block)
     res = _finalize(data, seen, trace)
     res["llm_calls"] = counter["llm_calls"]
+    res["rewritten_question"] = standalone
+    res["history_turns"] = len(history)
     res["plan"] = plan
     res["verdict"] = verdict
     return res

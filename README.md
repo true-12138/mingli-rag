@@ -1,4 +1,4 @@
-# 命理古籍 RAG Agent · v1.2
+# 命理古籍 RAG Agent · v1.3
 
 一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
@@ -44,11 +44,11 @@ flowchart LR
     end
 
     subgraph ONLINE["在线：检索 → 生成"]
-        Q["用户问题"] --> E["dense 召回<br/>每路取 20"]
-        Q --> F["BM25 召回<br/>每路取 20"]
+        Q["用户问题"] --> E["dense 召回<br/>每路取 40"]
+        Q --> F["BM25 召回<br/>每路取 40"]
         C --> E
         D --> F
-        E --> G["RRF 融合<br/>k = 60"]
+        E --> G["RRF 融合<br/>k = 10"]
         F --> G
         G --> H["Top-5 片段<br/>chunk_text + 书名/章/行号"]
         H --> I["DeepSeek chat<br/>temperature=0 · JSON 模式"]
@@ -70,7 +70,7 @@ flowchart LR
 | 融合 | RRF，k=10，每路先取 40 再截 Top-5 | `src/retrieval.py:53` |
 | 生成 | `deepseek-chat`，`temperature=0`，`response_format=json_object` | `src/rag.py:59` |
 | 约束 | 引用编号 → chunk_id 映射与校验；声称能答但零有效引用 → `invalid_output` | `src/rag.py:116` |
-| 界面 | Streamlit：单轮 RAG / 单 Agent / 多 Agent 切换、Top-k 调节、召回块/引用块左右对照、Agent 轨迹面板 | `src/app.py` |
+| 界面 | Streamlit：多轮对话（单轮 RAG / 单 Agent / 多 Agent）、Top-k 调节、逐轮引用与轨迹、数据中台、评测中台 | `src/app.py` |
 | 部署 | ModelScope 创空间，入口见 `modelscope.yml` | `app.py` |
 
 **一次请求发生了什么**
@@ -80,6 +80,29 @@ flowchart LR
 3. 5 个片段按 `[1]…[5]` 编号拼进 prompt，每个片段带《书名·卷·章》；
 4. DeepSeek 返回 JSON：`can_answer / answer / citations / refusal_reason`；
 5. `citations` 里的编号校验在 1..5 之间，映射回 `chunk_id`；越界编号进 `invalid_citations`，界面红色报错。
+
+**多轮对话（v1.3）**
+
+1. 界面用 `st.session_state` 保存本次会话的 user / assistant 消息，刷新页面才清空；右侧「新对话」显式清空；
+2. 后端只取最近 **3 轮 / 1200 字**，先让模型把追问改写成不依赖上文的独立问题（`{"standalone": "..."}`）；
+3. 改写后的问题才进入检索；Agent 模式把同一句独立问题交给 Planner / Retriever / Verifier / Synthesizer；
+4. **历史只用于消解指代，不作为回答证据**；引用白名单仍然只认本轮工具实际返回的 `chunk_id`；
+5. 改写失败（网络、额度、非法 JSON）一律退回原问题——多轮是增强，不能把单轮能力拖垮。
+
+实现集中在 `src/conversation.py`；三种后端都接受 `history=` 参数，并在返回值里带 `rewritten_question / history_turns / llm_calls`。测试见 `tests/test_conversation.py`。
+
+**数据中台 / 评测中台（v1.3，MVP）**
+
+| 能力 | 现在做到什么 | 位置 |
+|---|---|---|
+| 数据版本 | 语料内容指纹 → `ds-xxxxxxxxxxxx`，同版本重复扫描不新增 | `src/datahub.py` |
+| 版本血缘 | chunk 文件、`embeddings.npy`、术语表的 sha256 / 大小 | `datahub.assets_for()` |
+| 质量门 | 12 项：空 chunk、重复 id、重复正文、缺 sourcefile/行号、embedding 行数/维度/NaN | `datahub.scan()` |
+| 评测账本 | `eval_runs` + `eval_cases`：suite、backend、数据集版本、配置、逐题明细 | `src/evalhub.py` |
+| 回归门 | 检索 R@5 掉 >2 个点、Agent 通过率掉 >5 个点、拒答正确率掉 >2 个点 → 失败 | `evalhub.compare()` |
+| 界面 | 「评测中台」「数据中台」两个页签；可导入历史结果、跑检索评测、看逐题、比版本 | `src/app.py` |
+
+范围要说清楚：这是**单机 MVP**——一个 SQLite 文件、Streamlit 管理页、没有独立 API 服务、没有多租户和权限。选择这个范围是因为它已经能回答「这份数据和上次评测是不是同一版」「这次改动有没有把指标跑崩」两个真实问题，而不是先摆一套中间件。
 
 ---
 
@@ -169,8 +192,11 @@ flowchart LR
 | 证据去重 | 多 Agent 用 `chunk_id` 做 key 合并证据，同一段原文只进上下文一次 | `src/agent_multi.py:94` |
 | 缺口回补 | Verifier 最多指出 2 条缺口，Supervisor 用 `fetch_chunk` 或限定书名重查，而不是把整库再塞一遍 | `src/agent_multi.py:326` |
 | 引用白名单 | 只有工具实际返回过的 `chunk_id` 才能进 `citations`；无效引用会被标出并判为不合规 | `src/agent.py` 的 `_finalize` |
+| 多轮历史 | 只取最近 3 轮 / 1200 字，从旧到新丢；追问先改写成独立问题，历史只用于消解指代 | `src/conversation.py` |
+| 多轮引用隔离 | 每轮引用只来自本轮工具返回的 chunk；历史里出现过的旧结论不能当引用 | `src/rag.py`、`src/agent.py` |
+| 多轮失败回退 | 改写超时 / 额度 / 非法 JSON 时退回原问题，单轮链路不受影响 | `src/conversation.py` 的 `rewrite_question` |
 
-还没做的：多轮对话历史、按 token 截断/压缩、query rewrite、reranker。这些在路线图 v2，不在当前版本的能力范围内。
+还没做的：长期记忆与会话摘要、按 token 精确截断（目前按字符）、多轮专项评测集、reranker、RAGAS 忠实度。
 
 ---
 
@@ -233,13 +259,13 @@ gold 两段（`2750` 总论、`2751` 正月甲木），只召回 2751，Recall@5
 | 5 | BM25 用字二元组，**没有接 jieba 和 324 条术语词典**（词典已备好未接入） | 古汉语单字词多，二元组引入噪声；口语 query 字面零交集 | 接入 jieba + 术语词典 |
 | 6 | RRF 参数已在 8,681 条上重扫（k=10 / 候选 40），但**没有 reranker** | q01 说明融合仍会伤害单路强命中；reranker 未做前后对比 | 上 bge-reranker-v2-m3，补一组同题对比 |
 | 7 | 生成侧只校验**引用编号是否合法**，不校验"这段原文是否支持这句话" | 4/19 题回答没有任何 gold 引用；没有忠实度指标 | 加 RAGAS faithfulness / 人工抽检 |
-| 8 | 没有查询改写，没有多轮对话 | 口语改写类最弱（50%） | query rewrite / HyDE 对比实验 |
-| 9 | 延迟与成本没有测量 | 无法回答"端到端多少秒、一次多少钱" | 加计时与 token 统计，README 补数字 |
+| 8 | 多轮只做最近 3 轮 / 1200 字的追问改写，没有长期记忆、会话摘要和多轮专项评测集；改写本身也消耗一次 LLM 调用 | 长会话会丢早期约束；多轮质量目前只有单元测试，没有像检索那样的量化分数 | 补 20 条多轮评测（指代、省略、跨轮约束）并统计改写准确率 |
+| 9 | 已在界面记录每轮耗时和 LLM 调用次数，但仍未统计 token / 金额 | 能回答"几秒、几次调用"，还不能回答"一次多少钱" | 接 usage 字段，按题汇总成本 |
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 上 FastAPI + Nginx 限流 + Langfuse |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
 | 12 | 多 Agent 只在 15 条任务上测，且未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 扩到 30 条 + 逐轮 token/耗时/成本 |
 
-> 关于"没做完"的部分：reranker、查询改写、多轮、微调、换 LangChain/LlamaIndex 重写，v1.2 明确**不做**。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟到 v2。
+> 关于"没做完"的部分：reranker、RAGAS 忠实度、微调、换 LangChain/LlamaIndex 重写，v1.3 仍然**不做**；多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
 ---
 
@@ -260,9 +286,12 @@ streamlit run app.py
 - `data/embeddings.npy`（**8,681 × 1024，约 34 MB**）**已随仓库提供**，开箱即用，覆盖标点组 + 无标点组全部语料。若文件行数少于 chunk 数，启动时会打印 `[warn] 索引只覆盖前 N 条语料`，此时只检索已编码的部分。
 - 重建索引：先 `python src/build_index.py` 校验语料，再 `python src/embed.py` 重新编码（8,681 条，GPU 上十几分钟，纯 CPU 要数小时）
 - BGE-M3 权重首次加载需要下载（几 GB）。大陆网络可先设 `HF_ENDPOINT=https://hf-mirror.com`，或用 ModelScope 下载后指向本地目录
-- 排盘测试（**不调用 LLM**，纯计算，0.1 秒跑完）：`python -m pytest tests/ -q`
+- 全部测试（**不调用 LLM**，包含排盘、引用白名单、多轮改写、平台表结构）：`python -m pytest tests/ -q`
 - 重跑检索评测（**不调用 LLM**，只测检索）：`cd eval && python eval_matrics.py`
 - 重画结果图：`python eval/make_chart.py`
+- 数据中台：`python src/datahub.py` 扫描语料 / embedding，登记版本、哈希和 12 项质量门（写 `data/platform.sqlite3`）
+- 评测中台：`python src/evalhub.py` 导入 `eval/` 下已有结果；界面的「评测中台」页签可以跑新的检索评测、看逐题明细、做回归门对比
+- 中台数据默认落在 `data/platform.sqlite3`（已 gitignore，可由 scan / import 重建）；部署到持久化目录时设 `MINGLI_PLATFORM_DB=/path/to/platform.sqlite3`
 - 语料路径默认 `<repo>/data`，可用环境变量覆盖：`MINGLI_DATA_DIR=/path/to/data`
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
@@ -286,11 +315,15 @@ streamlit run app.py
 .
 ├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
 ├── src/
-│   ├── app.py                 # 界面：单 Agent / 多 Agent / 单轮 RAG 切换 + trace
+│   ├── app.py                 # 界面：多轮问答 + 评测中台 + 数据中台 + 排盘
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂，Streamlit 注入）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
 │   ├── rag.py                 # DeepSeek 调用、JSON 强制、引用校验、拒答
+│   ├── conversation.py        # 多轮：历史裁剪、追问改写、失败回退
+│   ├── platform_db.py         # 数据/评测中台共用的 SQLite schema 与连接
+│   ├── datahub.py             # 数据版本指纹、资产哈希、12 项质量门
+│   ├── evalhub.py             # run 账本、逐题明细、历史结果导入、回归门
 │   ├── build_index.py         # 建索引前校验（编号连续、gold 有效、无重复）
 │   ├── embed.py               # BGE-M3 离线编码 → data/embeddings.npy
 │   ├── chunk_*.py             # 语料切分（细节见 docs/corpus_pipeline.md）
@@ -305,7 +338,9 @@ streamlit run app.py
 │       └── interpret.py       #   解读（只解释盘面，不许改盘）
 ├── tests/
 │   ├── test_fortune.py        # 排盘测试：结构、边界、可复现性
-│   └── test_agent_guardrails.py # 引用白名单 / 拒答 / 预算（mock LLM）
+│   ├── test_agent_guardrails.py # 引用白名单 / 拒答 / 预算（mock LLM）
+│   ├── test_conversation.py   # 历史裁剪 / 改写回退 / 引用隔离
+│   └── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
 │   ├── agent_tasks.jsonl      # 15 题 Agent 评测集（多跳/换工具/拒答/复合）
@@ -340,14 +375,17 @@ streamlit run app.py
 - **line**：同一 `sourcefile` 且 `[line_start, line_end]` 区间相交（吸收边界差异，偏松）；
 - **MRR**：第一个 gold 命中的排名取倒数，无命中为 0；
 - **拒答**：`can_answer=false` 才算拒答；可答题被判 false = 误拒；语料外题被判 true = 漏拒。
+- **回归门**（`src/evalhub.py`）：检索 `line_recall` 下降超过 2 个点、Agent `pass_rate` 下降超过 5 个点、拒答 `refusal_accuracy` 下降超过 2 个点，判 fail；阈值写在 `GATE` 里，改阈值会被代码评审看见。
+- **数据质量门**（`src/datahub.py`）：空正文、重复 `chunk_id`、embedding 行数错位、维度不是 1024、NaN/Inf 直接 fail；缺 sourcefile / 行号、短 chunk、重复正文超过 1% 记 warn。
 
 ---
 
 ## 9. 路线图
 
 - **v1.1（已完成，11/02）**：RRF 候选池重扫（k=10 / cand=40，75.0%）、单/多 Agent 拆分与 3 次 A/B
-- **v1.2（11/15 前）**：FastAPI + Docker + ECS、Langfuse 全链路 trace、P50/P95 与单次 token/成本、30 条 Agent 评测、Demo 内 Agent trace 面板
-- **v2（12 月）**：reranker、query rewrite、评测扩到 80 条 + RAGAS 忠实度、多轮对话
+- **v1.3（已完成，11/03）**：多轮对话（追问改写 + 历史裁剪 + 引用隔离）、数据中台 MVP（版本/血缘/质量门）、评测中台 MVP（16 个 run、逐题明细、回归门）
+- **下一步（11/15 前）**：FastAPI + Docker + ECS、Langfuse 全链路 trace、P50/P95 与 token/成本、30 条 Agent 评测、20 条多轮评测
+- **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
 ---

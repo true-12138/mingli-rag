@@ -132,6 +132,21 @@ html, body, [class*="st-"] {
   margin: .8rem 0; padding: .55rem .9rem; color: var(--ink-soft);
 }
 
+/* ---------- 多轮对话 ---------- */
+[data-testid="stChatMessage"] {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: .85rem 1rem;
+  margin: .1rem 0 .55rem;
+}
+[data-testid="stChatMessage"] p { line-height: 1.85; }
+[data-testid="stChatMessage"] [data-testid="stChatMessageAvatarUser"],
+[data-testid="stChatMessage"] [data-testid="stChatMessageAvatarAssistant"] {
+  display: none;
+}
+.stFormSubmitButton > button { height: 2.55rem; }
+
 /* ---------- 怎么工作 ---------- */
 .how {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4rem;

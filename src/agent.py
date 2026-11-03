@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import tools
 from rag import REFUSAL_TEXT, _chat, _parse_json
+from conversation import history_block, normalize_history, rewrite_question
 
 MAX_STEPS = 6
 
@@ -48,6 +49,7 @@ SYSTEM_PROMPT = """你是古籍检索 Agent。你不能凭记忆回答，只能�
 5. 最多 6 步，超出会被强制按「证据不足」处理。
 6. 排盘工具返回的干支、行星度数、牌面是**已经算好的事实**：可以解释，不许重算、不许补充盘里没有的星体或神煞。
 7. 同一个出生时间只调一次排盘工具，不要反复调用；解读用倾向性语言，不做生死/疾病/灾祸/婚姻成败的断言。
+8. 对话历史只用于理解追问里的指代，不能作为回答证据；citations 只能来自本次工具实际返回过的 chunk_id。
 """
 
 
@@ -136,20 +138,27 @@ def _finalize(data, seen, trace):
     }
 
 
-def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None):
     """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
+    history 是多轮对话历史；只用于改写追问，不作为回答证据。
     """
+    counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
     trace = []
     seen = set()
+    hist = history_block(history)
+    user_text = (hist + "\n\n" if hist else "") + "【问题】\n{}".format(standalone)
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": "【问题】\n{}".format(question)},
+        {"role": "user", "content": user_text},
     ]
 
     for step in range(1, max_steps + 1):
         raw = _chat(messages, api_key=api_key)
+        counter["llm_calls"] += 1
         try:
             data = _parse_json(raw)
         except json.JSONDecodeError:
@@ -165,7 +174,11 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
 
         action = data.get("action")
         if action == "final":
-            return _finalize(data, seen, trace)
+            out = _finalize(data, seen, trace)
+            out["rewritten_question"] = standalone
+            out["history_turns"] = len(history)
+            out["llm_calls"] = counter["llm_calls"]
+            return out
 
         result = tools.call(action or "", **(data.get("args") or {}))
         got = _collect_ids(result)
@@ -195,6 +208,9 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None):
         "retrieved_chunk_ids": sorted(seen),
         "trace": trace,
         "steps": len(trace),
+        "rewritten_question": standalone,
+        "history_turns": len(history),
+        "llm_calls": counter["llm_calls"],
     }
 
 

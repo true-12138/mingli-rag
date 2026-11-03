@@ -26,6 +26,8 @@ from fortune.interpret import has_api_key, read
 from fortune.tarot import SPREADS, draw as draw_tarot
 from fortune.tarot import format_draw
 from rag import answer
+import datahub
+import evalhub
 
 CITIES = {
     "北京": (39.90, 116.40),
@@ -190,68 +192,110 @@ def _read_block(chart, key):
 
 # ---------- 古籍问答 ----------
 
-def _render_agent_trace(res, elapsed):
-    """Agent 模式的执行轨迹：每一步做了什么、返回了哪些 chunk。"""
-    st.divider()
-    st.markdown('<div class="section-title">Agent 执行轨迹</div>', unsafe_allow_html=True)
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("步数", res.get("steps", 0))
-    c2.metric("LLM 调用", res.get("llm_calls", "—"))
-    c3.metric("总耗时", "%.1fs" % elapsed)
-    c4.metric("有效引用", len(res.get("citations_chunk_ids") or []))
+MODES = ("单 Agent", "多 Agent", "单轮 RAG")
 
-    plan = res.get("plan")
-    if plan:
-        with st.expander("Planner 计划", expanded=False):
-            st.json(plan)
 
-    for t in res.get("trace") or []:
-        ok = t.get("ok", True)
-        label = "Step %s · %s · %s" % (
-            t.get("step", "?"), t.get("agent") or "agent", t.get("action") or "?")
-        with st.expander(label, expanded=False):
-            if t.get("thought"):
-                st.caption(t["thought"])
-            if t.get("args"):
-                st.code(json.dumps(t["args"], ensure_ascii=False, indent=2), language="json")
-            if t.get("chunk_ids"):
-                st.caption("chunk_id：" + "、".join(str(x) for x in t["chunk_ids"]))
-            if not ok:
-                st.error(t.get("error") or "工具调用失败")
+def _as_history(messages):
+    """只把真正的问答内容传给后端；错误提示和 UI 元数据不进上下文。"""
+    out = []
+    for m in messages:
+        if m.get("role") in ("user", "assistant") and not m.get("error"):
+            text = (m.get("content") or "").strip()
+            if text:
+                out.append({"role": m["role"], "content": text})
+    # 上一轮失败时只剩一条没有回答的 user，不能当成完整轮次带进改写
+    while out and out[-1]["role"] == "user":
+        out.pop()
+    return out
 
-    verdict = res.get("verdict")
-    if verdict:
-        with st.expander("Verifier 判定", expanded=False):
-            st.json(verdict)
+
+def _render_turn(msg, question=""):
+    """渲染一轮对话。引用、轨迹、耗时都挂在对应的助手消息下面，不串到下一轮。"""
+    res = msg.get("meta") or {}
+    with st.chat_message(msg["role"]):
+        if msg.get("error"):
+            st.error(msg["content"])
+            return
+
+        content = msg.get("content") or ""
+        if content:
+            st.markdown(content)
+        if msg.get("role") == "assistant" and res.get("can_answer") is None:
+            st.error("没有拿到可用回答（JSON 解析失败或缺少有效引用）")
+            if res.get("raw"):
+                st.code(res["raw"], language="json")
+
+        if not res:
+            return
+
+        bits = [msg.get("mode") or ""]
+        if res.get("steps") is not None:
+            bits.append("步数 %s" % res.get("steps"))
+        if res.get("llm_calls") is not None:
+            bits.append("LLM 调用 %s" % res.get("llm_calls"))
+        if msg.get("elapsed") is not None:
+            bits.append("%.1fs" % msg["elapsed"])
+        st.caption(" · ".join(b for b in bits if b))
+
+        standalone = res.get("rewritten_question")
+        if standalone and question and standalone != question:
+            st.caption("追问改写为：%s" % standalone)
+        if res.get("refusal_reason"):
+            st.caption("拒答理由：%s" % res["refusal_reason"])
+        if res.get("citations_chunk_ids"):
+            st.markdown(_chips(res["citations_chunk_ids"], seal=True), unsafe_allow_html=True)
+        elif res.get("can_answer") is False:
+            st.caption("本次无有效引用")
+        if res.get("invalid_citations"):
+            st.error("发现非法引用：%s" % res["invalid_citations"])
+        if res.get("invalid_output"):
+            st.warning("输出被标记为不合规：声称能答，但存在无效引用。")
+
+        trace = res.get("trace") or []
+        if trace or res.get("plan") or res.get("verdict"):
+            with st.expander("执行轨迹（%d 步）" % len(trace), expanded=False):
+                if res.get("plan"):
+                    st.markdown('<div class="section-title">Planner 计划</div>',
+                                unsafe_allow_html=True)
+                    st.json(res["plan"])
+                for t in trace:
+                    st.markdown("**Step %s · %s**" % (t.get("step", "?"),
+                                                      t.get("action") or "?"))
+                    if t.get("thought"):
+                        st.caption(t["thought"])
+                    if t.get("chunk_ids"):
+                        st.caption("chunk：" + "、".join(str(x) for x in t["chunk_ids"]))
+                    if t.get("ok") is False:
+                        st.error(t.get("error") or "工具调用失败")
+                if res.get("verdict"):
+                    st.markdown('<div class="section-title">Verifier 判定</div>',
+                                unsafe_allow_html=True)
+                    st.json(res["verdict"])
 
 
 def _qa_tab():
-    if not st.session_state.get("qa_q"):
-        st.session_state["qa_q"] = ""
+    messages = st.session_state.setdefault("qa_messages", [])
 
-    left, right = st.columns([0.62, 0.38], gap="large")
-
-    with left:
+    head_l, head_r = st.columns([0.62, 0.38], gap="large")
+    with head_l:
         st.markdown('<div class="prompt-label">问一个古籍里的问题</div>',
                     unsafe_allow_html=True)
-        question = st.text_input(
-            "你的问题", key="qa_q", label_visibility="collapsed",
-            placeholder="例如：取格以月令为主，还是以透出的天干为主？",
-        )
+        st.caption("可以连续追问。历史只用于理解指代，引用仍然只来自本轮实际检索到的片段。")
         mode_label = st.radio(
-            "回答模式", ["单 Agent", "多 Agent", "单轮 RAG"], index=0,
-            horizontal=True,
-            help="单 Agent：ReAct 工具调用（默认）；多 Agent：Supervisor/Retriever/Verifier；单轮 RAG：固定一次检索的基线",
+            "回答模式", MODES, index=0, horizontal=True, key="qa_mode",
+            help="单 Agent：ReAct 工具调用（默认）；多 Agent：Supervisor/Retriever/Verifier；"
+                 "单轮 RAG：固定一次检索的基线",
         )
-        c1, c2 = st.columns([0.55, 0.45])
         if mode_label == "单轮 RAG":
+            c1, c2 = st.columns([0.55, 0.45])
             mode = c1.radio("检索策略", ["rrf", "bm25", "dense"], index=0,
-                            horizontal=True, help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
-            top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5)
+                            horizontal=True, key="qa_retrieval",
+                            help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
+            top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5, key="qa_topk")
         else:
             mode, top_k = "rrf", 5
-            c1.caption("Agent 会自己决定检索策略与条数")
-        run_btn = st.button("开始回答", type="primary")
+            st.caption("Agent 会自己决定检索策略与条数")
+
         # 公网 Demo 不一定配了服务端 key，让访客能自带一个；只存在本次会话
         if has_api_key():
             api_key = None
@@ -261,29 +305,60 @@ def _qa_tab():
                         '（仅本次会话，不落盘）。</div>', unsafe_allow_html=True)
             api_key = st.text_input("DeepSeek API Key", type="password", key="qa_key") or None
 
-    with right:
-        st.markdown('<div class="section-title">可以这样问</div>', unsafe_allow_html=True)
-        for i, ex in enumerate(EXAMPLES):
-            if st.button(ex, key="ex%d" % i, use_container_width=True):
-                st.session_state["qa_q"] = ex
+    with head_r:
+        if messages:
+            if st.button("新对话", use_container_width=True, key="qa_new"):
+                st.session_state["qa_messages"] = []
+                st.session_state["qa_input"] = ""
                 st.rerun()
+            st.markdown(
+                '<div class="note">当前对话共 %d 条消息。追问会先改写成独立问题，'
+                '历史不会作为回答证据。</div>' % len(messages),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown('<div class="section-title">可以这样问</div>', unsafe_allow_html=True)
+            for i, ex in enumerate(EXAMPLES):
+                if st.button(ex, key="ex%d" % i, use_container_width=True):
+                    st.session_state["qa_input"] = ex
+                    st.rerun()
 
-    st.markdown(
-        '<div class="how">'
-        '<div><h3>检索</h3><p>BGE-M3 语义召回与 BM25 字面召回各取 40 条，'
-        'RRF 融合后保留前 5 段；每条引用都能定位到具体 chunk。</p></div>'
-        '<div><h3>编排</h3><p>单 Agent 用 ReAct 调 7 个工具；多 Agent 由 Supervisor 拆题、'
-        'Retriever 补证、Verifier 复核，再交给 Synthesizer 落笔。</p></div>'
-        '<div><h3>校验</h3><p>引用白名单只保留真正看过的片段；没有有效引用就拒答，'
-        '不拿主题相近的段落硬凑。</p></div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-    st.divider()
+    if not messages:
+        st.markdown(
+            '<div class="how">'
+            '<div><h3>检索</h3><p>BGE-M3 语义召回与 BM25 字面召回各取 40 条，'
+            'RRF 融合后保留前 5 段；每条引用都能定位到具体 chunk。</p></div>'
+            '<div><h3>编排</h3><p>单 Agent 用 ReAct 调 7 个工具；多 Agent 由 Supervisor 拆题、'
+            'Retriever 补证、Verifier 复核，再交给 Synthesizer 落笔。</p></div>'
+            '<div><h3>校验</h3><p>引用白名单只保留真正看过的片段；没有有效引用就拒答，'
+            '不拿主题相近的段落硬凑。</p></div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.divider()
 
-    if not run_btn:
+    if messages:
+        st.markdown('<div class="section-title" style="margin-top:.6rem">对话</div>',
+                    unsafe_allow_html=True)
+        prev_q = ""
+        for msg in messages[-12:]:
+            _render_turn(msg, prev_q)
+            if msg.get("role") == "user":
+                prev_q = msg.get("content") or ""
+        st.divider()
+
+    with st.form("qa_form", clear_on_submit=True):
+        c1, c2 = st.columns([0.82, 0.18])
+        question = c1.text_input(
+            "你的问题", key="qa_input", label_visibility="collapsed",
+            placeholder="继续追问，例如：那《渊海子平》里怎么说？",
+        )
+        submitted = c2.form_submit_button("发送", type="primary", use_container_width=True)
+
+    if not submitted:
         return
-    if not question.strip():
+    question = (question or "").strip()
+    if not question:
         st.warning("请先输入问题")
         return
     if not (has_api_key() or api_key):
@@ -295,68 +370,38 @@ def _qa_tab():
             st.warning(why)
             return
 
+    history = _as_history(messages)
+    messages.append({"role": "user", "content": question})
+
     spinner = ("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"
                if mode_label == "单轮 RAG"
                else "Agent 规划 / 检索 / 校验中；首次使用要先加载检索模型…")
     started = _time.perf_counter()
-    with st.spinner(spinner):
-        try:
+    try:
+        with st.spinner(spinner):
             if mode_label == "单 Agent":
                 from agent import agent_answer as _agent_answer
-                res = _agent_answer(question, api_key=api_key)
+                res = _agent_answer(question, api_key=api_key, history=history)
             elif mode_label == "多 Agent":
                 from agent_multi import agent_answer as _agent_answer
-                res = _agent_answer(question, api_key=api_key)
+                res = _agent_answer(question, api_key=api_key, history=history)
             else:
-                res = answer(question, top_k=top_k, mode=mode, api_key=api_key)
-        except Exception as exc:
-            st.error("生成失败：{}".format(exc))
-            st.info("排盘 / 星盘 / 塔罗不依赖检索模型，那几个页签可以正常使用。")
-            st.stop()
-    elapsed = _time.perf_counter() - started
-
-    body, side = st.columns([0.62, 0.38], gap="large")
-
-    with body:
-        with st.container(border=True):
-            st.markdown('<div class="section-title">回答</div>', unsafe_allow_html=True)
-            if res["can_answer"] is False:
-                st.markdown('<div class="answer">%s</div>' % res["answer"], unsafe_allow_html=True)
-                if res.get("refusal_reason"):
-                    st.caption("拒答理由：%s" % res["refusal_reason"])
-            elif res["can_answer"] is None:
-                st.error("没有拿到可用回答（JSON 解析失败或缺少有效引用）")
-                if res.get("raw"):
-                    st.code(res["raw"], language="json")
-            else:
-                st.markdown(res["answer"])
-                if res["invalid_citations"]:
-                    st.error("发现非法引用：%s" % res["invalid_citations"])
-                if res.get("invalid_output"):
-                    st.warning("输出被标记为不合规：声称能答，但存在无效引用。")
-
-    with side:
-        with st.container(border=True):
-            st.markdown('<div class="section-title">有效引用</div>', unsafe_allow_html=True)
-            if res["citations_chunk_ids"]:
-                st.markdown(_chips(res["citations_chunk_ids"], seal=True), unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="note">本次无有效引用</div>', unsafe_allow_html=True)
-            st.markdown('<div class="section-title" style="margin-top:1rem">本次召回</div>',
-                        unsafe_allow_html=True)
-            st.markdown(_chips(res["retrieved_chunk_ids"]), unsafe_allow_html=True)
-            if mode_label == "单轮 RAG":
-                st.caption("检索策略 %s · Top-%d" % (mode, top_k))
-            else:
-                st.caption("%s · 步数 %s · LLM 调用 %s · %.1fs" % (
-                    mode_label, res.get("steps", "-"), res.get("llm_calls", "-"), elapsed))
-
-    if mode_label != "单轮 RAG":
-        _render_agent_trace(res, elapsed)
-
-    with st.expander("查看原始返回 JSON（调试用）"):
-        st.json(res)
-
+                res = answer(question, top_k=top_k, mode=mode, api_key=api_key, history=history)
+        elapsed = _time.perf_counter() - started
+        messages.append({
+            "role": "assistant",
+            "content": res.get("answer") or "",
+            "meta": res,
+            "elapsed": elapsed,
+            "mode": mode_label,
+        })
+    except Exception as exc:
+        messages.append({
+            "role": "assistant",
+            "content": "生成失败：{}".format(exc),
+            "error": True,
+        })
+    st.rerun()
 
 # ---------- 八字 ----------
 
@@ -718,6 +763,252 @@ def _tarot_tab():
     _read_block(chart, "tarot_read")
 
 
+def _human_bytes(n):
+    try:
+        n = float(n)
+    except (TypeError, ValueError):
+        return "—"
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024 or unit == "GB":
+            return ("%.1f %s" % (n, unit)).replace(".0 ", " ")
+        n /= 1024
+
+
+def _status_cn(s):
+    return {"pass": "通过", "warn": "警告", "fail": "失败"}.get(s, s or "—")
+
+
+def _data_tab():
+    st.markdown('<div class="prompt-label">数据中台</div>', unsafe_allow_html=True)
+    st.caption("登记语料 / chunk / embedding 的版本、血缘和质量门。"
+               "库是单文件 SQLite，部署时用 MINGLI_PLATFORM_DB 指到持久化目录。")
+
+    latest = datahub.latest()
+    c1, c2 = st.columns([0.72, 0.28])
+    with c2:
+        if st.button("重新扫描并登记", type="primary", use_container_width=True, key="dh_scan"):
+            with st.spinner("扫描语料与 embedding，计算 sha256…"):
+                try:
+                    datahub.scan_and_store()
+                except Exception as exc:
+                    st.error("扫描失败：{}".format(exc))
+                else:
+                    st.rerun()
+
+    if not latest:
+        st.info("还没有登记过数据版本。点右上角「重新扫描并登记」。")
+        return
+
+    with c1:
+        st.markdown(
+            '<div class="section-title">当前版本 · %s</div>'
+            '<div class="note">登记于 %s</div>' % (
+                latest["version"], (latest["scanned_at"] or "").replace("T", " ")),
+            unsafe_allow_html=True,
+        )
+        m1, m2, m3 = st.columns(3)
+        m1.metric("书目", latest["books"])
+        m2.metric("chunk", "{:,}".format(latest["chunks"]))
+        m3.metric("字数", "{:,}".format(latest["chars"]))
+
+    checks = datahub.checks_for(latest["id"])
+    bad = sum(1 for c in checks if c["status"] == "fail")
+    warn = sum(1 for c in checks if c["status"] == "warn")
+    st.markdown('<div class="section-title" style="margin-top:1rem">质量门 · %d 通过 / %d 警告 / %d 失败</div>'
+                % (len(checks) - bad - warn, warn, bad), unsafe_allow_html=True)
+    st.dataframe(
+        [{"检查": c["check_name"], "结果": _status_cn(c["status"]),
+          "值": c["value"], "说明": c["detail"]} for c in checks],
+        hide_index=True, use_container_width=True,
+    )
+
+    st.markdown('<div class="section-title" style="margin-top:1rem">资产与哈希</div>',
+                unsafe_allow_html=True)
+    assets = datahub.assets_for(latest["id"])
+    st.dataframe(
+        [{"类型": a["kind"], "文件": a["path"], "大小": _human_bytes(a["bytes"]),
+          "sha256": (a["sha256"] or "")[:16]} for a in assets],
+        hide_index=True, use_container_width=True,
+    )
+
+    hist = datahub.history(limit=10)
+    if len(hist) > 1:
+        with st.expander("版本历史（%d）" % len(hist), expanded=False):
+            st.dataframe(
+                [{"id": h["id"], "版本": h["version"], "书目": h["books"],
+                  "chunk": h["chunks"], "字数": h["chars"],
+                  "登记时间": h["scanned_at"]} for h in hist],
+                hide_index=True, use_container_width=True,
+            )
+
+
+def _run_metric_text(r):
+    m = r["metrics"]
+    if r["suite"] == "retrieval":
+        val = m.get("line_recall")
+        return "—" if val is None else "R@5 {:.1f}%".format(val * 100)
+    if r["suite"] == "agent":
+        return "通过 {}/{}".format(m.get("auto_pass"), m.get("total"))
+    if r["suite"] == "refusal":
+        val = m.get("refusal_accuracy")
+        return "—" if val is None else "拒答正确 {:.0f}%".format(val * 100)
+    return "—"
+
+
+def _suite_cn(s):
+    return {"retrieval": "检索", "agent": "Agent", "refusal": "拒答"}.get(s, s or "—")
+
+
+def _version_text(v):
+    return "未记录" if not v or str(v).startswith("imported:") else v
+
+
+def _run_label(r):
+    return "#%d · %s · %s · %s" % (r["id"], r["suite"], r["name"], _run_metric_text(r))
+
+
+def _eval_tab():
+    st.markdown('<div class="prompt-label">评测中台</div>', unsafe_allow_html=True)
+    st.caption("把每次评测登记成带配置、数据集版本和逐题明细的 run；"
+               "两次 run 可以直接比，掉点超过阈值判回归失败。")
+
+    runs = evalhub.list_runs(limit=200)
+    by_suite = {}
+    for r in runs:
+        by_suite.setdefault(r["suite"], r)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("登记 run", len(runs))
+    # 检索看项目声明的当前基线（8681 段那版），不是「最后导入的文件」——
+    # 导入顺序取决于文件 mtime，拿它当「最新」会误导。
+    ret = next((r for r in runs if r["source"] == "results_8681_tuned.csv#rrf"),
+               by_suite.get("retrieval"))
+    c2.metric("检索 R@5（当前基线）", "—" if not ret or ret["metrics"].get("line_recall") is None
+              else "%.1f%%" % (ret["metrics"]["line_recall"] * 100))
+    # Agent 看多 Agent 组的均值；单次 run 会受模型波动影响，不能拿来当门面。
+    multi = [r for r in runs if r["suite"] == "agent" and r["backend"] == "multi"]
+    if multi:
+        vals = [r["metrics"].get("pass_rate") for r in multi
+                if r["metrics"].get("pass_rate") is not None]
+        total = multi[0]["metrics"].get("total") or 15
+        c3.metric("多 Agent 通过（均值）",
+                  "%.1f / %s" % (sum(vals) / len(vals) * total, total) if vals else "—")
+    else:
+        ag = by_suite.get("agent")
+        c3.metric("Agent 通过（最近登记）", "—" if not ag else "%s/%s" % (
+            ag["metrics"].get("auto_pass"), ag["metrics"].get("total")))
+    rf = by_suite.get("refusal")
+    c4.metric("拒答正确（最近登记）", "—" if not rf or rf["metrics"].get("refusal_accuracy") is None
+              else "%.0f%%" % (rf["metrics"]["refusal_accuracy"] * 100))
+
+    with st.expander("运行与导入", expanded=not runs):
+        b1, b2 = st.columns([0.45, 0.55])
+        with b1:
+            if st.button("导入 eval/ 下已有结果", use_container_width=True, key="eh_import"):
+                with st.spinner("读 results_agent_*.json / *results*.csv…"):
+                    added, skipped, errors = evalhub.import_existing()
+                if errors:
+                    st.warning("导入 {} 个，跳过 {} 个；{} 个失败".format(added, skipped, len(errors)))
+                    st.code("\n".join(errors))
+                else:
+                    st.success("导入 {} 个，跳过 {} 个".format(added, skipped))
+                st.rerun()
+            st.caption("已有的 6 次 Agent run、9 次检索 run 和 1 次拒答 run 可直接入库。")
+
+        with b2:
+            with st.form("eh_run_retrieval"):
+                f1, f2, f3 = st.columns([0.34, 0.33, 0.33])
+                mode = f1.selectbox("检索策略", ["rrf", "bm25", "dense"], index=0)
+                top_k = f2.slider("Top-k", 1, 10, 5)
+                limit = f3.number_input("只跑前 N 条（0=全量）", 0, 200, 0)
+                run_now = st.form_submit_button("跑一次检索评测", type="primary")
+            if run_now:
+                with st.spinner("加载 BGE-M3 并逐题检索；首次可能要一两分钟…"):
+                    try:
+                        rid = evalhub.run_retrieval(mode=mode, top_k=top_k, limit=limit)
+                    except Exception as exc:
+                        st.error("评测失败：{}".format(exc))
+                    else:
+                        st.success("已登记 run #%d" % rid)
+                        st.rerun()
+
+    if not runs:
+        st.info("还没有 run。先导入已有结果，或跑一次检索评测。")
+        return
+
+    st.markdown('<div class="section-title" style="margin-top:1rem">Run 账本</div>',
+                unsafe_allow_html=True)
+    st.dataframe(
+        [{"编号": r["id"], "登记时间": r["created_at"], "套件": _suite_cn(r["suite"]),
+          "后端": r["backend"], "数据集": _version_text(r["dataset_version"]),
+          "关键指标": _run_metric_text(r), "名称": r["name"]} for r in runs],
+        hide_index=True, use_container_width=True,
+    )
+
+    st.markdown('<div class="section-title" style="margin-top:1rem">逐题明细</div>',
+                unsafe_allow_html=True)
+    run_id = st.selectbox("选择一个 run", [r["id"] for r in runs],
+                          format_func=lambda i: _run_label(next(r for r in runs if r["id"] == i)),
+                          key="eh_case_run")
+    cases = evalhub.cases_for(run_id)
+    st.dataframe(
+        [{"id": c["case_id"], "类别": c["category"],
+          "可答": "是" if c["answerable"] else "否",
+          "通过": "—" if c["passed"] is None else ("通过" if c["passed"] else "未通过"),
+          "Recall": "—" if c["recall"] is None else "%.2f" % c["recall"],
+          "MRR": "—" if c["mrr"] is None else "%.2f" % c["mrr"],
+          "耗时(ms)": "—" if c["latency_ms"] is None else "%.0f" % c["latency_ms"],
+          "问题": (c["question"] or "")[:60]} for c in cases],
+        hide_index=True, use_container_width=True,
+    )
+    if cases:
+        cid = st.selectbox("查看单题", [c["case_id"] for c in cases], key="eh_case_one")
+        case = next(c for c in cases if c["case_id"] == cid)
+        st.markdown("**问题**：" + (case["question"] or ""))
+        if case["output"]:
+            st.markdown("**输出**：" + case["output"][:2000])
+        if case["citations"]:
+            st.markdown(_chips([str(x) for x in case["citations"]], seal=True),
+                        unsafe_allow_html=True)
+        if case["detail"]:
+            with st.expander("判据 / 原始明细", expanded=False):
+                st.json(case["detail"])
+
+    st.markdown('<div class="section-title" style="margin-top:1rem">版本对比 / 回归门</div>',
+                unsafe_allow_html=True)
+    suites = [s for s in ("retrieval", "agent", "refusal") if any(r["suite"] == s for r in runs)]
+    suite = st.selectbox("对比哪一类", suites, key="eh_cmp_suite")
+    candidates = [r for r in runs if r["suite"] == suite]
+    if len(candidates) < 2:
+        st.info("这一类至少要有两次 run 才能对比。")
+        return
+    b1, b2 = st.columns(2)
+    base = b1.selectbox("基线", [r["id"] for r in candidates],
+                        format_func=lambda i: _run_label(next(r for r in candidates if r["id"] == i)),
+                        key="eh_base")
+    cand = b2.selectbox("候选", [r["id"] for r in candidates],
+                        format_func=lambda i: _run_label(next(r for r in candidates if r["id"] == i)),
+                        key="eh_cand")
+    if base == cand:
+        st.warning("基线和候选是同一个 run。")
+        return
+    res = evalhub.compare(base, cand)
+    if res["status"] == "fail":
+        st.error("回归门：失败（%s 下降超过 %.0f%%）" % (
+            res.get("gate_metric"), (res.get("threshold") or 0) * 100))
+    elif res["status"] == "pass":
+        st.success("回归门：通过（%s 未下降超过 %.0f%%）" % (
+            res.get("gate_metric"), (res.get("threshold") or 0) * 100))
+    else:
+        st.warning("回归门：%s" % res.get("reason", "无法判定"))
+    if res["checks"]:
+        st.dataframe(
+            [{"指标": c["metric"], "基线": round(c["baseline"], 4),
+              "候选": round(c["candidate"], 4), "变化": round(c["delta"], 4),
+              "门禁": _status_cn(c["status"])} for c in res["checks"]],
+            hide_index=True, use_container_width=True,
+        )
+
 def main():
     st.set_page_config(
         page_title="命理古籍 RAG Agent",
@@ -751,10 +1042,14 @@ def main():
         unsafe_allow_html=True,
     )
 
-    tab_qa, tab_bazi, tab_astro, tab_tarot = st.tabs(
-        ["古籍问答", "八字排盘", "星盘", "塔罗"])
+    tab_qa, tab_eval, tab_data, tab_bazi, tab_astro, tab_tarot = st.tabs(
+        ["古籍问答", "评测中台", "数据中台", "八字排盘", "星盘", "塔罗"])
     with tab_qa:
         _qa_tab()
+    with tab_eval:
+        _eval_tab()
+    with tab_data:
+        _data_tab()
     with tab_bazi:
         _bazi_tab()
     with tab_astro:

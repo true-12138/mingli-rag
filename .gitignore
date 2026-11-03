@@ -19,5 +19,8 @@ src/mingli-rag/
 # 公网 Demo 的每日调用计数（运行时生成，不进仓库）
 data/.quota.json
 data/.quota.tmp
+# 数据 / 评测中台的本地账本（运行时生成，可由 scan/import 重建）
+data/platform.sqlite3
+data/platform.sqlite3-*
 
 

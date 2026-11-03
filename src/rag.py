@@ -8,6 +8,7 @@ import sys
 import requests
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from retrieval import retrieve_one
+from conversation import history_block, normalize_history, rewrite_question
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
 REFUSAL_TEXT = "语料中没有足够的依据回答这个问题。"
@@ -20,7 +21,8 @@ SYSTEM_PROMPT = """你是一个只依据给定古籍片段回答问题的助手�
    官星/官贵 ≠ 考公务员，财星 ≠ 工资或买房。
 3. 每个结论后面用方括号标注依据的片段编号，例如 [1]、[3]。
 4. 不确定时拒答，不要勉强回答。
-5. 只输出 JSON，不要输出 JSON 以外的任何文字。
+5. 对话历史只用于理解追问里的指代，不能作为回答证据；引用只能来自本轮【片段】。
+6. 只输出 JSON，不要输出 JSON 以外的任何文字。
 JSON 格式：
 {
   "can_answer": true 或 false,
@@ -85,13 +87,19 @@ def _chat(messages, temperature=0.0, api_key=None):
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
-def answer(question, top_k=5, mode="rrf", api_key=None):
+def answer(question, top_k=5, mode="rrf", api_key=None, history=None):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。
     api_key 用于公网访客自带 key 的场景，不传就读环境变量。
+    history 是多轮对话历史；只用于改写追问，不作为回答证据。
     """
-    hits = retrieve_one(question, top_k=top_k, mode=mode)
-    user = "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), question)
+    counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
+    hits = retrieve_one(standalone, top_k=top_k, mode=mode)
+    hist = history_block(history)
+    user = (hist + "\n\n" if hist else "") + "【片段】\n{}\n\n【问题】\n{}".format(
+        build_context(hits), standalone)
     data = None
     last_raw = ""
     for _ in range(2):  # JSON 解析失败重试一次
@@ -102,6 +110,7 @@ def answer(question, top_k=5, mode="rrf", api_key=None):
             ],
             api_key=api_key,
         )
+        counter["llm_calls"] += 1
         try:
             data = _parse_json(last_raw)
             break
@@ -118,6 +127,9 @@ def answer(question, top_k=5, mode="rrf", api_key=None):
             "error": "JSON 解析失败",
             "raw": last_raw,
             "retrieved_chunk_ids": [h["chunk_id"] for h in hits],
+            "rewritten_question": standalone,
+            "history_turns": len(history),
+            "llm_calls": counter["llm_calls"],
         }
     cited = data.get("citations") or []
     valid_nums, invalid_nums = [], []
@@ -131,6 +143,9 @@ def answer(question, top_k=5, mode="rrf", api_key=None):
     data["retrieved_chunk_ids"] = [h["chunk_id"] for h in hits]
     # 声称能答却没有一条有效引用：不算拒答，但要标成不合规输出
     data["invalid_output"] = bool(data.get("can_answer")) and not valid_nums
+    data["rewritten_question"] = standalone
+    data["history_turns"] = len(history)
+    data["llm_calls"] = counter["llm_calls"]
     if data.get("can_answer") is False and not data.get("answer"):
         data["answer"] = REFUSAL_TEXT
         data["citations"] = []
