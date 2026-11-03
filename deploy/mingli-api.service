@@ -1,0 +1,21 @@
+# /etc/systemd/system/mingli-api.service
+# 让 compose 随机器启动、崩溃后自动拉起。
+# 部署前把 WorkingDirectory 改成仓库实际路径。
+
+[Unit]
+Description=mingli-rag FastAPI
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/mingli-rag
+ExecStart=/usr/bin/docker compose up -d --build
+ExecStop=/usr/bin/docker compose down
+ExecReload=/usr/bin/docker compose restart api
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

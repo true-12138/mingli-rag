@@ -337,7 +337,7 @@ Docker：
 docker compose up --build       # http://localhost:8000/docs
 ```
 
-镜像不会打包 BGE-M3 权重，首次查询下载到 compose 的 `hf_cache` volume；语料和 34 MB embedding 随镜像提供。
+镜像不会打包 BGE-M3 权重，首次查询下载到 compose 的 `hf_cache` volume；语料和 34 MB embedding 随镜像提供。ECS + Nginx + systemd 的完整步骤见 [`deploy/README.md`](deploy/README.md)。
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 
@@ -361,6 +361,7 @@ docker compose up --build       # http://localhost:8000/docs
 ├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
 ├── Dockerfile                 # FastAPI 单镜像（不打包 BGE-M3 权重）
 ├── docker-compose.yml         # 本地一键起 API + HF 权重缓存 volume
+├── deploy/                    # ECS：Nginx 限流反代 + systemd 开机自启
 ├── src/
 │   ├── app.py                 # 界面：多轮问答 + 评测中台 + 数据中台 + 排盘
 │   ├── api.py                 # FastAPI：/chat /retrieve /trace /health

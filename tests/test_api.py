@@ -62,13 +62,14 @@ def test_chat_routes_to_rag_and_exposes_trace(client, monkeypatch):
             {"role": "user", "content": "什么是羊刃？"},
             {"role": "assistant", "content": "羊刃是..."},
         ],
-    })
+    }, headers={"X-DeepSeek-Key": "visitor-key"})
     assert r.status_code == 200
     body = r.json()
     assert body["answer"] == "测试回答 [1]"
     assert body["trace_id"]
     assert body["mode"] == "rag"
     assert captured["top_k"] == 3
+    assert captured["api_key"] == "visitor-key"
     assert captured["history"][0]["content"] == "什么是羊刃？"
 
     trace = client.get("/trace/" + body["trace_id"])
@@ -151,3 +152,16 @@ def test_upstream_error_maps_to_502(client, monkeypatch):
     monkeypatch.setattr(api.rag, "answer", boom)
     r = client.post("/chat", json={"question": "q"})
     assert r.status_code == 502
+
+
+def test_concurrency_limit_returns_429(client):
+    # 占满所有槽位，再发一个请求：必须在进模型之前被 429 挡住
+    for _ in range(api.MAX_CONCURRENCY):
+        assert api._SLOTS.acquire(blocking=False)
+    try:
+        r = client.post("/chat", json={"question": "q"})
+        assert r.status_code == 429
+        assert r.headers["retry-after"] == "2"
+    finally:
+        for _ in range(api.MAX_CONCURRENCY):
+            api._SLOTS.release()
