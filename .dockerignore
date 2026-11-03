@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.venv
+venv
+env
+__pycache__
+*.pyc
+.pytest_cache
+notebooks
+tests
+docs
+*.png
+data/platform.sqlite3
+data/platform.sqlite3-*
+data/.quota.json
+data/.quota.tmp

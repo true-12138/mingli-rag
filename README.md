@@ -1,9 +1,10 @@
-# 命理古籍 RAG Agent · v1.3
+# 命理古籍 RAG Agent · v1.4
 
 一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
 [公开 Demo（ModelScope 创空间）](https://modelscope.cn/studios/Trueful/mingli-rag) ·
 [直达 Streamlit](https://trueful-mingli-rag.ms.show) ·
+[HTTP API 文档](#61-http-apiv14) ·
 [检索评测明细](eval/results_8681_tuned.csv) ·
 [拒答评测明细](eval/refusal_results.csv) ·
 [Agent A/B 报告](eval/REPORT.md) ·
@@ -71,7 +72,8 @@ flowchart LR
 | 生成 | `deepseek-chat`，`temperature=0`，`response_format=json_object` | `src/rag.py:59` |
 | 约束 | 引用编号 → chunk_id 映射与校验；声称能答但零有效引用 → `invalid_output` | `src/rag.py:116` |
 | 界面 | Streamlit：多轮对话（单轮 RAG / 单 Agent / 多 Agent）、Top-k 调节、逐轮引用与轨迹、数据中台、评测中台 | `src/app.py` |
-| 部署 | ModelScope 创空间，入口见 `modelscope.yml` | `app.py` |
+| API | FastAPI：`/chat`、`/retrieve`、`/trace`、`/health`；并发信号量 + 可选 Bearer token | `src/api.py` |
+| 部署 | ModelScope 创空间，入口见 `modelscope.yml`；独立 API 走 `Dockerfile` / `docker-compose.yml` | `app.py`、`Dockerfile` |
 
 **一次请求发生了什么**
 
@@ -102,7 +104,7 @@ flowchart LR
 | 回归门 | 检索 R@5 掉 >2 个点、Agent 通过率掉 >5 个点、拒答正确率掉 >2 个点 → 失败 | `evalhub.compare()` |
 | 界面 | 「评测中台」「数据中台」两个页签；可导入历史结果、跑检索评测、看逐题、比版本 | `src/app.py` |
 
-范围要说清楚：这是**单机 MVP**——一个 SQLite 文件、Streamlit 管理页、没有独立 API 服务、没有多租户和权限。选择这个范围是因为它已经能回答「这份数据和上次评测是不是同一版」「这次改动有没有把指标跑崩」两个真实问题，而不是先摆一套中间件。
+范围要说清楚：中台本身仍是**单机 MVP**——一个 SQLite 文件、Streamlit 管理页、没有多租户和权限（对外服务另见 [§6.1 HTTP API](#61-http-apiv14)）。选择这个范围是因为它已经能回答「这份数据和上次评测是不是同一版」「这次改动有没有把指标跑崩」两个真实问题，而不是先摆一套中间件。
 
 ---
 
@@ -294,6 +296,49 @@ streamlit run app.py
 - 中台数据默认落在 `data/platform.sqlite3`（已 gitignore，可由 scan / import 重建）；部署到持久化目录时设 `MINGLI_PLATFORM_DB=/path/to/platform.sqlite3`
 - 语料路径默认 `<repo>/data`，可用环境变量覆盖：`MINGLI_DATA_DIR=/path/to/data`
 
+### 6.1 HTTP API（v1.4）
+
+Streamlit 适合演示，不适合被别的服务调用。`src/api.py` 把 RAG / 单 Agent / 多 Agent 包成同一套 HTTP 接口：
+
+```bash
+export DEEPSEEK_API_KEY=sk-xxxx
+python src/api.py                 # http://127.0.0.1:8000/docs
+# 或
+uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
+```
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `GET` | `/health` | 语料条数、embedding 形状、模型是否已加载、并发上限 |
+| `POST` | `/retrieve` | 只检索，`mode` 可选 `dense` / `bm25` / `rrf` |
+| `POST` | `/chat` | 问答，`mode` 可选 `rag` / `agent` / `multi`，支持 `history` |
+| `GET` | `/trace/{trace_id}` | 取回最近一次请求的完整结果（内存里保留最近 200 条） |
+
+```bash
+curl -s localhost:8000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"羊刃分几种？","mode":"rag","top_k":5}'
+
+curl -s localhost:8000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"那它和飞刃有什么区别？","mode":"agent","history":[
+        {"role":"user","content":"羊刃分几种？"},
+        {"role":"assistant","content":"羊刃有……"}]}'
+```
+
+- **鉴权**：设置 `MINGLI_API_TOKEN` 后，所有接口要求 `Authorization: Bearer <token>`；不设置则开放。
+- **访客自带 key**：请求头 `X-DeepSeek-Key`，只作用于本次请求，不落日志、不进 trace。不要放在浏览器前端。
+- **并发**：默认同时最多 4 个生成请求（`MINGLI_MAX_CONCURRENCY`），超了立刻 429，不排队。
+- **trace**：内存缓存，进程重启即清空；持久化 trace 留给 Langfuse（下一步）。
+
+Docker：
+
+```bash
+docker compose up --build       # http://localhost:8000/docs
+```
+
+镜像不会打包 BGE-M3 权重，首次查询下载到 compose 的 `hf_cache` volume；语料和 34 MB embedding 随镜像提供。
+
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 
 **公网 Demo 的问答与解读**：若部署环境没有配置 `DEEPSEEK_API_KEY`，页面会在「古籍问答」和排盘页提供「填入自己的 DeepSeek Key」入口——key 只存在当前会话，不写日志、不落盘，也不会作用于其他访客。要在公网让所有访客免填直接可用，请在创空间的环境变量里配置该 key。
@@ -314,8 +359,11 @@ streamlit run app.py
 ```text
 .
 ├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
+├── Dockerfile                 # FastAPI 单镜像（不打包 BGE-M3 权重）
+├── docker-compose.yml         # 本地一键起 API + HF 权重缓存 volume
 ├── src/
 │   ├── app.py                 # 界面：多轮问答 + 评测中台 + 数据中台 + 排盘
+│   ├── api.py                 # FastAPI：/chat /retrieve /trace /health
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂，Streamlit 注入）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
@@ -340,7 +388,8 @@ streamlit run app.py
 │   ├── test_fortune.py        # 排盘测试：结构、边界、可复现性
 │   ├── test_agent_guardrails.py # 引用白名单 / 拒答 / 预算（mock LLM）
 │   ├── test_conversation.py   # 历史裁剪 / 改写回退 / 引用隔离
-│   └── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
+│   ├── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
+│   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
 │   ├── agent_tasks.jsonl      # 15 题 Agent 评测集（多跳/换工具/拒答/复合）
@@ -384,7 +433,8 @@ streamlit run app.py
 
 - **v1.1（已完成，11/02）**：RRF 候选池重扫（k=10 / cand=40，75.0%）、单/多 Agent 拆分与 3 次 A/B
 - **v1.3（已完成，11/03）**：多轮对话（追问改写 + 历史裁剪 + 引用隔离）、数据中台 MVP（版本/血缘/质量门）、评测中台 MVP（16 个 run、逐题明细、回归门）
-- **下一步（11/15 前）**：FastAPI + Docker + ECS、Langfuse 全链路 trace、P50/P95 与 token/成本、30 条 Agent 评测、20 条多轮评测
+- **v1.4（已完成，11/03）**：FastAPI `/chat` `/retrieve` `/trace` `/health`、并发信号量、可选 Bearer token、Dockerfile + compose、7 条 API 测试
+- **下一步（11/15 前）**：ECS + Nginx + systemd、Langfuse 全链路 trace、P50/P95 与 token/成本、30 条 Agent 评测、20 条多轮评测
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
