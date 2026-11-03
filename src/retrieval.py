@@ -81,14 +81,27 @@ class _LazyModel:
         # 想直连就把 HF_ENDPOINT 设成 https://huggingface.co。
         os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
         try:
+            import inspect
             from sentence_transformers import SentenceTransformer
-            self._m = SentenceTransformer(self.model_id)
+            kwargs = {}
+            # sentence-transformers 3.x 支持 model_kwargs。显式关掉 low_cpu_mem_usage，
+            # 避免 accelerate 把权重留在 meta device，随后 .to() 报
+            # "Cannot copy out of meta tensor; no data!"。
+            if "model_kwargs" in inspect.signature(SentenceTransformer.__init__).parameters:
+                kwargs["model_kwargs"] = {"low_cpu_mem_usage": False}
+            self._m = SentenceTransformer(self.model_id, **kwargs)
         except Exception as exc:
+            detail = str(exc)
+            if "meta tensor" in detail:
+                detail += (
+                    "\n  依赖版本不匹配：按 requirements.txt 安装 "
+                    "sentence-transformers==2.7.0 / transformers==4.37.2，"
+                    "并清掉旧缓存后重试。")
             raise RuntimeError(
                 "加载检索模型失败（{}）：{}\n"
                 "  1) 大陆网络先设 HF_ENDPOINT=https://hf-mirror.com 再重试；\n"
                 "  2) 或把权重放到本地，设 MINGLI_MODEL_DIR=/path/to/bge-m3".format(
-                    self.model_id, exc)) from exc
+                    self.model_id, detail)) from exc
         return self._m
 
     def encode(self, *args, **kwargs):

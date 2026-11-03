@@ -1,0 +1,214 @@
+:root {
+  --paper: #f6f1e7;
+  --paper-2: #ece4d6;
+  --surface: #fffdf8;
+  --ink: #1d1a17;
+  --ink-soft: #625a4f;
+  --seal: #9a2f27;
+  --rule: #d9cebd;
+}
+html, body, [class*="st-"] {
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+.stApp { background: var(--paper); color: var(--ink); }
+.block-container {
+  max-width: 1120px; padding: 1.4rem 2.2rem 4.5rem !important;
+}
+[data-testid="stHeader"], #MainMenu, footer { visibility: hidden; height: 0; }
+.stApp::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--seal); z-index: 999;
+}
+
+/* ---------- 首屏 ---------- */
+.hero {
+  display: grid; grid-template-columns: 1.55fr .85fr; gap: 3.2rem;
+  align-items: end; padding: 1.8rem 0 2rem;
+  border-bottom: 1px solid var(--rule); margin-bottom: 1.2rem;
+}
+.hero h1 {
+  font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+  font-size: clamp(2.5rem, 4.6vw, 3.9rem); line-height: 1.08;
+  letter-spacing: -.02em; color: var(--ink); font-weight: 700;
+  margin: 0 0 .9rem;
+}
+.hero .sub {
+  color: var(--ink-soft); font-size: 1.02rem; line-height: 1.85;
+  max-width: 34em; margin: 0;
+}
+.hero .sub b { color: var(--seal); font-weight: 600; }
+.stats { display: flex; gap: 1.8rem; margin-top: 1.6rem; flex-wrap: wrap; }
+.stat { color: var(--ink-soft); font-size: .82rem; }
+.stat b {
+  display: block; color: var(--ink); font-size: 1.45rem;
+  font-family: "Noto Serif SC", "Songti SC", serif; line-height: 1.2;
+}
+.hero-aside {
+  background: var(--paper-2); border-radius: 6px; padding: 1.1rem 1.3rem 1rem;
+}
+.hero-aside .aside-label {
+  font-size: .82rem; color: var(--ink-soft); margin-bottom: .55rem;
+}
+.metric-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: .48rem 0; border-bottom: 1px solid rgba(98,90,79,.16);
+}
+.metric-row:last-of-type { border-bottom: 0; }
+.metric-row span { font-size: .86rem; color: var(--ink-soft); }
+.metric-row b {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.3rem; color: var(--ink); font-weight: 600;
+}
+.hero-aside .aside-note {
+  font-size: .72rem; color: var(--ink-soft); line-height: 1.6; margin-top: .5rem;
+}
+
+/* ---------- 页签 ---------- */
+.stTabs [data-baseweb="tab-list"] {
+  gap: 1.8rem; border-bottom: 1px solid var(--rule); padding: 0;
+}
+.stTabs [data-baseweb="tab"] {
+  height: 2.8rem; background: transparent; padding: 0 .1rem;
+  font-size: .96rem; letter-spacing: .02em; color: var(--ink-soft);
+}
+.stTabs [aria-selected="true"] { color: var(--seal) !important; font-weight: 600; }
+.stTabs [data-baseweb="tab-highlight"] { background: var(--seal); height: 2px; }
+
+/* ---------- 控件 ---------- */
+.stButton > button, .stFormSubmitButton > button {
+  border-radius: 4px; border: 1px solid var(--rule);
+  background: transparent; color: var(--ink);
+  letter-spacing: .02em; padding: .5rem 1rem;
+  transition: background .15s ease, border-color .15s ease;
+}
+.stButton > button:hover, .stFormSubmitButton > button:hover {
+  background: var(--paper-2); border-color: var(--ink); color: var(--ink);
+}
+.stButton > button[kind="primary"], .stButton > button[data-testid="baseButton-primary"] {
+  background: var(--seal); border-color: var(--seal); color: #fff;
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="baseButton-primary"]:hover {
+  background: #7f241d; border-color: #7f241d; color: #fff;
+}
+.stButton > button:focus-visible, .stFormSubmitButton > button:focus-visible {
+  outline: 2px solid var(--seal); outline-offset: 2px; box-shadow: none;
+}
+.stTextInput input, .stNumberInput input, .stTextArea textarea {
+  background: var(--surface); border-radius: 4px;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+  border-color: var(--seal); box-shadow: none;
+}
+.stRadio [role="radiogroup"] { gap: .45rem; }
+.stRadio [role="radiogroup"] label {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 999px; padding: .28rem .75rem;
+}
+.stRadio [role="radiogroup"] label:has(input:checked) { border-color: var(--seal); color: var(--seal); }
+.stSlider [data-baseweb="slider"] { max-width: 220px; }
+.stSelectbox [data-baseweb="select"] > div {
+  background: var(--surface); border-color: var(--rule); border-radius: 4px;
+}
+
+/* ---------- 卡片与文字 ---------- */
+[data-testid="stVerticalBlockBorderWrapper"] { box-shadow: none; }
+.section-title {
+  font-size: .9rem; letter-spacing: .02em; color: var(--ink);
+  font-weight: 600; margin: .1rem 0 .55rem;
+}
+.note { color: var(--ink-soft); font-size: .84rem; line-height: 1.7; }
+.prompt-label {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.25rem; color: var(--ink); margin: .2rem 0 .6rem;
+}
+.answer {
+  font-family: "Noto Serif SC", "Songti SC", "STSong", serif;
+  font-size: 1.02rem; line-height: 1.95; color: var(--ink);
+}
+.answer p { margin: .55rem 0; }
+.answer blockquote {
+  border-left: 3px solid var(--seal); background: var(--paper-2);
+  margin: .8rem 0; padding: .55rem .9rem; color: var(--ink-soft);
+}
+
+/* ---------- 怎么工作 ---------- */
+.how {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.4rem;
+  padding: 1.9rem 0 .8rem;
+}
+.how h3 {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.02rem; color: var(--ink); margin: 0 0 .35rem; font-weight: 600;
+}
+.how p { font-size: .86rem; line-height: 1.75; color: var(--ink-soft); margin: 0; }
+.how b { color: var(--ink); font-weight: 600; }
+
+/* ---------- 标签 ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chip {
+  display: inline-block; padding: .2rem .62rem; border-radius: 4px;
+  background: var(--paper-2); color: var(--ink-soft);
+  font-size: .8rem; border: 1px solid var(--rule);
+}
+.chip.seal { background: #f4e4e0; border-color: #dfc0b9; color: var(--seal); }
+
+/* ---------- 四柱 ---------- */
+.pillars { display: flex; gap: .8rem; margin: .4rem 0 1rem; flex-wrap: wrap; }
+.pillar {
+  flex: 1 1 0; min-width: 130px; background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 4px; padding: .9rem .6rem; text-align: center;
+}
+.pillar .label { font-size: .78rem; color: var(--ink-soft); letter-spacing: .12em; }
+.pillar .ganzhi {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.8rem; letter-spacing: .14em; color: var(--ink);
+  margin: .35rem 0 .3rem; font-weight: 600; white-space: nowrap;
+}
+.pillar .meta { font-size: .78rem; color: var(--ink-soft); line-height: 1.6; }
+.pillar .meta em { font-style: normal; color: var(--seal); }
+
+/* ---------- 命盘图 ---------- */
+.chart { border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.chart-grid { display: grid; grid-template-columns: 78px repeat(4, 1fr); }
+.chart-grid > div {
+  padding: .5rem .35rem; text-align: center; border-bottom: 1px solid var(--rule);
+  font-size: .84rem; color: var(--ink-soft);
+}
+.chart-grid .rowlabel {
+  text-align: right; padding-right: .75rem; background: var(--paper-2);
+  letter-spacing: .1em; font-size: .74rem;
+}
+.chart-grid .pillarhead { font-size: .78rem; letter-spacing: .18em; color: var(--ink); }
+.chart-grid .gan, .chart-grid .zhi {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.6rem; font-weight: 600; line-height: 1.3;
+}
+.chart-grid .day { background: #fbf1ee; }
+.chart-grid .lbl-day { color: var(--seal); }
+
+/* ---------- 五行 / 大运 ---------- */
+.wxbar { display: flex; height: 10px; border-radius: 999px; overflow: hidden;
+         background: var(--paper-2); margin: .35rem 0 .55rem; }
+.wxbar span { display: block; height: 100%; }
+.dayun { display: flex; gap: .45rem; overflow-x: auto; padding-bottom: .25rem; }
+.dayun .pill {
+  flex: 0 0 auto; min-width: 66px; text-align: center; background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 4px; padding: .4rem .25rem;
+}
+.dayun .pill.cur { border-color: var(--seal); background: #fbf1ee; }
+.dayun .gz {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-size: 1.1rem; letter-spacing: .08em; color: var(--ink);
+}
+.dayun .yr { font-size: .7rem; color: var(--ink-soft); margin-top: .15rem; }
+
+@media (max-width: 760px) {
+  .block-container { padding: 1rem 1.1rem 3rem !important; }
+  .hero { grid-template-columns: 1fr; gap: 1.6rem; padding-top: 1.2rem; }
+  .hero h1 { font-size: 2.35rem; }
+  .stats { gap: 1.2rem; }
+  .how { grid-template-columns: 1fr; gap: 1.4rem; }
+  [data-testid="stHorizontalBlock"] { flex-wrap: wrap; gap: .8rem; }
+  [data-testid="column"] { flex: 1 1 100% !important; min-width: 100% !important; }
+}

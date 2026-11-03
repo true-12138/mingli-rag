@@ -156,6 +156,22 @@ flowchart LR
 
 完整逐题配对、成本拆解与失效分析见 [`eval/REPORT.md`](eval/REPORT.md)。
 
+
+### 3.4 上下文工程：项目里具体做了什么
+
+「上下文工程」在这个项目里不是一句口号，而是几处可以指到代码的约束：
+
+| 环节 | 做法 | 位置 |
+|---|---|---|
+| 检索上下文 | 每路取 40 条候选，RRF 融合后只把 Top-5 拼进 prompt；每段带 `[序号]《书名·卷·篇》`，空字段不拼 | `src/rag.py:49` |
+| 工具观察 | 工具结果统一压成一条 `observation`；失败的调用也回给模型，避免它重复同一个错误 | `src/agent.py:54` |
+| 步骤预算 | 单/多 Agent 共用 6 步预算；走满还没收口就强制按「证据不足」拒答 | `src/agent.py:22`、`src/agent_multi.py` |
+| 证据去重 | 多 Agent 用 `chunk_id` 做 key 合并证据，同一段原文只进上下文一次 | `src/agent_multi.py:94` |
+| 缺口回补 | Verifier 最多指出 2 条缺口，Supervisor 用 `fetch_chunk` 或限定书名重查，而不是把整库再塞一遍 | `src/agent_multi.py:326` |
+| 引用白名单 | 只有工具实际返回过的 `chunk_id` 才能进 `citations`；无效引用会被标出并判为不合规 | `src/agent.py` 的 `_finalize` |
+
+还没做的：多轮对话历史、按 token 截断/压缩、query rewrite、reranker。这些在路线图 v2，不在当前版本的能力范围内。
+
 ---
 
 ## 4. 失败案例
@@ -270,7 +286,8 @@ streamlit run app.py
 .
 ├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
 ├── src/
-│   ├── app.py                 # 界面：检索策略、Top-k、召回与引用对照
+│   ├── app.py                 # 界面：单 Agent / 多 Agent / 单轮 RAG 切换 + trace
+│   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂，Streamlit 注入）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
 │   ├── rag.py                 # DeepSeek 调用、JSON 强制、引用校验、拒答

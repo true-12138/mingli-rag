@@ -44,143 +44,7 @@ EXAMPLES = (
     "纳音五行和正五行，谁说了算？",
 )
 
-CSS = """
-<style>
-:root {
-  --paper: #faf7f1;
-  --paper-2: #f2ece1;
-  --ink: #201b16;
-  --ink-soft: #5b5348;
-  --seal: #8c2f26;
-  --rule: #ddd3c2;
-}
-html, body, [class*="css"] {
-  font-family: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", serif;
-}
-.stApp { background: var(--paper); }
-
-/* 顶部装饰条 */
-.stApp::before {
-  content: "";
-  position: fixed; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--seal), #c98a4b 55%, transparent);
-  z-index: 999;
-}
-[data-testid="stHeader"] { background: transparent; }
-
-/* 标题区 */
-.hero { padding: 1.2rem 0 1.4rem; border-bottom: 1px solid var(--rule); margin-bottom: 1.4rem; }
-.hero h1 {
-  font-size: 2.35rem; line-height: 1.25; margin: 0 0 .45rem;
-  letter-spacing: .12em; color: var(--ink); font-weight: 700;
-}
-.hero .sub { color: var(--ink-soft); font-size: .98rem; letter-spacing: .04em; }
-.hero .sub b { color: var(--seal); font-weight: 600; }
-.stats { margin-top: 1rem; display: flex; gap: .6rem; flex-wrap: wrap; }
-.stat {
-  border: 1px solid var(--rule); background: #fff; border-radius: 999px;
-  padding: .28rem .86rem; font-size: .85rem; color: var(--ink-soft);
-}
-.stat b { color: var(--ink); font-size: 1rem; margin-right: .3rem; }
-
-/* 卡片 */
-[data-testid="stVerticalBlockBorderWrapper"] {
-  background: #fff; border-radius: 14px;
-  border: 1px solid var(--rule) !important;
-  box-shadow: 0 1px 2px rgba(32,27,22,.04);
-}
-
-/* 页签 */
-.stTabs [data-baseweb="tab-list"] { gap: 1.6rem; border-bottom: 1px solid var(--rule); }
-.stTabs [data-baseweb="tab"] {
-  height: 2.9rem; background: transparent; padding: 0 .1rem;
-  font-size: 1rem; letter-spacing: .08em; color: var(--ink-soft);
-}
-.stTabs [aria-selected="true"] { color: var(--seal) !important; font-weight: 600; }
-.stTabs [data-baseweb="tab-highlight"] { background: var(--seal); height: 2px; }
-
-/* 按钮 */
-.stButton > button, .stFormSubmitButton > button {
-  border-radius: 8px; border: 1px solid var(--seal);
-  background: var(--seal); color: #fff; letter-spacing: .08em;
-  padding: .42rem 1.1rem; transition: all .15s ease;
-}
-.stButton > button:hover, .stFormSubmitButton > button:hover {
-  background: #741f18; border-color: #741f18; color: #fff;
-}
-.stButton > button:focus { box-shadow: 0 0 0 2px rgba(140,47,38,.18); }
-
-/* 输入框 */
-.stTextInput input, .stNumberInput input { background: #fff; border-radius: 8px; }
-
-/* 四柱 */
-.pillars { display: flex; gap: .8rem; margin: .4rem 0 1rem; flex-wrap: wrap; }
-.pillar {
-  flex: 1 1 0; min-width: 130px; background: #fff; border: 1px solid var(--rule);
-  border-radius: 12px; padding: .9rem .6rem; text-align: center;
-}
-.pillar .label { font-size: .8rem; color: var(--ink-soft); letter-spacing: .18em; }
-.pillar .ganzhi {
-  font-size: 1.85rem; letter-spacing: .14em; color: var(--ink);
-  margin: .35rem 0 .3rem; font-weight: 600; white-space: nowrap;
-}
-.pillar .meta { font-size: .8rem; color: var(--ink-soft); line-height: 1.6; }
-.pillar .meta em { font-style: normal; color: var(--seal); }
-
-/* 标签 */
-.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
-.chip {
-  display: inline-block; padding: .2rem .62rem; border-radius: 6px;
-  background: var(--paper-2); color: var(--ink-soft);
-  font-size: .82rem; border: 1px solid var(--rule);
-}
-.chip.seal { background: #f7e9e6; border-color: #e3c4be; color: var(--seal); }
-
-/* 回答正文 */
-.answer { font-size: 1.02rem; line-height: 1.95; color: var(--ink); }
-.answer p { margin: .55rem 0; }
-.answer blockquote {
-  border-left: 3px solid var(--seal); background: var(--paper-2);
-  margin: .8rem 0; padding: .55rem .9rem; color: var(--ink-soft);
-}
-.section-title {
-  font-size: .82rem; letter-spacing: .2em; color: var(--ink-soft);
-  text-transform: uppercase; margin: .2rem 0 .6rem;
-}
-.note { color: var(--ink-soft); font-size: .85rem; }
-
-/* 命盘图 */
-.chart { border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; background: #fff; }
-.chart-grid { display: grid; grid-template-columns: 78px repeat(4, 1fr); }
-.chart-grid > div {
-  padding: .5rem .35rem; text-align: center; border-bottom: 1px solid var(--rule);
-  font-size: .85rem; color: var(--ink-soft);
-}
-.chart-grid .rowlabel {
-  text-align: right; padding-right: .75rem; background: var(--paper-2);
-  letter-spacing: .12em; font-size: .75rem;
-}
-.chart-grid .pillarhead { font-size: .8rem; letter-spacing: .22em; color: var(--ink); }
-.chart-grid .gan, .chart-grid .zhi { font-size: 1.65rem; font-weight: 600; line-height: 1.3; }
-.chart-grid .day { background: #fbf3f1; }
-.chart-grid .lbl-day { color: var(--seal); }
-
-/* 五行比例条 */
-.wxbar { display: flex; height: 10px; border-radius: 999px; overflow: hidden;
-         background: var(--paper-2); margin: .35rem 0 .55rem; }
-.wxbar span { display: block; height: 100%; }
-
-/* 大运 */
-.dayun { display: flex; gap: .45rem; overflow-x: auto; padding-bottom: .25rem; }
-.dayun .pill {
-  flex: 0 0 auto; min-width: 66px; text-align: center; background: #fff;
-  border: 1px solid var(--rule); border-radius: 10px; padding: .4rem .25rem;
-}
-.dayun .pill.cur { border-color: var(--seal); background: #fbf3f1; }
-.dayun .gz { font-size: 1.12rem; letter-spacing: .08em; color: var(--ink); }
-.dayun .yr { font-size: .72rem; color: var(--ink-soft); margin-top: .15rem; }
-</style>
-"""
+CSS = "<style>" + (Path(__file__).with_name("app_theme.css")).read_text(encoding="utf-8") + "</style>"
 
 
 def _chips(items, seal=False):
@@ -368,8 +232,11 @@ def _qa_tab():
     left, right = st.columns([0.62, 0.38], gap="large")
 
     with left:
+        st.markdown('<div class="prompt-label">问一个古籍里的问题</div>',
+                    unsafe_allow_html=True)
         question = st.text_input(
-            "你的问题", key="qa_q", placeholder="例如：取格以月令为主，还是以透出的天干为主？",
+            "你的问题", key="qa_q", label_visibility="collapsed",
+            placeholder="例如：取格以月令为主，还是以透出的天干为主？",
         )
         mode_label = st.radio(
             "回答模式", ["单 Agent", "多 Agent", "单轮 RAG"], index=0,
@@ -401,8 +268,17 @@ def _qa_tab():
                 st.session_state["qa_q"] = ex
                 st.rerun()
 
-    st.markdown('<div class="note">仅依据入库古籍片段作答；片段只是主题相近、不能正面回答时，'
-                '会明确拒答而不是硬凑。</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="how">'
+        '<div><h3>检索</h3><p>BGE-M3 语义召回与 BM25 字面召回各取 40 条，'
+        'RRF 融合后保留前 5 段；每条引用都能定位到具体 chunk。</p></div>'
+        '<div><h3>编排</h3><p>单 Agent 用 ReAct 调 7 个工具；多 Agent 由 Supervisor 拆题、'
+        'Retriever 补证、Verifier 复核，再交给 Synthesizer 落笔。</p></div>'
+        '<div><h3>校验</h3><p>引用白名单只保留真正看过的片段；没有有效引用就拒答，'
+        '不拿主题相近的段落硬凑。</p></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
     st.divider()
 
     if not run_btn:
@@ -844,7 +720,7 @@ def _tarot_tab():
 
 def main():
     st.set_page_config(
-        page_title="命理古籍问答 · 排盘",
+        page_title="命理古籍 RAG Agent",
         page_icon="📜",
         layout="wide",
     )
@@ -852,15 +728,26 @@ def main():
 
     st.markdown(
         '<div class="hero">'
-        '<h1>命理古籍知识库</h1>'
-        '<div class="sub">只依据入库古籍片段作答，无据可查时<b>明确拒答</b>；'
-        '排盘为历法计算，解读属文化娱乐内容，不构成任何决策建议。</div>'
+        '<div>'
+        '<h1>命理古籍<br>RAG Agent</h1>'
+        '<p class="sub">45 部古籍、8,681 个段落。先检索、再作答，'
+        '每个结论都能回到原文；证据不足时<b>明确拒答</b>。</p>'
         '<div class="stats">'
         '<span class="stat"><b>45</b>部古籍</span>'
         '<span class="stat"><b>8,681</b>段落</span>'
-        '<span class="stat"><b>3</b>种检索策略</span>'
-        '<span class="stat"><b>引用</b>逐条可核</span>'
-        '</div></div>',
+        '<span class="stat"><b>340 万</b>字语料</span>'
+        '<span class="stat"><b>7</b>个工具</span>'
+        '</div>'
+        '</div>'
+        '<aside class="hero-aside">'
+        '<div class="aside-label">当前评测（样本有限）</div>'
+        '<div class="metric-row"><span>检索 Recall@5</span><b>75.0%</b></div>'
+        '<div class="metric-row"><span>单 Agent</span><b>8.0 / 15</b></div>'
+        '<div class="metric-row"><span>多 Agent</span><b>12.7 / 15</b></div>'
+        '<div class="metric-row"><span>拒答正确</span><b>9 / 9</b></div>'
+        '<div class="aside-note">30 题检索集 / 15 题 Agent 集，三次运行均值；不宣称统计显著。</div>'
+        '</aside>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
