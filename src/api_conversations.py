@@ -116,11 +116,12 @@ class ConversationChatResponse(BaseModel):
     elapsed_ms: float
     can_answer: bool | None = None
     citations: list[Any] = Field(default_factory=list)
-    citations_chunk_ids: list[str] = Field(default_factory=list)
+    # 语料里的 chunk_id 是 1 起的整数，响应模型按真实类型声明
+    citations_chunk_ids: list[int] = Field(default_factory=list)
     invalid_citations: list[Any] = Field(default_factory=list)
     invalid_output: bool = False
     refusal_reason: str | None = None
-    retrieved_chunk_ids: list[str] = Field(default_factory=list)
+    retrieved_chunk_ids: list[int] = Field(default_factory=list)
     rewritten_question: str | None = None
     history_turns: int = 0
     llm_calls: int = 0

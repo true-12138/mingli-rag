@@ -95,11 +95,12 @@ class ChatResponse(BaseModel):
     can_answer: bool | None = None
     answer: str = ""
     citations: list[Any] = Field(default_factory=list)
-    citations_chunk_ids: list[str] = Field(default_factory=list)
+    # chunk_id 在 corpus.build() 里被重编成 1 起的整数，这里如实声明
+    citations_chunk_ids: list[int] = Field(default_factory=list)
     invalid_citations: list[Any] = Field(default_factory=list)
     invalid_output: bool = False
     refusal_reason: str | None = None
-    retrieved_chunk_ids: list[str] = Field(default_factory=list)
+    retrieved_chunk_ids: list[int] = Field(default_factory=list)
     rewritten_question: str | None = None
     history_turns: int = 0
     llm_calls: int = 0
@@ -123,7 +124,7 @@ class RetrieveRequest(BaseModel):
 
 
 class RetrieveHit(BaseModel):
-    chunk_id: str
+    chunk_id: int
     text: str
     meta: dict[str, Any]
     score: float

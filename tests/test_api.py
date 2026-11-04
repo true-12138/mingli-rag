@@ -23,11 +23,11 @@ def _rag_result():
         "can_answer": True,
         "answer": "测试回答 [1]",
         "citations": [1],
-        "citations_chunk_ids": ["c1"],
+        "citations_chunk_ids": [1],
         "invalid_citations": [],
         "invalid_output": False,
         "refusal_reason": None,
-        "retrieved_chunk_ids": ["c1"],
+        "retrieved_chunk_ids": [1],
         "rewritten_question": "独立问题",
         "history_turns": 1,
         "llm_calls": 2,
@@ -108,7 +108,7 @@ def test_chat_routes_to_single_and_multi_agent(client, monkeypatch):
 def test_retrieve_returns_hits_and_stores_trace(client, monkeypatch):
     def fake_retrieve(question, top_k=5, mode="rrf"):
         return [{
-            "chunk_id": "c9",
+            "chunk_id": 9,
             "text": "原文",
             "meta": {"book": "三命通会"},
             "rrf_score": 0.5,
@@ -118,7 +118,7 @@ def test_retrieve_returns_hits_and_stores_trace(client, monkeypatch):
     r = client.post("/retrieve", json={"question": "羊刃", "mode": "rrf", "top_k": 2})
     assert r.status_code == 200
     body = r.json()
-    assert body["hits"][0]["chunk_id"] == "c9"
+    assert body["hits"][0]["chunk_id"] == 9
     assert body["hits"][0]["score"] == 0.5
     assert client.get("/trace/" + body["trace_id"]).status_code == 200
 
