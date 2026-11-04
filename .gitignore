@@ -22,6 +22,9 @@ data/.quota.tmp
 # 数据 / 评测中台的本地账本（运行时生成，可由 scan/import 重建）
 data/platform.sqlite3
 data/platform.sqlite3-*
+# 业务数据库（运行时生成，由 alembic upgrade head 建表）
+data/app.sqlite3
+data/app.sqlite3-*
 # 界面走查的临时脚本与截图（design-taste 工具产物）
 .taste-skill/
 

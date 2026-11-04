@@ -17,5 +17,11 @@ ephem>=4.1
 fastapi>=0.110,<1
 uvicorn>=0.29,<1
 
+# 业务数据库（v1.6）：用户 / 会话 / 消息 / 运行 / 工具审计 / 反馈 / 额度
+SQLAlchemy>=2.0,<3
+alembic>=1.13,<2
+
 # 测试
 pytest>=7.0
+# FastAPI TestClient 依赖 httpx；以前只在 CI 里单独装，这里补上
+httpx>=0.27,<1
