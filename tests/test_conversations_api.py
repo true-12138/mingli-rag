@@ -162,3 +162,107 @@ def test_v1_requires_token_when_configured(client, monkeypatch):
     assert client.get(
         "/v1/conversations", headers={"Authorization": "Bearer secret"}
     ).status_code == 200
+
+
+def test_chat_persists_run_and_tool_calls(client, monkeypatch):
+    def fake_agent(question, max_steps=6, api_key=None, history=None):
+        out = _rag_result()
+        out["llm_calls"] = 3
+        out["trace"] = [{
+            "step": 1,
+            "agent": "retriever",
+            "thought": "先搜术语",
+            "action": "search_classics",
+            "args": {"query": "羊刃", "book": "三命通会"},
+            "ok": True,
+            "chunk_ids": ["c1", "c2"],
+            "error": None,
+        }]
+        out["steps"] = 1
+        return out
+
+    monkeypatch.setattr(api_conversations.agent, "agent_answer", fake_agent)
+    headers = {"X-Anonymous-Id": "anon-1"}
+    conv = _create(client)
+    body = client.post(
+        f"/v1/conversations/{conv['id']}/chat",
+        json={"question": "羊刃分几种？", "mode": "agent"},
+        headers=headers,
+    ).json()
+    assert body["run_id"]
+
+    run = client.get(f"/v1/runs/{body['run_id']}", headers=headers)
+    assert run.status_code == 200, run.text
+    detail = run.json()
+    assert detail["status"] == "succeeded"
+    assert detail["can_answer"] is True
+    assert detail["llm_calls"] == 3
+    assert detail["tool_calls"][0]["tool_name"] == "search_classics"
+    assert detail["tool_calls"][0]["agent"] == "retriever"
+    assert detail["tool_calls"][0]["args"] == {"query": "羊刃", "book": "三命通会"}
+    assert detail["tool_calls"][0]["chunk_ids"] == ["c1", "c2"]
+
+    runs = client.get(
+        f"/v1/conversations/{conv['id']}/runs", headers=headers
+    ).json()
+    assert [r["id"] for r in runs] == [body["run_id"]]
+
+
+def test_refusal_run_is_marked_refused(client, monkeypatch):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        out = _rag_result()
+        out.update({"can_answer": False, "answer": "拒答", "citations": []})
+        return out
+
+    monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
+    headers = {"X-Anonymous-Id": "anon-1"}
+    conv = _create(client)
+    body = client.post(
+        f"/v1/conversations/{conv['id']}/chat",
+        json={"question": "能预测股票吗？"},
+        headers=headers,
+    ).json()
+    detail = client.get(f"/v1/runs/{body['run_id']}", headers=headers).json()
+    assert detail["status"] == "refused"
+    assert detail["tool_calls"] == []
+
+
+def test_failed_run_is_recorded(client, monkeypatch):
+    import requests
+
+    def boom(*args, **kwargs):
+        raise requests.HTTPError("upstream 500")
+
+    monkeypatch.setattr(api_conversations.rag, "answer", boom)
+    headers = {"X-Anonymous-Id": "anon-1"}
+    conv = _create(client)
+    r = client.post(
+        f"/v1/conversations/{conv['id']}/chat",
+        json={"question": "q"},
+        headers=headers,
+    )
+    assert r.status_code == 502
+
+    runs = client.get(
+        f"/v1/conversations/{conv['id']}/runs", headers=headers
+    ).json()
+    assert len(runs) == 1
+    assert runs[0]["status"] == "failed"
+    assert "上游" in runs[0]["error"]
+
+
+def test_run_is_isolated_by_anonymous_id(client, monkeypatch):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        return _rag_result()
+
+    monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
+    conv = _create(client, anon="alice")
+    body = client.post(
+        f"/v1/conversations/{conv['id']}/chat",
+        json={"question": "q"},
+        headers={"X-Anonymous-Id": "alice"},
+    ).json()
+
+    assert client.get(
+        f"/v1/runs/{body['run_id']}", headers={"X-Anonymous-Id": "bob"}
+    ).status_code == 404

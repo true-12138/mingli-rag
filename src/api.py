@@ -190,6 +190,8 @@ def root() -> dict[str, Any]:
             "/trace/{trace_id}",
             "/v1/conversations",
             "/v1/conversations/{conversation_id}/chat",
+            "/v1/conversations/{conversation_id}/runs",
+            "/v1/runs/{run_id}",
         ],
     }
 

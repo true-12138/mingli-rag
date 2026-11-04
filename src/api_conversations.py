@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import json
 import logging
 import sys
 import time
@@ -91,6 +92,7 @@ class ConversationChatResponse(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     conversation_id: str
+    run_id: str
     trace_id: str
     mode: Literal["rag", "agent", "multi"]
     question: str
@@ -109,6 +111,43 @@ class ConversationChatResponse(BaseModel):
     usage: dict[str, Any] | None = None
     user_message_id: int
     assistant_message_id: int
+
+
+class ToolCallOut(BaseModel):
+    step_no: int
+    agent: str | None = None
+    tool_name: str
+    thought: str | None = None
+    args: Any | None = None
+    ok: bool
+    chunk_ids: list[Any] = Field(default_factory=list)
+    error: str | None = None
+    created_at: datetime
+
+
+class RunOut(BaseModel):
+    id: str
+    conversation_id: str
+    trace_id: str
+    mode: str
+    question: str
+    status: str
+    can_answer: bool | None = None
+    answer: str | None = None
+    refusal_reason: str | None = None
+    invalid_output: bool = False
+    elapsed_ms: float | None = None
+    llm_calls: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    error: str | None = None
+    created_at: datetime
+    finished_at: datetime | None = None
+
+
+class RunDetailOut(RunOut):
+    tool_calls: list[ToolCallOut] = Field(default_factory=list)
 
 
 # ---------- 依赖 ----------
@@ -136,6 +175,55 @@ def _get_owned(session: Session, conversation_id: str, user_id: int) -> Conversa
     if conv is None:
         raise HTTPException(status_code=404, detail="会话不存在")
     return conv
+
+
+def _loads(value: str | None, default: Any) -> Any:
+    """数据库里存的是 JSON 字符串；解析失败时原样返回，方便排查脏数据。"""
+    if not value:
+        return default
+    try:
+        return json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return value
+
+
+def _run_out(run, with_tool_calls: bool = False) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "id": run.id,
+        "conversation_id": run.conversation_id,
+        "trace_id": run.trace_id,
+        "mode": run.mode,
+        "question": run.question,
+        "status": run.status,
+        "can_answer": run.can_answer,
+        "answer": run.answer,
+        "refusal_reason": run.refusal_reason,
+        "invalid_output": run.invalid_output,
+        "elapsed_ms": run.elapsed_ms,
+        "llm_calls": run.llm_calls,
+        "prompt_tokens": run.prompt_tokens,
+        "completion_tokens": run.completion_tokens,
+        "total_tokens": run.total_tokens,
+        "error": run.error,
+        "created_at": run.created_at,
+        "finished_at": run.finished_at,
+    }
+    if with_tool_calls:
+        out["tool_calls"] = [
+            {
+                "step_no": call.step_no,
+                "agent": call.agent,
+                "tool_name": call.tool_name,
+                "thought": call.thought,
+                "args": _loads(call.args_json, None),
+                "ok": call.ok,
+                "chunk_ids": _loads(call.chunk_ids_json, []),
+                "error": call.error,
+                "created_at": call.created_at,
+            }
+            for call in run.tool_calls
+        ]
+    return out
 
 
 # ---------- 会话增删查 ----------
@@ -194,6 +282,33 @@ def delete_conversation(
     return Response(status_code=204)
 
 
+# ---------- 运行记录与回放 ----------
+
+@router.get("/conversations/{conversation_id}/runs", response_model=list[RunOut])
+def list_conversation_runs(
+    conversation_id: str,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> list[dict[str, Any]]:
+    user = repo.get_or_create_user(session, anonymous_id)
+    _get_owned(session, conversation_id, user.id)
+    return [_run_out(run) for run in repo.list_runs(session, conversation_id)]
+
+
+@router.get("/runs/{run_id}", response_model=RunDetailOut)
+def get_run(
+    run_id: str,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """回放一次运行：问题、答案、耗时、token，以及每一步工具调用。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    run = repo.get_run(session, run_id, user.id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="运行记录不存在")
+    return _run_out(run, with_tool_calls=True)
+
+
 # ---------- 带记忆的对话 ----------
 
 @router.post(
@@ -216,6 +331,8 @@ def chat_in_conversation(
     key = (x_deepseek_key or "").strip() or None
     started = time.perf_counter()
     trace_id = uuid.uuid4().hex
+    # 先落一条 running 记录：即使模型调用中途失败，数据库里也能看到这次运行。
+    run = repo.create_run(session, conv, trace_id, req.mode, req.question)
     usage.reset()
 
     try:
@@ -234,18 +351,29 @@ def chat_in_conversation(
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 502
         logger.warning("upstream failed trace_id=%s status=%s", trace_id, status)
+        repo.fail_run(
+            session, run, "上游模型调用失败（%s）" % status,
+            (time.perf_counter() - started) * 1000,
+        )
         raise HTTPException(status_code=502, detail="上游模型调用失败（%s）" % status) from exc
     except RuntimeError as exc:
         logger.warning("configuration error trace_id=%s: %s", trace_id, exc)
+        repo.fail_run(
+            session, run, str(exc), (time.perf_counter() - started) * 1000
+        )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("chat failed trace_id=%s mode=%s", trace_id, req.mode)
+        repo.fail_run(
+            session, run, str(exc), (time.perf_counter() - started) * 1000
+        )
         raise HTTPException(status_code=500, detail="生成失败") from exc
 
     elapsed_ms = (time.perf_counter() - started) * 1000
     answer_text = str(result.get("answer") or "")
+    tokens = usage.snapshot()
 
-    # 用户消息和助手消息在同一个事务里提交，避免只存了半轮。
+    # 消息、运行结果、工具调用在同一个事务里提交，避免只存了半轮。
     repo.rename_if_untitled(session, conv, req.question)
     user_msg = repo.add_message(
         session, conv, "user", req.question, commit=False
@@ -253,6 +381,8 @@ def chat_in_conversation(
     assistant_msg = repo.add_message(
         session, conv, "assistant", answer_text, commit=False
     )
+    repo.finish_run(session, run, result, elapsed_ms, tokens, commit=False)
+    repo.add_tool_calls(session, run, result.get("trace"), commit=False)
     session.commit()
 
     out = dict(result)
@@ -263,11 +393,12 @@ def chat_in_conversation(
         out[name] = out.get(name) or []
     out.update({
         "conversation_id": conv.id,
+        "run_id": run.id,
         "trace_id": trace_id,
         "mode": req.mode,
         "question": req.question,
         "elapsed_ms": round(elapsed_ms, 1),
-        "usage": usage.snapshot(),
+        "usage": tokens,
         "user_message_id": user_msg.id,
         "assistant_message_id": assistant_msg.id,
     })

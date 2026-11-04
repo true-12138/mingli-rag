@@ -179,7 +179,11 @@ class ToolCall(Base):
         String(32), ForeignKey("runs.id", ondelete="CASCADE"), nullable=False, index=True
     )
     step_no = Column(Integer, nullable=False)
+    # 多 Agent 版会有 supervisor / retriever 等角色；单 Agent 留空
+    agent = Column(String(30), nullable=True)
     tool_name = Column(String(50), nullable=False)
+    # 模型调用这个工具前的想法，回放时能看出“为什么搜这个”
+    thought = Column(Text, nullable=True)
     args_json = Column(Text, nullable=True)
     ok = Column(Boolean, nullable=False, default=False)
     result_digest = Column(Text, nullable=True)
