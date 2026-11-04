@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
 """命理古籍问答 · 排盘：Streamlit 界面。
 
-设计上刻意只做「宣纸 + 墨色 + 朱砂」三种颜色：
-- 底色是纸，正文是墨，强调色只给按钮和引用标记，避免把古籍界面做得花哨。
-- 八字渲染成一张命盘图（四柱竖排 + 五行比例条 + 大运横排），
-  星盘画成圆盘（上升定在左侧），排盘结果先给图再给文字。
+给访客看的只有两件事：问古籍、排盘。检索策略、Agent 编排、评测账本都是
+内部工具，默认不出现；维护时用 MINGLI_ADMIN=1 或 URL 加 ?admin=1 打开。
 
-功能与旧版一致：古籍问答（三种检索策略）、八字、星盘、塔罗，四个页签。
+视觉沿用「纸、墨、朱砂」：纸是底，墨是字，朱砂只用在印章和原文出处上。
 """
+from __future__ import annotations
+
+import html
 import json
 import os
+import re
 import sys
 import time as _time
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 # 无论从仓库根目录还是 src/ 内部启动，都能找到同级模块
 sys.path.append(str(Path(__file__).resolve().parent))
@@ -25,9 +28,6 @@ from fortune.bazi import format_bazi, paipan
 from fortune.interpret import has_api_key, read
 from fortune.tarot import SPREADS, draw as draw_tarot
 from fortune.tarot import format_draw
-from rag import answer
-import datahub
-import evalhub
 
 CITIES = {
     "北京": (39.90, 116.40),
@@ -40,19 +40,36 @@ CITIES = {
     "西安": (34.34, 108.94),
 }
 
+# 示例问题都能在语料里找到依据；点一下就直接发出去。
 EXAMPLES = (
     "七杀和偏官是同一个神吗？",
     "伤官见官，为祸百端，是不是一定不好？",
+    "官杀混杂，什么时候能一起看，什么时候必须分开？",
     "纳音五行和正五行，谁说了算？",
 )
 
 CSS = "<style>" + (Path(__file__).with_name("app_theme.css")).read_text(encoding="utf-8") + "</style>"
 
+# 回答里的引用编号 [1] 显示成上标，和出处列表对应
+_SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def _esc(value):
+    return html.escape(str(value or ""))
+
 
 def _chips(items, seal=False):
     cls = "chip seal" if seal else "chip"
     return '<div class="chips">%s</div>' % "".join(
-        '<span class="%s">%s</span>' % (cls, x) for x in items
+        '<span class="%s">%s</span>' % (cls, _esc(x)) for x in items
+    )
+
+
+def _panel(kind, title, body):
+    st.markdown(
+        '<div class="panel panel-%s"><div class="panel-title">%s</div>'
+        '<div class="panel-body">%s</div></div>' % (kind, _esc(title), _esc(body)),
+        unsafe_allow_html=True,
     )
 
 
@@ -82,7 +99,7 @@ def _quota_take():
     """占用一次调用额度。返回 (是否放行, 提示语)。"""
     used_session = int(st.session_state.get("llm_used", 0))
     if used_session >= SESSION_LLM_LIMIT:
-        return False, "本次会话的免费解读次数已用完（%d 次）。刷新页面可重置，或填入自己的 Key。" % SESSION_LLM_LIMIT
+        return False, "本次会话的免费次数已用完（%d 次）。刷新页面可重置，或填入自己的 Key。" % SESSION_LLM_LIMIT
 
     day = datetime.now().strftime("%Y-%m-%d")
     used = _quota_used_today()
@@ -109,15 +126,6 @@ def _quota_take():
     return True, ""
 
 
-def _quota_left_today():
-    return max(DAILY_LLM_LIMIT - _quota_used_today(), 0)
-
-
-def _quota_caption():
-    if has_api_key():
-        st.caption("今日全站剩余免费解读 %d 次（上限 %d）。" % (_quota_left_today(), DAILY_LLM_LIMIT))
-
-
 TOPIC_PROMPTS = (
     ("感情", "请结合盘面，重点讲讲我的感情与相处方式。"),
     ("事业", "请结合盘面，重点讲讲我的事业方向与适合的工作方式。"),
@@ -126,74 +134,50 @@ TOPIC_PROMPTS = (
 )
 
 
-def _read_block(chart, key):
-    """排完盘后的问答区。
+# ---------- 外壳 ----------
 
-    盘面本身是算出来的，不花钱；解读才调模型。所以这里先让用户把问题问清楚
-    （感情/事业是绝大多数人真正想知道的），再点一次按钮花一次调用。
-    公网没配服务端 Key 时，让访客填自己的 Key——key 只存在 session_state，
-    不写日志、不落盘，也不会带给别的访客（Streamlit 的 session 是隔离的）。
-    """
-    qkey = key + "_q"
-    pending = key + "_pending"
-    # 话题按钮是在输入框已经渲染之后才被点中的，这时不能直接改 qkey
-    # （Streamlit 不允许改动已实例化的 widget）。先写进 pending，
-    # 下一次 rerun 在输入框创建之前搬过去。
-    if pending in st.session_state:
-        st.session_state[qkey] = st.session_state.pop(pending)
-    st.session_state.setdefault(qkey, "")
+def _admin_enabled():
+    if os.environ.get("MINGLI_ADMIN", "").strip().lower() in ("1", "true", "yes", "on"):
+        return True
+    try:
+        return str(st.query_params.get("admin") or "").strip() == "1"
+    except Exception:
+        return False
 
-    st.markdown('<div class="section-title">问自己的盘</div>', unsafe_allow_html=True)
-    st.text_input("想问什么", key=qkey, label_visibility="collapsed",
-                  placeholder="例如：今年适合换工作吗？感情上要注意什么？")
-    cols = st.columns(len(TOPIC_PROMPTS))
-    for i, (label, prompt) in enumerate(TOPIC_PROMPTS):
-        if cols[i].button(label, key="%s_t%d" % (key, i), use_container_width=True):
-            st.session_state[pending] = prompt
-            st.rerun()
 
-    server_key = has_api_key()
-    api_key = None
-    if not server_key:
-        st.markdown(
-            '<div class="note">公网 Demo 没有配置服务端 Key。填入自己的 DeepSeek Key '
-            '只用于本次会话，不写日志、不落盘；不填也能看盘，只是不能生成解读。</div>',
-            unsafe_allow_html=True)
-        api_key = st.text_input("DeepSeek API Key", type="password",
-                                key=key + "_key") or None
+def _header():
+    views = ["问古籍", "排盘"] + (["维护"] if _admin_enabled() else [])
+    left, right = st.columns([0.62, 0.38], gap="small", vertical_alignment="center")
+    left.markdown(
+        '<div class="brand-row">'
+        '<span class="seal-mark">古</span>'
+        '<span class="brand-name">问古</span>'
+        '<span class="brand-sub">命理古籍问答</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    view = right.radio(
+        "页面", views, index=0, horizontal=True,
+        label_visibility="collapsed", key="nav_view",
+    )
+    st.markdown('<div class="head-rule"></div>', unsafe_allow_html=True)
+    return view
 
-    if server_key:
-        _quota_caption()
 
-    if not st.button("生成解读", type="primary", key=key + "_go"):
-        return
-    if not (server_key or api_key):
-        st.warning("没有可用的 Key：先在上面填入自己的 DeepSeek Key，再点一次。")
-        return
-    if server_key:  # 服务端 key 才计额度；访客自带 key 花的是他自己的钱
-        ok, why = _quota_take()
-        if not ok:
-            st.warning(why)
-            return
-
-    with st.spinner("正在解读盘面…"):
-        try:
-            res = read(chart, question=st.session_state.get(qkey) or None, api_key=api_key)
-        except Exception as exc:
-            st.error("解读失败：%s" % exc)
-            return
-    if res["summary"]:
-        st.success(res["summary"])
-    for sec in res["sections"]:
-        st.subheader(sec["title"])
-        st.markdown(sec["content"])
-    st.caption(res["disclaimer"])
+def _key_panel():
+    """没有服务端 Key 时，让访客自带一个；只存在本次会话，不落盘。"""
+    if has_api_key():
+        return None
+    with st.expander("使用自己的 DeepSeek Key", expanded=True):
+        st.caption("公网演示没有配置服务端 Key。Key 只用于本次会话，不写日志、不落盘。")
+        st.text_input(
+            "DeepSeek API Key", type="password", key="qa_key",
+            label_visibility="collapsed", placeholder="sk-…",
+        )
+    return st.session_state.get("qa_key") or None
 
 
 # ---------- 古籍问答 ----------
-
-MODES = ("单 Agent", "多 Agent", "单轮 RAG")
-
 
 def _as_history(messages):
     """只把真正的问答内容传给后端；错误提示和 UI 元数据不进上下文。"""
@@ -209,199 +193,258 @@ def _as_history(messages):
     return out
 
 
-def _render_turn(msg, question=""):
-    """渲染一轮对话。引用、轨迹、耗时都挂在对应的助手消息下面，不串到下一轮。"""
-    res = msg.get("meta") or {}
-    with st.chat_message(msg["role"]):
-        if msg.get("error"):
-            st.error(msg["content"])
-            return
+@st.cache_resource(show_spinner=False)
+def _chunk_index():
+    import retrieval
 
-        content = msg.get("content") or ""
-        if content:
-            st.markdown(content)
-        if msg.get("role") == "assistant" and res.get("can_answer") is None:
-            st.error("没有拿到可用回答（JSON 解析失败或缺少有效引用）")
-            if res.get("raw"):
-                st.code(res["raw"], language="json")
-
-        if not res:
-            return
-
-        bits = [msg.get("mode") or ""]
-        if res.get("steps") is not None:
-            bits.append("步数 %s" % res.get("steps"))
-        if res.get("llm_calls") is not None:
-            bits.append("LLM 调用 %s" % res.get("llm_calls"))
-        if msg.get("elapsed") is not None:
-            bits.append("%.1fs" % msg["elapsed"])
-        st.caption(" · ".join(b for b in bits if b))
-
-        standalone = res.get("rewritten_question")
-        if standalone and question and standalone != question:
-            st.caption("追问改写为：%s" % standalone)
-        if res.get("refusal_reason"):
-            st.caption("拒答理由：%s" % res["refusal_reason"])
-        if res.get("citations_chunk_ids"):
-            st.markdown(_chips(res["citations_chunk_ids"], seal=True), unsafe_allow_html=True)
-        elif res.get("can_answer") is False:
-            st.caption("本次无有效引用")
-        if res.get("invalid_citations"):
-            st.error("发现非法引用：%s" % res["invalid_citations"])
-        if res.get("invalid_output"):
-            st.warning("输出被标记为不合规：声称能答，但存在无效引用。")
-
-        trace = res.get("trace") or []
-        if trace or res.get("plan") or res.get("verdict"):
-            with st.expander("执行轨迹（%d 步）" % len(trace), expanded=False):
-                if res.get("plan"):
-                    st.markdown('<div class="section-title">Planner 计划</div>',
-                                unsafe_allow_html=True)
-                    st.json(res["plan"])
-                for t in trace:
-                    st.markdown("**Step %s · %s**" % (t.get("step", "?"),
-                                                      t.get("action") or "?"))
-                    if t.get("thought"):
-                        st.caption(t["thought"])
-                    if t.get("chunk_ids"):
-                        st.caption("chunk：" + "、".join(str(x) for x in t["chunk_ids"]))
-                    if t.get("ok") is False:
-                        st.error(t.get("error") or "工具调用失败")
-                if res.get("verdict"):
-                    st.markdown('<div class="section-title">Verifier 判定</div>',
-                                unsafe_allow_html=True)
-                    st.json(res["verdict"])
+    return {str(c["chunk_id"]): c for c in retrieval.chunks}
 
 
-def _qa_tab():
-    messages = st.session_state.setdefault("qa_messages", [])
+def _source_items(res):
+    """把模型引用的 chunk_id 还原成可展示的原文。"""
+    index = _chunk_index()
+    seen, items = set(), []
+    for cid in res.get("citations_chunk_ids") or []:
+        key = str(cid)
+        if key in seen:
+            continue
+        seen.add(key)
+        chunk = index.get(key)
+        if not chunk:
+            continue
+        meta = chunk.get("meta") or {}
+        parts = [str(meta.get(k) or "").strip() for k in ("book", "volume", "chapter")]
+        title = "《{}》".format("·".join(p for p in parts if p)) if any(parts) else "《未标书名》"
+        text = (chunk.get("chunk_text") or "").strip()
+        items.append({
+            "title": title,
+            "book": str(meta.get("book") or "").strip(),
+            "text": text,
+        })
+    return items
 
-    head_l, head_r = st.columns([0.62, 0.38], gap="large")
-    with head_l:
-        st.markdown('<div class="prompt-label">问一个古籍里的问题</div>',
-                    unsafe_allow_html=True)
-        st.caption("可以连续追问。历史只用于理解指代，引用仍然只来自本轮实际检索到的片段。")
-        mode_label = st.radio(
-            "回答模式", MODES, index=0, horizontal=True, key="qa_mode",
-            help="单 Agent：ReAct 工具调用（默认）；多 Agent：Supervisor/Retriever/Verifier；"
-                 "单轮 RAG：固定一次检索的基线",
-        )
-        if mode_label == "单轮 RAG":
-            c1, c2 = st.columns([0.55, 0.45])
-            mode = c1.radio("检索策略", ["rrf", "bm25", "dense"], index=0,
-                            horizontal=True, key="qa_retrieval",
-                            help="rrf=语义+字面融合，bm25=精确术语，dense=语义")
-            top_k = c2.slider("召回条数", min_value=1, max_value=10, value=5, key="qa_topk")
-        else:
-            mode, top_k = "rrf", 5
-            st.caption("Agent 会自己决定检索策略与条数")
 
-        # 公网 Demo 不一定配了服务端 key，让访客能自带一个；只存在本次会话
-        if has_api_key():
-            api_key = None
-            _quota_caption()
-        else:
-            st.markdown('<div class="note">公网未配置服务端 Key，可填自己的 DeepSeek Key'
-                        '（仅本次会话，不落盘）。</div>', unsafe_allow_html=True)
-            api_key = st.text_input("DeepSeek API Key", type="password", key="qa_key") or None
-
-    with head_r:
-        if messages:
-            if st.button("新对话", use_container_width=True, key="qa_new"):
-                st.session_state["qa_messages"] = []
-                st.session_state["qa_input"] = ""
-                st.rerun()
+def _source_block(items):
+    chips = "".join(
+        '<span class="source-chip"><b>%d</b>&nbsp;%s</span>' % (i + 1, _esc(it["title"]))
+        for i, it in enumerate(items)
+    )
+    st.markdown(
+        '<div class="source-strip"><span class="source-label">原文出处</span>%s</div>' % chips,
+        unsafe_allow_html=True,
+    )
+    with st.expander("查看 %d 段原文" % len(items), expanded=False):
+        for it in items:
+            text = it["text"]
+            if len(text) > 700:
+                text = text[:700] + "……"
             st.markdown(
-                '<div class="note">当前对话共 %d 条消息。追问会先改写成独立问题，'
-                '历史不会作为回答证据。</div>' % len(messages),
+                '<div class="source-quote"><div class="source-head">%s</div>'
+                '<div class="source-text">%s</div></div>'
+                % (_esc(it["title"]), _esc(text).replace("\n", "<br>")),
                 unsafe_allow_html=True,
             )
-        else:
-            st.markdown('<div class="section-title">可以这样问</div>', unsafe_allow_html=True)
-            for i, ex in enumerate(EXAMPLES):
-                if st.button(ex, key="ex%d" % i, use_container_width=True):
-                    st.session_state["qa_input"] = ex
-                    st.rerun()
 
-    if not messages:
+
+def _followup_items(res):
+    books = []
+    for it in _source_items(res):
+        if it["book"] and it["book"] not in books:
+            books.append(it["book"])
+    items = []
+    if books:
+        items.append(("《%s》里还怎么说？" % books[0],
+                      "《%s》里还怎么说？" % books[0]))
+    items.append(("用更直白的话讲一遍",
+                  "用更直白的话把刚才的回答讲一遍，并保留原文出处。"))
+    if len(books) > 1:
+        items.append(("换部书对照一下",
+                      "《%s》和《%s》对这个问题的说法有什么区别？" % (books[0], books[1])))
+    elif not books:
+        items.append(("有没有相反的说法？", "古籍里对这个说法有没有相反的意见？"))
+    return items[:3]
+
+
+def _refusal_panel(res):
+    reason = (res.get("refusal_reason") or "").strip()
+    st.markdown(
+        '<div class="panel panel-refusal">'
+        '<div class="panel-title">这句古籍里没有直接依据</div>'
+        '<div class="panel-body">%s</div>'
+        '<div class="panel-help">可以换一个更具体的问法，或者先问一个相关术语。</div>'
+        '</div>' % _esc(reason or "检索到的段落只是主题相近，不能直接回答问题，所以不硬答。"),
+        unsafe_allow_html=True,
+    )
+
+
+def _render_answer(msg, idx):
+    res = msg.get("meta") or {}
+    if msg.get("error"):
+        _panel("notice", "这次没有回答成功",
+               "可能是网络或额度问题。稍后再试一次，或者把问题拆小一点。")
+        if _admin_enabled() and msg.get("detail"):
+            with st.expander("技术信息"):
+                st.code(msg["detail"])
+        return
+
+    if res.get("can_answer") is None:
+        _panel("notice", "这次没有生成可用的回答",
+               "模型输出没有通过格式校验。换一种问法，或者再试一次。")
+        return
+
+    if res.get("can_answer") is False:
+        _refusal_panel(res)
+        return
+
+    content = (msg.get("content") or "").strip()
+    if content:
+        # [1] → [¹]：正文里的编号不抢戏，和下面的出处一一对应。
+        content = re.sub(
+            r"\[(\d{1,2})\]", lambda m: "[%s]" % m.group(1).translate(_SUP),
+            content,
+        )
+        st.markdown(content)
+    else:
+        _panel("notice", "回答是空的", "模型没有给出正文。可以再问一次，或换一种问法。")
+
+    items = _source_items(res)
+    if items:
+        _source_block(items)
+    elif res.get("can_answer"):
         st.markdown(
-            '<div class="how">'
-            '<div><h3>检索</h3><p>BGE-M3 语义召回与 BM25 字面召回各取 40 条，'
-            'RRF 融合后保留前 5 段；每条引用都能定位到具体 chunk。</p></div>'
-            '<div><h3>编排</h3><p>单 Agent 用 ReAct 调 7 个工具；多 Agent 由 Supervisor 拆题、'
-            'Retriever 补证、Verifier 复核，再交给 Synthesizer 落笔。</p></div>'
-            '<div><h3>校验</h3><p>引用白名单只保留真正看过的片段；没有有效引用就拒答，'
-            '不拿主题相近的段落硬凑。</p></div>'
-            '</div>',
+            '<div class="caution">这条回答没有可核对的原文出处，请只当作参考。</div>',
             unsafe_allow_html=True,
         )
-        st.divider()
 
-    if messages:
-        st.markdown('<div class="section-title" style="margin-top:.6rem">对话</div>',
-                    unsafe_allow_html=True)
-        prev_q = ""
-        for msg in messages[-12:]:
-            _render_turn(msg, prev_q)
-            if msg.get("role") == "user":
-                prev_q = msg.get("content") or ""
-        st.divider()
+    items_to_ask = _followup_items(res)
+    if items_to_ask:
+        st.markdown('<div class="follow-label">继续问</div>', unsafe_allow_html=True)
+        cols = st.columns(len(items_to_ask), gap="small")
+        for i, (label, prompt) in enumerate(items_to_ask):
+            if cols[i].button(label, key="follow_%d_%d" % (idx, i), use_container_width=True):
+                st.session_state["qa_pending"] = prompt
+                st.rerun()
 
-    with st.form("qa_form", clear_on_submit=True):
-        c1, c2 = st.columns([0.82, 0.18])
-        question = c1.text_input(
-            "你的问题", key="qa_input", label_visibility="collapsed",
-            placeholder="继续追问，例如：那《渊海子平》里怎么说？",
-        )
-        submitted = c2.form_submit_button("发送", type="primary", use_container_width=True)
 
-    if not submitted:
-        return
+def _render_user(question):
+    st.markdown(
+        '<div class="q-row"><div class="q-bubble">%s</div></div>' % _esc(question),
+        unsafe_allow_html=True,
+    )
+
+
+def _empty_state():
+    st.markdown(
+        '<div class="hero">'
+        '<h1>问古籍，得原文</h1>'
+        '<p class="hero-sub">命理里的一个词、一句断语，回到四十五部古籍里找依据。'
+        '找不到，它会直说。</p>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="section-label">可以这样问</div>', unsafe_allow_html=True)
+    rows = [EXAMPLES[i:i + 2] for i in range(0, len(EXAMPLES), 2)]
+    for r, pair in enumerate(rows):
+        cols = st.columns(len(pair), gap="small")
+        for c, question in enumerate(pair):
+            if cols[c].button(question, key="ex%d_%d" % (r, c), use_container_width=True):
+                st.session_state["qa_pending"] = question
+                st.rerun()
+    st.markdown(
+        '<p class="fineprint">点问题直接发。也可以追问「那《三命通会》里怎么说？」——'
+        '回答只引用检索到的原文，引用不足时会拒答。</p>',
+        unsafe_allow_html=True,
+    )
+    # st.chat_input 会挂在页底并把主区滚到底，首屏的页眉和问候会被顶出视口。
+    # 首屏没有对话，滚回顶部；有对话后交给 Streamlit 自己滚到最新一条。
+    components.html(
+        """<script>
+        (function () {
+          var doc = window.parent.document;
+          function goTop() {
+            var main = doc.querySelector('section[data-testid="ScrollToBottomContainer"]');
+            if (main) main.scrollTop = 0;
+            window.parent.scrollTo(0, 0);
+          }
+          goTop();
+          [80, 300, 800, 1500].forEach(function (t) { setTimeout(goTop, t); });
+        })();
+        </script>""",
+        height=0,
+    )
+
+
+def _chat_title():
+    left, right = st.columns([0.72, 0.28], gap="small", vertical_alignment="center")
+    left.markdown('<h1 class="page-h1">问古籍</h1>', unsafe_allow_html=True)
+    if right.button("新对话", key="qa_new", use_container_width=False):
+        st.session_state["qa_messages"] = []
+        st.session_state.pop("qa_pending", None)
+        st.rerun()
+
+
+def _handle_question(question, messages):
     question = (question or "").strip()
     if not question:
-        st.warning("请先输入问题")
         return
-    if not (has_api_key() or api_key):
-        st.warning("没有可用的 Key：填入自己的 DeepSeek Key 后再点一次。")
+    api_key = st.session_state.get("qa_key") or None
+    if not has_api_key() and not api_key:
+        _panel("notice", "先填一个 Key",
+               "公网演示没有配置服务端 Key。展开下面的「使用自己的 DeepSeek Key」填入后就能提问。")
         return
     if has_api_key() and not api_key:
         ok, why = _quota_take()
         if not ok:
-            st.warning(why)
+            _panel("notice", "今天的免费次数用完了", why)
             return
 
     history = _as_history(messages)
     messages.append({"role": "user", "content": question})
-
-    spinner = ("检索古籍 + 生成回答中；首次使用要先加载检索模型，可能需要一两分钟…"
-               if mode_label == "单轮 RAG"
-               else "Agent 规划 / 检索 / 校验中；首次使用要先加载检索模型…")
+    _render_user(question)
     started = _time.perf_counter()
     try:
-        with st.spinner(spinner):
-            if mode_label == "单 Agent":
-                from agent import agent_answer as _agent_answer
-                res = _agent_answer(question, api_key=api_key, history=history)
-            elif mode_label == "多 Agent":
-                from agent_multi import agent_answer as _agent_answer
-                res = _agent_answer(question, api_key=api_key, history=history)
-            else:
-                res = answer(question, top_k=top_k, mode=mode, api_key=api_key, history=history)
-        elapsed = _time.perf_counter() - started
-        messages.append({
-            "role": "assistant",
-            "content": res.get("answer") or "",
-            "meta": res,
-            "elapsed": elapsed,
-            "mode": mode_label,
-        })
+        with st.spinner("正在四十五部古籍里找依据…"):
+            from agent import agent_answer as _agent_answer
+            res = _agent_answer(question, api_key=api_key, history=history)
+        res["_elapsed"] = round(_time.perf_counter() - started, 1)
     except Exception as exc:
         messages.append({
             "role": "assistant",
-            "content": "生成失败：{}".format(exc),
+            "content": "回答没有生成成功。",
             "error": True,
+            "detail": str(exc),
         })
+        st.rerun()
+    messages.append({"role": "assistant", "content": res.get("answer") or "", "meta": res})
     st.rerun()
+
+
+def _ask_page():
+    messages = st.session_state.setdefault("qa_messages", [])
+    pending = st.session_state.pop("qa_pending", None)
+
+    if not messages:
+        _empty_state()
+    else:
+        _chat_title()
+
+    if messages:
+        for idx, msg in enumerate(messages):
+            if msg.get("role") == "user":
+                _render_user(msg.get("content") or "")
+            else:
+                with st.chat_message("assistant"):
+                    _render_answer(msg, idx)
+
+    api_key = _key_panel()
+    ready = bool(has_api_key() or api_key)
+    typed = st.chat_input(
+        "问一个命理里的问题…" if ready else "填入自己的 Key 后就能提问",
+        key="qa_input",
+        disabled=not ready,
+    )
+    _handle_question(pending or typed, messages)
+
 
 # ---------- 八字 ----------
 
@@ -430,12 +473,7 @@ def _colored(ch, table):
 
 
 def _bazi_chart(chart):
-    """命盘图：四柱竖排成一张盘，日柱高亮。
-
-    行序按传统命书的读法——十神在上，干支在中，藏干/支神在下，
-    纳音和旬空是附注。用 HTML 网格而不是 st.dataframe，
-    因为 df 会把「日柱」当成普通一列，丢掉它才是命主本体这层意思。
-    """
+    """命盘图：四柱竖排成一张盘，日柱高亮。"""
     sizhu = chart["sizhu"]
 
     def cols(fn, cls=""):
@@ -491,19 +529,75 @@ def _dayun_strip(chart):
     return '<div class="dayun">%s</div>' % "".join(pills)
 
 
-def _bazi_tab():
-    with st.container(border=True):
-        st.markdown('<div class="section-title">出生信息</div>', unsafe_allow_html=True)
-        with st.form("bazi_form"):
-            col1, col2, col3 = st.columns(3)
-            d = col1.date_input("出生日期", value=date(2000, 1, 1),
-                                min_value=date(1900, 1, 1), key="bazi_d")
-            t = col2.time_input("出生时间（不确定就填 12:00）", value=time(12, 0), key="bazi_t")
-            gender = col3.selectbox("性别", ["male", "female"],
-                                    format_func=lambda g: "男" if g == "male" else "女",
-                                    key="bazi_g")
-            submitted = st.form_submit_button("排盘", type="primary")
-        st.caption("按出生地当地时间排，节气与干支由历法库计算；同一份输入永远得到同一个盘。")
+def _read_block(chart, key):
+    """排完盘后的问答区。
+
+    盘面本身是算出来的，不花钱；解读才调模型。所以这里先让用户把问题问清楚，
+    再点一次按钮花一次调用。
+    """
+    qkey = key + "_q"
+    pending = key + "_pending"
+    if pending in st.session_state:
+        st.session_state[qkey] = st.session_state.pop(pending)
+    st.session_state.setdefault(qkey, "")
+
+    st.markdown('<div class="section-label">想问什么</div>', unsafe_allow_html=True)
+    st.text_input("想问什么", key=qkey, label_visibility="collapsed",
+                  placeholder="例如：今年适合换工作吗？感情上要注意什么？")
+    cols = st.columns(len(TOPIC_PROMPTS), gap="small")
+    for i, (label, prompt) in enumerate(TOPIC_PROMPTS):
+        if cols[i].button(label, key="%s_t%d" % (key, i), use_container_width=True):
+            st.session_state[pending] = prompt
+            st.rerun()
+
+    server_key = has_api_key()
+    api_key = None
+    if not server_key:
+        with st.expander("使用自己的 DeepSeek Key", expanded=True):
+            st.caption("公网演示没有配置服务端 Key。Key 只用于本次会话，不写日志、不落盘。")
+            api_key = st.text_input("DeepSeek API Key", type="password",
+                                    key=key + "_key", label_visibility="collapsed",
+                                    placeholder="sk-…") or None
+
+    if not st.button("生成解读", type="primary", key=key + "_go"):
+        return
+    if not (server_key or api_key):
+        st.warning("没有可用的 Key：先填入自己的 DeepSeek Key，再点一次。")
+        return
+    if server_key:  # 服务端 key 才计额度；访客自带 key 花的是他自己的钱
+        ok, why = _quota_take()
+        if not ok:
+            st.warning(why)
+            return
+
+    with st.spinner("正在解读盘面…"):
+        try:
+            res = read(chart, question=st.session_state.get(qkey) or None, api_key=api_key)
+        except Exception as exc:
+            st.error("解读失败：%s" % exc)
+            return
+    if res["summary"]:
+        st.markdown('<div class="panel panel-note"><div class="panel-body">%s</div></div>'
+                    % _esc(res["summary"]), unsafe_allow_html=True)
+    for sec in res["sections"]:
+        st.markdown('<div class="section-label">%s</div>' % _esc(sec["title"]),
+                    unsafe_allow_html=True)
+        st.markdown(sec["content"])
+    st.caption(res["disclaimer"])
+
+
+def _bazi_view():
+    st.markdown('<div class="section-label">出生信息</div>', unsafe_allow_html=True)
+    with st.form("bazi_form"):
+        col1, col2, col3 = st.columns(3)
+        d = col1.date_input("出生日期", value=date(2000, 1, 1),
+                            min_value=date(1900, 1, 1), key="bazi_d")
+        t = col2.time_input("出生时间（不确定就填 12:00）", value=time(12, 0), key="bazi_t")
+        gender = col3.selectbox("性别", ["male", "female"],
+                                format_func=lambda g: "男" if g == "male" else "女",
+                                key="bazi_g")
+        submitted = st.form_submit_button("排盘", type="primary")
+    st.caption("按出生地当地时间排，节气与干支由历法库计算；同一份输入永远得到同一个盘。")
 
     if submitted:
         try:
@@ -518,6 +612,7 @@ def _bazi_tab():
     if not chart:
         return
 
+    st.markdown('<h2 class="result-h2">你的八字盘</h2>', unsafe_allow_html=True)
     st.markdown(_bazi_chart(chart), unsafe_allow_html=True)
     st.caption("日柱为命主本体，底色标红；干支按五行着色（木绿 火赤 土黄 金灰 水蓝）。")
 
@@ -525,50 +620,51 @@ def _bazi_tab():
     st.markdown(_chips([
         "公历 %s" % info["solar"], "农历 %s" % info["lunar"],
         "日主 %s" % chart["day_master"], "生肖 %s" % chart["shengxiao"],
-        "命宫 %s" % chart["minggong"], "胎元 %s" % chart["taiyuan"],
-        "身宫 %s" % chart["shengong"],
     ]), unsafe_allow_html=True)
 
-    with st.container(border=True):
-        st.markdown('<div class="section-title">五行分布</div>', unsafe_allow_html=True)
-        st.markdown(_wuxing_bar(chart), unsafe_allow_html=True)
-
-    qiyun = chart["qiyun"]
-    with st.container(border=True):
-        st.markdown('<div class="section-title">大运</div>', unsafe_allow_html=True)
+    layout = st.columns([0.55, 0.45], gap="large")
+    with layout[0]:
         st.markdown(
-            '<div class="note">%s，出生后 %d 年 %d 个月 %d 天起运</div>' % (
+            '<div class="card"><div class="section-label">五行分布</div>%s</div>'
+            % _wuxing_bar(chart), unsafe_allow_html=True)
+    with layout[1]:
+        qiyun = chart["qiyun"]
+        st.markdown(
+            '<div class="card"><div class="section-label">起运</div>'
+            '<div class="big-value">%d 年 %d 个月</div>'
+            '<div class="note">%s，出生后 %d 年 %d 个月 %d 天起运</div></div>' % (
+                qiyun["years"], qiyun["months"],
                 "顺排" if qiyun["forward"] else "逆排",
                 qiyun["years"], qiyun["months"], qiyun["days"]),
             unsafe_allow_html=True)
-        if chart["dayun"]:
-            st.markdown(_dayun_strip(chart), unsafe_allow_html=True)
-            if chart.get("current_dayun"):
-                cur = chart["current_dayun"]
-                st.caption("红框为当前大运：%s（%d 岁起，%d 年起运）" % (
-                    cur["ganzhi"], cur["start_age"], cur["start_year"]))
-        st.markdown('<div class="section-title" style="margin-top:1rem">旬空</div>',
-                    unsafe_allow_html=True)
-        st.markdown(_chips(["%s %s" % (k, v) for k, v in chart["xunkong"].items()]),
-                    unsafe_allow_html=True)
 
-    with st.expander("查看完整排盘文本 / 结构化数据"):
+    if chart["dayun"]:
+        cap = ""
+        if chart.get("current_dayun"):
+            cur = chart["current_dayun"]
+            cap = ('<div class="note">红框为当前大运：%s（%d 岁起，%d 年起运）</div>'
+                   % (cur["ganzhi"], cur["start_age"], cur["start_year"]))
+        st.markdown(
+            '<div class="card"><div class="section-label">大运</div>%s%s</div>'
+            % (_dayun_strip(chart), cap), unsafe_allow_html=True)
+
+    with st.expander("排盘明细与原始数据"):
+        st.markdown(_chips([
+            "命宫 %s" % chart["minggong"], "胎元 %s" % chart["taiyuan"],
+            "身宫 %s" % chart["shengong"],
+        ] + ["旬空 %s %s" % (k, v) for k, v in chart["xunkong"].items()]),
+            unsafe_allow_html=True)
         st.code(format_bazi(chart), language=None)
         st.json(chart)
 
-    st.divider()
+    st.markdown('<div class="soft-rule"></div>', unsafe_allow_html=True)
     _read_block(chart, "bazi_read")
 
 
 # ---------- 星盘 ----------
 
 def _astro_wheel(chart, size=440):
-    """本命盘圆盘。
-
-    上升点固定在左侧（盘面 9 点方向）——这是占星软件的通行画法，
-    好处是同一张盘无论何时打开，宫位方向都一样，不用重新找上升。
-    黄经逆时针增加；外圈是十二星座，内圈是星体。
-    """
+    """本命盘圆盘。上升点固定在左侧（盘面 9 点方向）。"""
     import math
 
     asc_lon = chart["asc"]["lon"]
@@ -583,33 +679,31 @@ def _astro_wheel(chart, size=440):
 
     p = ['<svg viewBox="0 0 %d %d" width="100%%" style="max-width:440px;display:block;margin:0 auto" '
          'xmlns="http://www.w3.org/2000/svg">' % (size, size)]
-    p.append('<circle cx="%g" cy="%g" r="%g" fill="#fff" stroke="#ddd3c2"/>' % (cx, cy, r_out))
-    p.append('<circle cx="%g" cy="%g" r="%g" fill="none" stroke="#ddd3c2"/>' % (cx, cy, r_sign))
+    p.append('<circle cx="%g" cy="%g" r="%g" fill="#fff" stroke="#e6e0d4"/>' % (cx, cy, r_out))
+    p.append('<circle cx="%g" cy="%g" r="%g" fill="none" stroke="#e6e0d4"/>' % (cx, cy, r_sign))
 
     for i in range(12):
         lon = i * 30.0
         x1, y1 = pt(lon, r_sign)
         x2, y2 = pt(lon, r_out)
-        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#ddd3c2"/>'
+        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#e6e0d4"/>'
                  % (x1, y1, x2, y2))
         mx, my = pt(lon + 15, (r_sign + r_out) / 2.0)
-        p.append('<text x="%.1f" y="%.1f" font-size="12" fill="#5b5348" '
+        p.append('<text x="%.1f" y="%.1f" font-size="12" fill="#6e685e" '
                  'text-anchor="middle" dominant-baseline="middle">%s</text>'
                  % (mx, my, SIGNS[i]))
 
     for label, lon in (("ASC", asc_lon), ("MC", chart["mc"]["lon"])):
         x1, y1 = pt(lon, r_sign)
         x2, y2 = pt(lon, r_out)
-        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#8c2f26" '
+        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#96322a" '
                  'stroke-width="2"/>' % (x1, y1, x2, y2))
         lx, ly = pt(lon, r_sign - 18)
-        p.append('<text x="%.1f" y="%.1f" font-size="10" fill="#8c2f26" '
+        p.append('<text x="%.1f" y="%.1f" font-size="10" fill="#96322a" '
                  'text-anchor="middle" dominant-baseline="middle">%s</text>'
                  % (lx, ly, label))
 
-    # 星体挤在一起会叠字：按「两串标签的字宽约占多少度」判断，
-    # 挤了的往内圈退一层，最多退三层。写死角度阈值不行——
-    # 「太阳」两个字和「海王星」三个字需要的余量差一倍。
+    # 星体挤在一起会叠字：按两串标签的字宽判断，挤了的往内圈退一层，最多三层。
     placed = []
     for body in sorted(chart["planets"], key=lambda x: x["lon"] % 360):
         lon = body["lon"] % 360
@@ -624,37 +718,35 @@ def _astro_wheel(chart, size=440):
         placed.append((lon, ring, label))
         x, y = pt(lon, r_planet - ring * 26)
         tx, ty = pt(lon, r_sign - 2)
-        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#c9bfae" '
+        p.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#d8d1c3" '
                  'stroke-dasharray="2 3"/>' % (x, y, tx, ty))
-        # 描一圈纸色描边：万一一两颗星实在挤到一起，字仍然读得出来
-        p.append('<text x="%.1f" y="%.1f" font-size="11" fill="#201b16" '
+        p.append('<text x="%.1f" y="%.1f" font-size="11" fill="#1c1a16" '
                  'text-anchor="middle" dominant-baseline="middle" '
-                 'style="paint-order:stroke;stroke:#faf7f1;stroke-width:3px">%s</text>'
+                 'style="paint-order:stroke;stroke:#faf8f3;stroke-width:3px">%s</text>'
                  % (x, y, label))
 
     p.append("</svg>")
     return "".join(p)
 
 
-def _astro_tab():
-    with st.container(border=True):
-        st.markdown('<div class="section-title">出生信息</div>', unsafe_allow_html=True)
-        with st.form("astro_form"):
-            col1, col2, col3 = st.columns(3)
-            d = col1.date_input("出生日期", value=date(2000, 1, 1),
-                                min_value=date(1900, 1, 1), key="as_d")
-            t = col2.time_input("出生时间", value=time(12, 0), key="as_t")
-            city = col3.selectbox("出生城市", list(CITIES) + ["其他（手填经纬度）"], key="as_c")
-            if city == "其他（手填经纬度）":
-                c1, c2, c3 = st.columns(3)
-                lat = c1.number_input("纬度（北纬为正）", value=39.90, format="%.2f")
-                lon = c2.number_input("经度（东经为正）", value=116.40, format="%.2f")
-                tz = c3.number_input("时区偏移", value=8.0, format="%.1f")
-            else:
-                lat, lon = CITIES[city]
-                tz = 8.0
-            submitted = st.form_submit_button("排盘", type="primary")
-        st.caption("地心视黄经、整宫制。出生时间越准，上升和宫位越准——差 2 小时上升会偏一个星座。")
+def _astro_view():
+    st.markdown('<div class="section-label">出生信息</div>', unsafe_allow_html=True)
+    with st.form("astro_form"):
+        col1, col2, col3 = st.columns(3)
+        d = col1.date_input("出生日期", value=date(2000, 1, 1),
+                            min_value=date(1900, 1, 1), key="as_d")
+        t = col2.time_input("出生时间", value=time(12, 0), key="as_t")
+        city = col3.selectbox("出生城市", list(CITIES) + ["其他（手填经纬度）"], key="as_c")
+        if city == "其他（手填经纬度）":
+            c1, c2, c3 = st.columns(3)
+            lat = c1.number_input("纬度（北纬为正）", value=39.90, format="%.2f")
+            lon = c2.number_input("经度（东经为正）", value=116.40, format="%.2f")
+            tz = c3.number_input("时区偏移", value=8.0, format="%.1f")
+        else:
+            lat, lon = CITIES[city]
+            tz = 8.0
+        submitted = st.form_submit_button("排盘", type="primary")
+    st.caption("地心视黄经、整宫制。出生时间越准，上升和宫位越准——差 2 小时上升会偏一个星座。")
 
     if submitted:
         try:
@@ -669,65 +761,51 @@ def _astro_tab():
     if not chart:
         return
 
+    st.markdown('<h2 class="result-h2">你的本命盘</h2>', unsafe_allow_html=True)
     asc, mc = chart["asc"], chart["mc"]
     wheel, info = st.columns([0.58, 0.42], gap="large")
     with wheel:
-        with st.container(border=True):
-            st.markdown('<div class="section-title">本命盘</div>', unsafe_allow_html=True)
-            st.markdown(_astro_wheel(chart), unsafe_allow_html=True)
-            st.caption("上升点固定在盘面左侧，逆时针为黄经增加方向；"
-                       "虚线指向星体所在黄经，ᴿ 为逆行。")
+        st.markdown('<div class="card astro-card">%s</div>' % _astro_wheel(chart),
+                    unsafe_allow_html=True)
+        st.caption("上升点固定在盘面左侧，逆时针为黄经增加方向；虚线指向星体所在黄经。")
     with info:
-        with st.container(border=True):
-            st.markdown('<div class="section-title">四轴</div>', unsafe_allow_html=True)
-            st.markdown('<div class="pillar"><div class="label">上升 ASC</div>'
-                        '<div class="ganzhi">%s</div><div class="meta">%s°</div></div>'
-                        % (asc["sign"], asc["degree"]), unsafe_allow_html=True)
-            st.markdown('<div class="pillar"><div class="label">天顶 MC</div>'
-                        '<div class="ganzhi">%s</div><div class="meta">%s°</div></div>'
-                        % (mc["sign"], mc["degree"]), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="card">'
+            '<div class="pillar"><div class="label">上升 ASC</div>'
+            '<div class="ganzhi">%s</div><div class="meta">%s°</div></div>'
+            '<div class="pillar"><div class="label">天顶 MC</div>'
+            '<div class="ganzhi">%s</div><div class="meta">%s°</div></div>'
+            '%s</div>' % (
+                asc["sign"], asc["degree"], mc["sign"], mc["degree"],
+                _chips(["%s %d" % (k, v) for k, v in chart["elements"].items()] +
+                       ["%s %d" % (k, v) for k, v in chart["modalities"].items()])),
+            unsafe_allow_html=True)
 
-    with st.container(border=True):
-        st.markdown('<div class="section-title">星体位置</div>', unsafe_allow_html=True)
+    with st.expander("星体位置、相位与原始数据"):
         st.dataframe(
             [{"星体": p["name"], "星座": p["sign"], "度数": p["degree"],
               "逆行": "逆" if p["retrograde"] else ""} for p in chart["planets"]],
             hide_index=True, use_container_width=True)
-
-    c1, c2 = st.columns(2)
-    with c1:
-        with st.container(border=True):
-            st.markdown('<div class="section-title">元素分布</div>', unsafe_allow_html=True)
-            st.markdown(_chips(["%s %d" % (k, v) for k, v in chart["elements"].items()]),
-                        unsafe_allow_html=True)
-    with c2:
-        with st.container(border=True):
-            st.markdown('<div class="section-title">三态分布</div>', unsafe_allow_html=True)
-            st.markdown(_chips(["%s %d" % (k, v) for k, v in chart["modalities"].items()]),
-                        unsafe_allow_html=True)
-
-    with st.expander("查看星盘文本 / 相位 / 结构化数据"):
-        st.code(format_chart(chart), language=None)
         if chart.get("aspects"):
             st.dataframe(chart["aspects"], hide_index=True, use_container_width=True)
+        st.code(format_chart(chart), language=None)
         st.json(chart)
 
-    st.divider()
+    st.markdown('<div class="soft-rule"></div>', unsafe_allow_html=True)
     _read_block(chart, "astro_read")
 
 
 # ---------- 塔罗 ----------
 
-def _tarot_tab():
-    with st.container(border=True):
-        st.markdown('<div class="section-title">抽牌</div>', unsafe_allow_html=True)
-        with st.form("tarot_form"):
-            col1, col2 = st.columns(2)
-            spread = col1.selectbox("牌阵", list(SPREADS),
-                                    format_func=lambda k: SPREADS[k][0], key="tt_s")
-            seed_text = col2.text_input("固定种子（可留空，填了结果可复现）", key="tt_seed")
-            submitted = st.form_submit_button("抽牌", type="primary")
-        st.caption("抽到什么是随机的；怎么解释才是塔罗真正在做的部分，别反复抽到满意为止。")
+def _tarot_view():
+    st.markdown('<div class="section-label">抽牌</div>', unsafe_allow_html=True)
+    with st.form("tarot_form"):
+        col1, col2 = st.columns(2)
+        spread = col1.selectbox("牌阵", list(SPREADS),
+                                format_func=lambda k: SPREADS[k][0], key="tt_s")
+        seed_text = col2.text_input("固定种子（可留空，填了结果可复现）", key="tt_seed")
+        submitted = st.form_submit_button("抽牌", type="primary")
+    st.caption("抽到什么是随机的；怎么解释才是塔罗真正在做的部分，别反复抽到满意为止。")
 
     if submitted:
         seed = None
@@ -742,26 +820,45 @@ def _tarot_tab():
     if not chart:
         return
 
+    st.markdown('<h2 class="result-h2">你抽到的牌</h2>', unsafe_allow_html=True)
     cards = chart["cards"]
-    cols = st.columns(min(len(cards), 3))
+    cols = st.columns(min(len(cards), 3), gap="small")
     for i, card in enumerate(cards):
-        with cols[i % len(cols)].container(border=True):
-            st.markdown(
-                '<div class="section-title">%s</div>'
-                '<div class="pillar"><div class="ganzhi" style="font-size:1.35rem">%s</div>'
-                '<div class="meta"><em>%s</em><br>%s</div></div>'
-                '<div class="note">%s</div>' % (
-                    card["position"], card["name"], card["orientation"],
-                    card["arcana"], card["meaning"]),
-                unsafe_allow_html=True)
+        cols[i % len(cols)].markdown(
+            '<div class="card tarot-card">'
+            '<div class="section-label">%s</div>'
+            '<div class="tarot-name">%s</div>'
+            '<div class="meta"><em>%s</em> · %s</div>'
+            '<div class="note">%s</div></div>' % (
+                _esc(card["position"]), _esc(card["name"]), _esc(card["orientation"]),
+                _esc(card["arcana"]), _esc(card["meaning"])),
+            unsafe_allow_html=True)
 
-    with st.expander("查看牌面文本 / 结构化数据"):
+    with st.expander("牌面明细与原始数据"):
         st.code(format_draw(cards), language=None)
         st.json(chart)
 
-    st.divider()
+    st.markdown('<div class="soft-rule"></div>', unsafe_allow_html=True)
     _read_block(chart, "tarot_read")
 
+
+def _fortune_page():
+    st.markdown(
+        '<div class="page-head"><h1 class="page-h1">排一张盘</h1>'
+        '<p class="page-sub">先把盘排出来，排盘本身不花钱；解读才会调用模型。</p></div>',
+        unsafe_allow_html=True,
+    )
+    tools = ["八字", "星盘", "塔罗"]
+    tool = st.selectbox("排盘方式", tools, index=0, key="fortune_tool")
+    if tool == "八字":
+        _bazi_view()
+    elif tool == "星盘":
+        _astro_view()
+    else:
+        _tarot_view()
+
+
+# ---------- 内部工具（默认隐藏） ----------
 
 def _human_bytes(n):
     try:
@@ -779,7 +876,8 @@ def _status_cn(s):
 
 
 def _data_tab():
-    st.markdown('<div class="prompt-label">数据中台</div>', unsafe_allow_html=True)
+    import datahub
+
     st.caption("登记语料 / chunk / embedding 的版本、血缘和质量门。"
                "库是单文件 SQLite，部署时用 MINGLI_PLATFORM_DB 指到持久化目录。")
 
@@ -801,7 +899,7 @@ def _data_tab():
 
     with c1:
         st.markdown(
-            '<div class="section-title">当前版本 · %s</div>'
+            '<div class="section-label">当前版本 · %s</div>'
             '<div class="note">登记于 %s</div>' % (
                 latest["version"], (latest["scanned_at"] or "").replace("T", " ")),
             unsafe_allow_html=True,
@@ -814,7 +912,7 @@ def _data_tab():
     checks = datahub.checks_for(latest["id"])
     bad = sum(1 for c in checks if c["status"] == "fail")
     warn = sum(1 for c in checks if c["status"] == "warn")
-    st.markdown('<div class="section-title" style="margin-top:1rem">质量门 · %d 通过 / %d 警告 / %d 失败</div>'
+    st.markdown('<div class="section-label" style="margin-top:1rem">质量门 · %d 通过 / %d 警告 / %d 失败</div>'
                 % (len(checks) - bad - warn, warn, bad), unsafe_allow_html=True)
     st.dataframe(
         [{"检查": c["check_name"], "结果": _status_cn(c["status"]),
@@ -822,7 +920,7 @@ def _data_tab():
         hide_index=True, use_container_width=True,
     )
 
-    st.markdown('<div class="section-title" style="margin-top:1rem">资产与哈希</div>',
+    st.markdown('<div class="section-label" style="margin-top:1rem">资产与哈希</div>',
                 unsafe_allow_html=True)
     assets = datahub.assets_for(latest["id"])
     st.dataframe(
@@ -868,7 +966,8 @@ def _run_label(r):
 
 
 def _eval_tab():
-    st.markdown('<div class="prompt-label">评测中台</div>', unsafe_allow_html=True)
+    import evalhub
+
     st.caption("把每次评测登记成带配置、数据集版本和逐题明细的 run；"
                "两次 run 可以直接比，掉点超过阈值判回归失败。")
 
@@ -879,13 +978,10 @@ def _eval_tab():
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("登记 run", len(runs))
-    # 检索看项目声明的当前基线（8681 段那版），不是「最后导入的文件」——
-    # 导入顺序取决于文件 mtime，拿它当「最新」会误导。
     ret = next((r for r in runs if r["source"] == "results_8681_tuned.csv#rrf"),
                by_suite.get("retrieval"))
     c2.metric("检索 R@5（当前基线）", "—" if not ret or ret["metrics"].get("line_recall") is None
               else "%.1f%%" % (ret["metrics"]["line_recall"] * 100))
-    # Agent 看多 Agent 组的均值；单次 run 会受模型波动影响，不能拿来当门面。
     multi = [r for r in runs if r["suite"] == "agent" and r["backend"] == "multi"]
     if multi:
         vals = [r["metrics"].get("pass_rate") for r in multi
@@ -936,7 +1032,7 @@ def _eval_tab():
         st.info("还没有 run。先导入已有结果，或跑一次检索评测。")
         return
 
-    st.markdown('<div class="section-title" style="margin-top:1rem">Run 账本</div>',
+    st.markdown('<div class="section-label" style="margin-top:1rem">Run 账本</div>',
                 unsafe_allow_html=True)
     st.dataframe(
         [{"编号": r["id"], "登记时间": r["created_at"], "套件": _suite_cn(r["suite"]),
@@ -945,7 +1041,7 @@ def _eval_tab():
         hide_index=True, use_container_width=True,
     )
 
-    st.markdown('<div class="section-title" style="margin-top:1rem">逐题明细</div>',
+    st.markdown('<div class="section-label" style="margin-top:1rem">逐题明细</div>',
                 unsafe_allow_html=True)
     run_id = st.selectbox("选择一个 run", [r["id"] for r in runs],
                           format_func=lambda i: _run_label(next(r for r in runs if r["id"] == i)),
@@ -974,7 +1070,7 @@ def _eval_tab():
             with st.expander("判据 / 原始明细", expanded=False):
                 st.json(case["detail"])
 
-    st.markdown('<div class="section-title" style="margin-top:1rem">版本对比 / 回归门</div>',
+    st.markdown('<div class="section-label" style="margin-top:1rem">版本对比 / 回归门</div>',
                 unsafe_allow_html=True)
     suites = [s for s in ("retrieval", "agent", "refusal") if any(r["suite"] == s for r in runs)]
     suite = st.selectbox("对比哪一类", suites, key="eh_cmp_suite")
@@ -1009,53 +1105,36 @@ def _eval_tab():
             hide_index=True, use_container_width=True,
         )
 
+
+def _admin_page():
+    st.markdown(
+        '<div class="page-head"><h1 class="page-h1">维护</h1>'
+        '<p class="page-sub">内部工具：数据版本与评测账本，不对访客展示。</p></div>',
+        unsafe_allow_html=True,
+    )
+    t1, t2 = st.tabs(["数据中台", "评测中台"])
+    with t1:
+        _data_tab()
+    with t2:
+        _eval_tab()
+
+
 def main():
     st.set_page_config(
-        page_title="命理古籍 RAG Agent",
+        page_title="问古 · 命理古籍问答",
         page_icon="📜",
         layout="wide",
+        initial_sidebar_state="collapsed",
     )
     st.markdown(CSS, unsafe_allow_html=True)
 
-    st.markdown(
-        '<div class="hero">'
-        '<div>'
-        '<h1>命理古籍<br>RAG Agent</h1>'
-        '<p class="sub">45 部古籍、8,681 个段落。先检索、再作答，'
-        '每个结论都能回到原文；证据不足时<b>明确拒答</b>。</p>'
-        '<div class="stats">'
-        '<span class="stat"><b>45</b>部古籍</span>'
-        '<span class="stat"><b>8,681</b>段落</span>'
-        '<span class="stat"><b>340 万</b>字语料</span>'
-        '<span class="stat"><b>7</b>个工具</span>'
-        '</div>'
-        '</div>'
-        '<aside class="hero-aside">'
-        '<div class="aside-label">当前评测（样本有限）</div>'
-        '<div class="metric-row"><span>检索 Recall@5</span><b>75.0%</b></div>'
-        '<div class="metric-row"><span>单 Agent</span><b>8.0 / 15</b></div>'
-        '<div class="metric-row"><span>多 Agent</span><b>12.7 / 15</b></div>'
-        '<div class="metric-row"><span>拒答正确</span><b>9 / 9</b></div>'
-        '<div class="aside-note">30 题检索集 / 15 题 Agent 集，三次运行均值；不宣称统计显著。</div>'
-        '</aside>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-    tab_qa, tab_eval, tab_data, tab_bazi, tab_astro, tab_tarot = st.tabs(
-        ["古籍问答", "评测中台", "数据中台", "八字排盘", "星盘", "塔罗"])
-    with tab_qa:
-        _qa_tab()
-    with tab_eval:
-        _eval_tab()
-    with tab_data:
-        _data_tab()
-    with tab_bazi:
-        _bazi_tab()
-    with tab_astro:
-        _astro_tab()
-    with tab_tarot:
-        _tarot_tab()
+    view = _header()
+    if view == "排盘":
+        _fortune_page()
+    elif view == "维护":
+        _admin_page()
+    else:
+        _ask_page()
 
 
 if __name__ == "__main__":

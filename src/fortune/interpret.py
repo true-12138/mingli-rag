@@ -19,8 +19,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from rag import _chat, _parse_json
-
 DISCLAIMER = (
     "以上为传统文化视角的解读，属于文化娱乐内容，不构成医疗、法律、投资或人生决策建议。"
     "命盘描述的是倾向，不是注定；具体选择仍取决于你自己。"
@@ -105,6 +103,10 @@ def read(chart, question=None, user_note=None, temperature=0.7, api_key=None):
     if user_note:
         parts.append("【用户补充的处境】\n" + str(user_note).strip())
     parts.append("【希望覆盖的角度】\n" + SECTION_HINTS[kind])
+
+    # rag 会加载语料和 34MB embedding；放到真正要解读时才导入，
+    # 否则 Streamlit 首屏要等十几秒。
+    from rag import _chat, _parse_json
 
     raw = _chat(
         [
