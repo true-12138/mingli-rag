@@ -20,7 +20,6 @@
 """
 from __future__ import annotations
 
-import hmac
 import logging
 import os
 import sys
@@ -40,16 +39,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent
 import agent_multi
+import api_conversations
 import rag
 import retrieval
 import usage
+from guards import MAX_CONCURRENCY, _SLOTS, _require_token, _slot
 
 API_VERSION = "1.0.0"
 logger = logging.getLogger("mingli.api")
 
 MAX_TRACES = int(os.environ.get("MINGLI_TRACE_CACHE", "200"))
-MAX_CONCURRENCY = int(os.environ.get("MINGLI_MAX_CONCURRENCY", "4"))
-_SLOTS = threading.BoundedSemaphore(MAX_CONCURRENCY)
 
 _TRACES: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
 _TRACES_LOCK = threading.Lock()
@@ -59,6 +58,7 @@ app = FastAPI(
     version=API_VERSION,
     description="45 部古籍 / 8,681 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
 )
+app.include_router(api_conversations.router)
 
 
 # ---------- 请求 / 响应模型 ----------
@@ -147,31 +147,7 @@ class TraceResponse(BaseModel):
     result: dict[str, Any]
 
 
-# ---------- 鉴权 / 并发 / trace ----------
-
-def _require_token(authorization: str | None = Header(default=None)) -> None:
-    expected = os.environ.get("MINGLI_API_TOKEN")
-    if not expected:
-        return
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="缺少 Bearer token")
-    if not hmac.compare_digest(authorization[7:].strip(), expected):
-        raise HTTPException(status_code=401, detail="token 不正确")
-
-
-def _slot() -> Any:
-    """限制同时在跑的生成请求；超限立刻返回 429，而不是排队把内存吃满。"""
-    if not _SLOTS.acquire(blocking=False):
-        raise HTTPException(
-            status_code=429,
-            detail="服务繁忙，请稍后重试",
-            headers={"Retry-After": "2"},
-        )
-    try:
-        yield
-    finally:
-        _SLOTS.release()
-
+# ---------- trace ----------
 
 def _remember(trace_id: str, mode: str, question: str, elapsed_ms: float,
               result: dict[str, Any]) -> None:
@@ -207,7 +183,14 @@ def root() -> dict[str, Any]:
         "service": "mingli-rag-api",
         "version": API_VERSION,
         "docs": "/docs",
-        "endpoints": ["/health", "/chat", "/retrieve", "/trace/{trace_id}"],
+        "endpoints": [
+            "/health",
+            "/chat",
+            "/retrieve",
+            "/trace/{trace_id}",
+            "/v1/conversations",
+            "/v1/conversations/{conversation_id}/chat",
+        ],
     }
 
 
