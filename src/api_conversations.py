@@ -71,6 +71,22 @@ class ConversationDetailOut(ConversationOut):
     messages: list[MessageOut] = Field(default_factory=list)
 
 
+class FeedbackCreate(BaseModel):
+    rating: Literal[1, -1]
+    reason: str | None = Field(default=None, max_length=2000)
+    expected_answer: str | None = Field(default=None, max_length=5000)
+
+
+class FeedbackOut(BaseModel):
+    id: int
+    run_id: str
+    rating: int
+    reason: str | None = None
+    expected_answer: str | None = None
+    promoted_to_eval: bool = False
+    created_at: datetime
+
+
 class ConversationChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     mode: Literal["rag", "agent", "multi"] = "rag"
@@ -148,6 +164,7 @@ class RunOut(BaseModel):
 
 class RunDetailOut(RunOut):
     tool_calls: list[ToolCallOut] = Field(default_factory=list)
+    feedback: list[FeedbackOut] = Field(default_factory=list)
 
 
 # ---------- 依赖 ----------
@@ -187,6 +204,18 @@ def _loads(value: str | None, default: Any) -> Any:
         return value
 
 
+def _feedback_out(fb) -> dict[str, Any]:
+    return {
+        "id": fb.id,
+        "run_id": fb.run_id,
+        "rating": fb.rating,
+        "reason": fb.reason,
+        "expected_answer": fb.expected_answer,
+        "promoted_to_eval": fb.promoted_to_eval,
+        "created_at": fb.created_at,
+    }
+
+
 def _run_out(run, with_tool_calls: bool = False) -> dict[str, Any]:
     out: dict[str, Any] = {
         "id": run.id,
@@ -223,6 +252,7 @@ def _run_out(run, with_tool_calls: bool = False) -> dict[str, Any]:
             }
             for call in run.tool_calls
         ]
+        out["feedback"] = [_feedback_out(fb) for fb in run.feedback]
     return out
 
 
@@ -307,6 +337,30 @@ def get_run(
     if run is None:
         raise HTTPException(status_code=404, detail="运行记录不存在")
     return _run_out(run, with_tool_calls=True)
+
+
+@router.post("/runs/{run_id}/feedback", response_model=FeedbackOut)
+def submit_feedback(
+    run_id: str,
+    req: FeedbackCreate,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """对一次回答打分。差评后面会被 eval/promote_feedback.py 晋升成回归用例。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    run = repo.get_run(session, run_id, user.id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="运行记录不存在")
+
+    fb = repo.upsert_feedback(
+        session,
+        run,
+        user.id,
+        req.rating,
+        reason=(req.reason or "").strip() or None,
+        expected_answer=(req.expected_answer or "").strip() or None,
+    )
+    return _feedback_out(fb)
 
 
 # ---------- 带记忆的对话 ----------

@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -30,15 +31,22 @@ GATE = {
     "retrieval": ("line_recall", 0.02),
     "agent": ("pass_rate", 0.05),
     "refusal": ("refusal_accuracy", 0.02),
+    "feedback": ("pass_rate", 0.05),
 }
 
 IMPORTED_VERSION = "imported:unknown"
+FEEDBACK_CASES = EVAL_DIR / "feedback_cases.jsonl"
 
 METRIC_KEYS = {
     "retrieval": ("line_recall", "exact_recall", "line_mrr"),
     "agent": ("pass_rate", "auto_pass", "errors", "elapsed_seconds", "llm_mean"),
     "refusal": ("answered_rate", "refusal_accuracy", "invalid_outputs"),
+    "feedback": ("pass_rate", "auto_pass", "auto_total", "human_review", "errors"),
 }
+
+# 判断“这次回答有没有改好”时，用字符二元组重合度做粗比较；
+# 只用于线上反馈这种没有标准答案的场景，不能替代人工评测。
+_REFUSAL_MARKERS = ("没有足够", "无法回答", "语料中没有")
 
 
 def _now():
@@ -205,6 +213,187 @@ def run_retrieval(mode="rrf", top_k=TOP_K, limit=0, name=None, questions_path=QU
             {"mode": mode, "top_k": top_k, "limit": limit,
              "questions_sha256": _sha256(questions_path)},
             metrics, "done", None, _now(), cases,
+        )
+        conn.commit()
+    return run_id
+
+
+# ---------- 线上差评 → 回归用例 ----------
+
+def load_feedback_cases(path=FEEDBACK_CASES):
+    """读 eval/promote_feedback.py 生成的回归用例。"""
+    path = Path(path)
+    if not path.exists():
+        return []
+    out = []
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                out.append(json.loads(line))
+    return out
+
+
+def _norm_text(text):
+    return re.sub(r"[\s\W_]+", "", str(text or "")).lower()
+
+
+def _bigrams(text):
+    text = _norm_text(text)
+    if len(text) < 2:
+        return {text} if text else set()
+    return {text[i:i + 2] for i in range(len(text) - 1)}
+
+
+def _similarity(a, b):
+    """字符二元组 Jaccard；中文不需要分词，够用来判断“有没有往期望答案靠”。"""
+    ba, bb = _bigrams(a), _bigrams(b)
+    if not ba or not bb:
+        return 0.0
+    return len(ba & bb) / len(ba | bb)
+
+
+def judge_feedback_case(case, result):
+    """判断新回答是否修好了这条差评。
+
+    能机器判的只有两类：
+    1. 上次是拒答，这次必须答出来且带有效引用；
+    2. 用户给了 expected_answer，新答案要和它更接近，且引用合规。
+    其余返回 passed=None，交给人工，不混进 pass_rate。
+    """
+    answer = str(result.get("answer") or "")
+    can_answer = result.get("can_answer")
+    citations = result.get("citations_chunk_ids") or []
+    valid_answer = (
+        can_answer is True and bool(citations) and not result.get("invalid_output")
+    )
+    expected = str(case.get("expected_answer") or "").strip()
+    bad_answer = str(case.get("bad_answer") or "")
+
+    if case.get("bad_can_answer") is False:
+        return {
+            "passed": valid_answer,
+            "auto": True,
+            "reason": "上次拒答，这次要求给出带引用的回答"
+            if not valid_answer else "已从拒答改为有依据的回答",
+            "new_similarity": None,
+            "old_similarity": None,
+        }
+
+    if expected:
+        new_sim = _similarity(answer, expected)
+        old_sim = _similarity(bad_answer, expected)
+        if any(marker in expected for marker in _REFUSAL_MARKERS):
+            passed = can_answer is False
+            reason = "期望拒答，这次应保持拒答" if passed else "期望拒答，但这次仍在作答"
+        else:
+            passed = valid_answer and new_sim > old_sim
+            reason = ("更接近期望答案" if passed else
+                      "没有比旧答案更接近期望答案，或引用不合规")
+        return {
+            "passed": passed,
+            "auto": True,
+            "reason": reason,
+            "new_similarity": round(new_sim, 4),
+            "old_similarity": round(old_sim, 4),
+        }
+
+    return {
+        "passed": None,
+        "auto": False,
+        "reason": "缺少 expected_answer，留给人看",
+        "new_similarity": None,
+        "old_similarity": None,
+    }
+
+
+def _run_feedback_case(case, mode=None):
+    """按用例记录的模式重跑一次问答；没有记录就默认走 RAG。"""
+    question = case["question"]
+    mode = mode or case.get("mode") or "rag"
+    if mode == "rag":
+        from rag import answer
+        return answer(question)
+    if mode == "agent":
+        from agent import agent_answer
+        return agent_answer(question)
+    if mode == "multi":
+        from agent_multi import agent_answer
+        return agent_answer(question)
+    raise ValueError("未知 mode: {}".format(mode))
+
+
+def run_feedback(mode=None, limit=0, name=None, cases_path=FEEDBACK_CASES):
+    """重跑差评用例并登记成一个 suite=feedback 的 eval_run。
+
+    和其他 suite 一样，用 evalhub.compare(baseline_id, new_id) 过回归门。
+    """
+    cases = load_feedback_cases(cases_path)
+    if limit:
+        cases = cases[:limit]
+    if not cases:
+        raise SystemExit(
+            "没有反馈用例。先启动服务收集差评，再跑 eval/promote_feedback.py。"
+        )
+
+    started = time.perf_counter()
+    rows, auto_passed, errors = [], 0, 0
+    for case in cases:
+        t0 = time.perf_counter()
+        try:
+            result = _run_feedback_case(case, mode=mode)
+        except Exception as exc:  # 单条失败不拖垮整轮评测
+            errors += 1
+            result = {
+                "answer": "", "can_answer": None, "citations_chunk_ids": [],
+                "invalid_output": True, "error": str(exc),
+            }
+        latency = (time.perf_counter() - t0) * 1000
+        judged = judge_feedback_case(case, result)
+        if judged["passed"] is True:
+            auto_passed += 1
+        rows.append({
+            "case_id": case.get("id"),
+            "question": case.get("question"),
+            "answerable": case.get("bad_can_answer") is not False,
+            "category": "线上反馈",
+            "output": result.get("answer"),
+            "can_answer": result.get("can_answer"),
+            "citations": result.get("citations_chunk_ids") or [],
+            "recall": None, "mrr": None,
+            "passed": judged["passed"],
+            "latency_ms": round(latency, 1),
+            "detail": {
+                "judge": judged,
+                "mode": mode or case.get("mode") or "rag",
+                "reason": case.get("reason"),
+                "expected_answer": case.get("expected_answer"),
+                "bad_answer": case.get("bad_answer"),
+                "refusal_reason": result.get("refusal_reason"),
+                "error": result.get("error"),
+            },
+        })
+
+    auto_total = sum(1 for r in rows if r["detail"]["judge"].get("auto"))
+    metrics = {
+        "pass_rate": (auto_passed / auto_total) if auto_total else None,
+        "auto_pass": auto_passed,
+        "auto_total": auto_total,
+        "human_review": len(rows) - auto_total,
+        "total": len(rows),
+        "errors": errors,
+        "elapsed_seconds": round(time.perf_counter() - started, 1),
+    }
+    suite = "feedback"
+    backend = mode or "mixed"
+    with connect() as conn:
+        run_id = _insert_run(
+            conn,
+            name or "feedback/{}/{}".format(backend, _now()),
+            None, suite, backend, _dataset_version(conn),
+            {"cases": str(cases_path), "limit": limit,
+             "cases_sha256": _sha256(cases_path) if Path(cases_path).exists() else None},
+            metrics, "done", None, _now(), rows,
         )
         conn.commit()
     return run_id

@@ -17,7 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .models import Conversation, Message, Run, ToolCall, User, utcnow
+from .models import Conversation, Feedback, Message, Run, ToolCall, User, utcnow
 
 # 一次最多带最近 3 轮（6 条）进 prompt；和 conversation.normalize_history 的预算一致。
 DEFAULT_HISTORY_MESSAGES = 6
@@ -286,3 +286,57 @@ def list_runs(
             .limit(limit)
         ).all()
     )
+
+
+# ---------- 反馈 ----------
+
+def upsert_feedback(
+    session: Session,
+    run: Run,
+    user_id: int,
+    rating: int,
+    reason: str | None = None,
+    expected_answer: str | None = None,
+) -> Feedback:
+    """一个用户对一次运行只保留一条反馈；再提交就是修改。会 commit。"""
+    fb = session.scalar(
+        select(Feedback).where(
+            Feedback.run_id == run.id,
+            Feedback.user_id == user_id,
+        )
+    )
+    if fb is None:
+        fb = Feedback(run_id=run.id, user_id=user_id, rating=rating)
+        session.add(fb)
+    fb.rating = rating
+    fb.reason = reason
+    fb.expected_answer = expected_answer
+    # 改了评价就重新进入“待晋升”队列，避免旧结论被永久标记为已处理。
+    fb.promoted_to_eval = False
+    session.commit()
+    session.refresh(fb)
+    return fb
+
+
+def feedback_for_run(session: Session, run_id: str) -> list[Feedback]:
+    return list(
+        session.scalars(
+            select(Feedback)
+            .where(Feedback.run_id == run_id)
+            .order_by(Feedback.created_at)
+        ).all()
+    )
+
+
+def pending_negative_feedback(
+    session: Session, limit: int = 500
+) -> list[tuple[Feedback, Run]]:
+    """差评且还没晋升成评测用例的记录，连带对应的 run 一起返回。"""
+    stmt = (
+        select(Feedback, Run)
+        .join(Run, Feedback.run_id == Run.id)
+        .where(Feedback.rating == -1, Feedback.promoted_to_eval.is_(False))
+        .order_by(Feedback.created_at)
+        .limit(limit)
+    )
+    return list(session.execute(stmt).all())
