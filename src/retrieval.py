@@ -1,5 +1,6 @@
 import os
 import sys
+import threading
 from pathlib import Path
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -71,12 +72,23 @@ class _LazyModel:
     def __init__(self, model_id):
         self.model_id = model_id
         self._m = None
+        # 冷启动时多个用户同时到：没有锁会各自加载一份 BGE-M3，
+        # 在 2C4G 上直接 OOM。双重检查，只有第一个线程真正加载。
+        self._lock = threading.Lock()
 
     @property
     def loaded(self):
         return self._m is not None
 
     def _load(self):
+        if self._m is not None:
+            return self._m
+        with self._lock:
+            if self._m is not None:
+                return self._m
+            return self._load_locked()
+
+    def _load_locked(self):
         # 大陆网络直连 huggingface 多数会失败。用户没显式配置时默认走镜像，
         # 想直连就把 HF_ENDPOINT 设成 https://huggingface.co。
         os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")

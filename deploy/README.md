@@ -39,6 +39,19 @@ curl -s localhost:8000/health
 首次构建会装 torch / sentence-transformers，镜像比较大；构建完启动时只加载语料和
 `embeddings.npy`，BGE-M3 在第一次检索时才加载。
 
+**数据持久化**：compose 把业务库和评测库放在 `mingli_state` 卷（容器内
+`/var/lib/mingli`），语料仍在镜像的 `/app/data`，两者不冲突。
+`docker compose down` 不会删卷；只有 `down -v` 会。备份：
+
+```bash
+docker run --rm -v mingli-rag_mingli_state:/src -v "$PWD":/backup alpine \
+  tar czf /backup/mingli-state-$(date +%F).tgz -C /src .
+```
+
+**存活与就绪**：`/health` 是存活探针，`/ready` 是就绪探针。`/ready` 在
+`DEEPSEEK_API_KEY` 未配置或索引不一致时返回 503；接负载均衡时用它摘流量，
+不要用 `/health`。
+
 带 token 调用：
 
 ```bash
@@ -76,6 +89,8 @@ sudo systemctl status mingli-api
 ## 6. 验收清单
 
 - [ ] `curl https://api.example.com/health` 返回 200，`chunks=8681`、`embedding_dim=1024`
+- [ ] `curl https://api.example.com/ready` 返回 200；临时清空 key 后返回 503
+- [ ] `docker compose down && docker compose up -d` 后，之前的会话仍能查到（卷生效）
 - [ ] `/chat` 三种 `mode` 都能返回；`rag` 和 `agent` 至少各跑 1 条真实问题
 - [ ] 不带 token 返回 401（设置了 `MINGLI_API_TOKEN` 时）
 - [ ] 并发打 10 个请求，超出部分返回 429，服务不崩

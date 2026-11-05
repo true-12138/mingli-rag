@@ -194,6 +194,7 @@ def root() -> dict[str, Any]:
         "docs": "/docs",
         "endpoints": [
             "/health",
+            "/ready",
             "/metrics",
             "/chat",
             "/retrieve",
@@ -223,6 +224,43 @@ def health() -> dict[str, Any]:
         "max_concurrency": MAX_CONCURRENCY,
         "trace_cache": len(_TRACES),
     }
+
+
+@app.get("/ready")
+def ready() -> JSONResponse:
+    """就绪探针：配置齐全、索引一致时才返回 200。
+
+    和 `/health` 的分工：
+    - `/health` 是存活探针，进程还在就给 200，用于 Docker 判断要不要重启；
+    - `/ready` 是就绪探针，缺 key / 索引不一致时给 503，负载均衡据此摘流量。
+
+    这里**不加载** BGE-M3：加载要下载几 GB 权重，探针不能触发它。
+    模型按需加载是刻意的，所以 `embedding_loaded=false` 不算未就绪。
+    """
+    problems: list[str] = []
+    if not (os.environ.get("DEEPSEEK_API_KEY") or "").strip():
+        problems.append("DEEPSEEK_API_KEY 未配置（访客自带 key 仍可用，但服务端无法兜底）")
+
+    n_chunks = len(retrieval.chunks)
+    n_rows = int(retrieval.embeds.shape[0])
+    if n_chunks == 0:
+        problems.append("语料为空")
+    elif n_rows != n_chunks:
+        problems.append("embeddings 行数 {} 与语料 {} 不一致".format(n_rows, n_chunks))
+
+    payload = {
+        "status": "not_ready" if problems else "ready",
+        "service": "mingli-rag-api",
+        "version": API_VERSION,
+        "problems": problems,
+        "chunks": n_chunks,
+        "embedding_rows": n_rows,
+        "embedding_loaded": bool(getattr(retrieval.model, "loaded", False)),
+        "server_key_configured": bool(
+            (os.environ.get("DEEPSEEK_API_KEY") or "").strip()
+        ),
+    }
+    return JSONResponse(status_code=503 if problems else 200, content=payload)
 
 
 @app.get("/metrics", response_class=PlainTextResponse, tags=["ops"])

@@ -44,6 +44,28 @@ def test_health_reports_corpus_and_modes(client):
     assert data["modes"] == ["rag", "agent", "multi"]
 
 
+def test_ready_fails_without_server_key(client, monkeypatch):
+    """就绪探针必须在配置缺失时给 503，否则 LB 会把流量送进一个每请求都 503 的实例。"""
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    r = client.get("/ready")
+
+    assert r.status_code == 503
+    body = r.json()
+    assert body["status"] == "not_ready"
+    assert any("DEEPSEEK_API_KEY" in p for p in body["problems"])
+
+
+def test_ready_ok_when_key_and_index_are_present(client, monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    r = client.get("/ready")
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ready"
+    assert body["chunks"] == 8681
+    assert body["server_key_configured"] is True
+
+
 def test_chat_routes_to_rag_and_exposes_trace(client, monkeypatch):
     captured = {}
 

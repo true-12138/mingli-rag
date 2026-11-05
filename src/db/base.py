@@ -36,9 +36,14 @@ def db_url() -> str:
 def make_engine(url: str | None = None) -> Engine:
     """按 URL 建 engine。
 
-    SQLite 有两个特殊处理：
+    SQLite 的四个特殊处理：
     1. `check_same_thread=False`：FastAPI 的同步接口跑在线程池里，连接会跨线程；
-    2. `PRAGMA foreign_keys=ON`：SQLite 默认不执行外键，必须每个连接手动打开。
+    2. `PRAGMA foreign_keys=ON`：SQLite 默认不执行外键，必须每个连接手动打开；
+    3. `PRAGMA journal_mode=WAL`：读不阻塞写，多个用户同时问时不会因为一次写入
+       把所有人的会话读取都卡住；
+    4. `PRAGMA busy_timeout=5000`：第二个写者排队 5 秒，而不是立刻抛
+       `database is locked`。它不把 SQLite 变成 Postgres，但能把「4 路并发写」
+       从偶发 500 变成可预期。
     内存库用 StaticPool，保证同一份内存库在多次连接之间共享。
     """
     url = url or db_url()
@@ -52,9 +57,13 @@ def make_engine(url: str | None = None) -> Engine:
 
     if url.startswith("sqlite"):
         @event.listens_for(engine, "connect")
-        def _enable_sqlite_foreign_keys(dbapi_connection, _record) -> None:
+        def _configure_sqlite(dbapi_connection, _record) -> None:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
+            # WAL 对内存库会返回 "memory"，不报错；对文件库是持久设置。
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=5000")
             cursor.close()
 
     return engine

@@ -8,6 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# 运行时数据目录：业务库 / 评测库 / 额度计数。部署时由 compose 挂卷覆盖，
+# 这里先建好，避免直接 `docker run` 时 SQLite 找不到父目录。
+RUN mkdir -p /var/lib/mingli
+
 # sentence-transformers / torch 的 wheel 已经覆盖常用平台，不需要 build-essential。
 COPY requirements.txt .
 RUN pip install -r requirements.txt

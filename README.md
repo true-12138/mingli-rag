@@ -72,7 +72,7 @@ flowchart LR
 | 生成 | `deepseek-chat`，`temperature=0`，`response_format=json_object` | `src/rag.py:59` |
 | 约束 | 引用编号 → chunk_id 映射与校验；声称能答但零有效引用 → `invalid_output` | `src/rag.py:116` |
 | 界面 | Streamlit：面向访客的「问古籍」「排盘」两页；检索后端、Top-k、轨迹、数据/评测中台收进维护页（`?admin=1`） | `src/app.py` |
-| API | FastAPI：`/chat`、`/retrieve`、`/trace`、`/health`；并发信号量 + 可选 Bearer token | `src/api.py` |
+| API | FastAPI：`/chat`、`/retrieve`、`/trace`、`/health`、`/ready`；并发信号量 + 可选 Bearer token | `src/api.py` |
 | 部署 | ModelScope 创空间，入口见 `modelscope.yml`；独立 API 走 `Dockerfile` / `docker-compose.yml` | `app.py`、`Dockerfile` |
 
 **一次请求发生了什么**
@@ -425,7 +425,8 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| `GET` | `/health` | 语料条数、embedding 形状、模型是否已加载、并发上限 |
+| `GET` | `/health` | 存活探针：语料条数、embedding 形状、模型是否已加载、并发上限 |
+| `GET` | `/ready` | 就绪探针：缺 `DEEPSEEK_API_KEY` 或索引不一致时返回 503 |
 | `POST` | `/retrieve` | 只检索，`mode` 可选 `dense` / `bm25` / `rrf` |
 | `POST` | `/chat` | 问答，`mode` 可选 `rag` / `agent` / `multi`，支持 `history` |
 | `GET` | `/trace/{trace_id}` | 取回最近一次请求的完整结果（内存里保留最近 200 条） |
@@ -466,7 +467,7 @@ Docker：
 docker compose up --build       # http://localhost:8000/docs
 ```
 
-镜像不会打包 BGE-M3 权重，首次查询下载到 compose 的 `hf_cache` volume；语料和 34 MB embedding 随镜像提供。ECS + Nginx + systemd 的完整步骤见 [`deploy/README.md`](deploy/README.md)。
+镜像不会打包 BGE-M3 权重，首次查询下载到 compose 的 `hf_cache` volume；语料和 34 MB embedding 随镜像提供。业务库与评测库放在 `mingli_state` volume（容器内 `/var/lib/mingli`），重建容器不会丢会话；`/health` 是存活探针，`/ready` 是就绪探针。ECS + Nginx + systemd 的完整步骤见 [`deploy/README.md`](deploy/README.md)。
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 
@@ -518,7 +519,7 @@ python scripts/demo_closed_loop.py
 .
 ├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
 ├── Dockerfile                 # FastAPI 单镜像（不打包 BGE-M3 权重）
-├── docker-compose.yml         # 本地一键起 API + HF 权重缓存 volume
+├── docker-compose.yml         # 本地一键起 API + HF 权重缓存 / 业务数据 volume
 ├── deploy/                    # ECS：Nginx 限流反代 + systemd 开机自启
 ├── src/
 │   ├── app.py                 # 界面：问古籍 + 排盘；维护页（?admin=1）放中台与后端开关

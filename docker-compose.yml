@@ -10,9 +10,16 @@ services:
       MINGLI_API_TOKEN: ${MINGLI_API_TOKEN:-}
       MINGLI_MAX_CONCURRENCY: ${MINGLI_MAX_CONCURRENCY:-4}
       MINGLI_TRACE_CACHE: ${MINGLI_TRACE_CACHE:-200}
+      # 运行时数据（业务库、评测库、额度计数）必须落在卷里，不能留在容器可写层，
+      # 否则 docker compose up --build 一执行，用户/会话/run 全部丢失。
+      # 注意：/var/lib/mingli 和镜像里的语料目录 /app/data 分开，挂载不会遮住语料。
+      MINGLI_DB_URL: ${MINGLI_DB_URL:-sqlite:////var/lib/mingli/app.sqlite3}
+      MINGLI_PLATFORM_DB: ${MINGLI_PLATFORM_DB:-/var/lib/mingli/platform.sqlite3}
     volumes:
       # BGE-M3 权重只下载一次，容器重建不重下
       - hf_cache:/root/.cache/huggingface
+      # 业务数据与评测账本：重建容器、升级镜像都不丢
+      - mingli_state:/var/lib/mingli
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)"]
@@ -23,3 +30,4 @@ services:
 
 volumes:
   hf_cache:
+  mingli_state:

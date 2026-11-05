@@ -63,6 +63,18 @@ def test_creates_seven_business_tables(session):
     }
 
 
+def test_sqlite_uses_wal_and_waits_for_writers(tmp_path):
+    """多个用户同时问时，读不能被一次写入卡死，写者也不能立刻报 locked。"""
+    engine = make_engine("sqlite:///" + (tmp_path / "pragmas.sqlite3").as_posix())
+    try:
+        with engine.connect() as conn:
+            assert conn.exec_driver_sql("PRAGMA journal_mode").scalar() == "wal"
+            assert conn.exec_driver_sql("PRAGMA busy_timeout").scalar() == 5000
+            assert conn.exec_driver_sql("PRAGMA foreign_keys").scalar() == 1
+    finally:
+        engine.dispose()
+
+
 def test_user_conversation_message_relationship(session):
     user = _user(session)
     conv = _conversation(session, user)
