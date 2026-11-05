@@ -397,7 +397,7 @@ python eval/run_feedback.py --mode rag --baseline <id>   # 回归门，掉超过
 自动判据在 `src/evalhub.py::judge_feedback_case`：
 
 - 上次是拒答 → 这次必须答出来且带有效引用；
-- 有 `expected_answer` → 新答案的字符二元组相似度必须**高于旧答案**，且引用合规；
+- 有 `expected_answer` → 新答案的字符二元组相似度必须比旧答案**至少高 2 个百分点**（`MINGLI_FEEDBACK_MIN_GAIN`，默认 `0.02`），且引用合规；只涨千分之几视为噪声；
 - 两者都没有 → `passed=None`，转人工复核，不计入通过率。
 
 不想配 key 也能看完整链路（假模型 + 临时数据库，不联网）：

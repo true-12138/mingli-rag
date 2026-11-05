@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import re
 import time
 from datetime import datetime
@@ -47,6 +48,10 @@ METRIC_KEYS = {
 # 判断“这次回答有没有改好”时，用字符二元组重合度做粗比较；
 # 只用于线上反馈这种没有标准答案的场景，不能替代人工评测。
 _REFUSAL_MARKERS = ("没有足够", "无法回答", "语料中没有")
+
+# 相似度只要涨一点点就放行，等于把 LLM 的随机波动当成"修好了"。
+# 0.02 是字符二元组 Jaccard 的经验值：几十个字的答案，涨 2 个点才不是噪声。
+MIN_SIM_GAIN = float(os.environ.get("MINGLI_FEEDBACK_MIN_GAIN", "0.02"))
 
 
 def _now():
@@ -258,7 +263,8 @@ def judge_feedback_case(case, result):
 
     能机器判的只有两类：
     1. 上次是拒答，这次必须答出来且带有效引用；
-    2. 用户给了 expected_answer，新答案要和它更接近，且引用合规。
+    2. 用户给了 expected_answer，新答案要比旧答案至少接近 ``MIN_SIM_GAIN``，
+       且引用合规——只涨 0.002 这种幅度是随机波动，不算修好。
     其余返回 passed=None，交给人工，不混进 pass_rate。
     """
     answer = str(result.get("answer") or "")
@@ -287,9 +293,16 @@ def judge_feedback_case(case, result):
             passed = can_answer is False
             reason = "期望拒答，这次应保持拒答" if passed else "期望拒答，但这次仍在作答"
         else:
-            passed = valid_answer and new_sim > old_sim
-            reason = ("更接近期望答案" if passed else
-                      "没有比旧答案更接近期望答案，或引用不合规")
+            gain = new_sim - old_sim
+            passed = valid_answer and gain >= MIN_SIM_GAIN
+            if passed:
+                reason = "比旧答案更接近期望答案（+{:.3f}）".format(gain)
+            elif valid_answer:
+                reason = "只接近了 {:.3f}，低于噪声阈值 {:.2f}".format(
+                    gain, MIN_SIM_GAIN
+                )
+            else:
+                reason = "引用不合规，或没有比旧答案更接近期望答案"
         return {
             "passed": passed,
             "auto": True,

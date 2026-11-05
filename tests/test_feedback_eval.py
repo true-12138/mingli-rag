@@ -47,6 +47,19 @@ def test_expected_answer_requires_improvement_over_bad_answer():
     assert same["passed"] is False
 
 
+def test_noise_level_improvement_is_rejected():
+    """只比旧答案像 0.002，是模型随机波动，不能算修好。"""
+    base = "".join(chr(0x4E00 + i) for i in range(200))
+    case = {
+        "bad_answer": base[:-1] + "X",
+        "bad_can_answer": True,
+        "expected_answer": base,
+    }
+    judged = evalhub.judge_feedback_case(case, _result(answer=base[:-1] + "Y"))
+    assert judged["passed"] is False
+    assert "噪声" in judged["reason"]
+
+
 def test_expected_refusal_case():
     case = {
         "bad_answer": "你明天面试一定顺利。",
