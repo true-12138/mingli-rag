@@ -1,0 +1,33 @@
+{
+  "name": "mingli-agent",
+  "version": "agent_v1",
+  "status": "frozen",
+  "frozen_at": "2026-11-05",
+  "frozen_since": "7dcd772",
+  "cases_sha256": "a7b1f3abeeae1a6993619cc764c060c24de3dff5826015062aa1aca651ecd649",
+  "splits": {
+    "dev": 10,
+    "holdout": 5
+  },
+  "dev_cases": [
+    "a01",
+    "a02",
+    "a04",
+    "b01",
+    "b02",
+    "b03",
+    "b04",
+    "c01",
+    "c03",
+    "d01"
+  ],
+  "holdout_cases": [
+    "a03",
+    "a05",
+    "b05",
+    "c02",
+    "d02"
+  ],
+  "primary_metric": "pass_rate",
+  "note": "holdout 自本版本起冻结。此前提示词迭代已看过全部 15 条，因此 v1 的 holdout 分数只能约束后续改动，不能当作无污染的泛化指标；扩题到 30 条后按 build_benchmark.py --force 重新冻结。"
+}

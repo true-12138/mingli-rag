@@ -1,0 +1,19 @@
+{
+  "baseline_expectation": "单 Agent 命中一条断语就下定论，缺两书对照",
+  "evidence_books": [
+    "三命通会",
+    "五行精纪"
+  ],
+  "id": "a05",
+  "pass_criteria": [
+    "两本书各至少 1 条引用",
+    "回答中包含取法（依据年支或日支）与吉凶条件的区分",
+    "只给吉或只给凶的单边结论即判不通过"
+  ],
+  "required_tools": [
+    "search_classics(book=三命通会)",
+    "search_classics(book=五行精纪)"
+  ],
+  "retrieval_note": "实测：三命通会 咸池 46 / 桃花 44；五行精纪 咸池 15 / 桃花 6。",
+  "why_agentic": "神煞条目在《三命通会》与《五行精纪》里都有，取法与吉凶判断并不统一。要回答「是不是凶煞」必须两书对照。"
+}

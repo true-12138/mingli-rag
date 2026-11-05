@@ -1,0 +1,18 @@
+{
+  "baseline_expectation": "单 Agent 易跳过术语表，凭常识补推导规则，出现无出处结论",
+  "evidence_books": [
+    "三命通会"
+  ],
+  "id": "b01",
+  "pass_criteria": [
+    "调用 search_terms 且命中纳音相关条目",
+    "至少 1 条原文引用说明六十甲子纳音的编排方式（两两一组）",
+    "回答中出现语料未支持的推导规则即判不通过"
+  ],
+  "required_tools": [
+    "search_terms",
+    "search_classics"
+  ],
+  "retrieval_note": "实测：三命通会「海中金」3 条、「六十甲子」12 条、「纳音」118 条；五行精纪「海中金」1 条。",
+  "why_agentic": "需要先用 search_terms 拿到纳音的定义，再回原文找排法。单 Agent 常跳过术语表直接检索，拿到零散的纳音对照就自行编推导规则。"
+}

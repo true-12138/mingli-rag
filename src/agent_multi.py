@@ -31,9 +31,11 @@ import tools
 from agent import MAX_STEPS, _finalize
 from rag import _chat, _parse_json
 from conversation import history_block, normalize_history, rewrite_question
+import agent_state
 
-EVIDENCE_CHAR = 420          # 喂给 Verifier / 汇总的每条证据截断长度
-RETRIEVER_MAX_CALLS = 2      # 单个检索子任务最多几次工具调用（先搜，必要时再翻原文）
+_CONFIG = agent_state.load_config()
+EVIDENCE_CHAR = _CONFIG["evidence_char"]          # 喂给 Verifier / 汇总的每条证据截断长度
+RETRIEVER_MAX_CALLS = _CONFIG["retriever_max_calls"]  # 单个检索子任务最多几次工具调用
 
 
 # ---------- 基础 ----------
@@ -120,108 +122,13 @@ def _book_catalog():
     return _BOOK_CATALOG
 
 
-PLANNER_PROMPT = """你是古籍问答流水线的调度者。只拆任务，不改写问题，不写答案。
+PLANNER_PROMPT = agent_state.load_prompt("planner")
 
-可用工具的准确签名（参数名必须一致，写错会直接调用失败）：
-- draw_bazi(year, month, day, hour=0, minute=0, gender="male")   gender 只能是 "male" 或 "female"
-- draw_astro(year, month, day, hour=0, minute=0, tz=8.0, lat=39.90, lon=116.40, city="北京")
-- list_books()
-- search_terms(term, limit=5)
+RETRIEVER_PROMPT = agent_state.load_prompt("retriever")
 
-输出 JSON：
-{
-  "pre": [{"action": "工具名", "args": {...}}],
-  "searches": [{"book": "书名", "query": "检索词"}],
-  "out_of_scope": false,
-  "reason": ""
-}
+VERIFIER_PROMPT = agent_state.load_prompt("verifier")
 
-pre 放确定性的前置工具，没有就给空数组：
-1. 问题给了公历出生时间（年月日，可能带时辰、性别）-> draw_bazi；提到「星盘」「命主星」-> draw_astro。
-   时间要拆成 year/month/day/hour/minute 五个参数，不要写成 birth 字符串；性别写 male/female。
-2. 问题说「记得有本书…」「名字里带…」这类模糊书名 -> list_books。
-3. 要先解释某个术语的定义（纳音、羊刃、咸池…）-> search_terms。
-4. 问题直接给了四柱 -> 不排盘。
-
-searches 是必须分别去查的书，规则：
-1. 问题点名了哪几本书，就全部列进去，不能少列。
-2. 没点名时，只从【语料书目】里挑真实存在、且确实有该内容的书，最多 3 本。
-   书目里没有的书一律不许出现在 searches 里——那只会白白浪费预算。
-3. 同一概念在不同书里可能异名（例如《三命通会》全篇无「七杀」，只作「偏官」），
-   检索词按每本书的实际用词写，不要一个词套所有书。
-4. out_of_scope 为 true 时也要列 1~2 条 searches，用来确认语料里究竟有没有相关内容，不要留空。
-
-out_of_scope 只有在问题要求的东西语料根本不可能提供时才为 true：
-金融涨跌预测、现代医学诊断、语料里没有的术数门类（如奇门遁甲起局）、
-现代生活问题（考研、买房、考公）。此时 pre 里加 list_books 确认书目。
-不确定就填 false。
-"""
-
-RETRIEVER_PROMPT = """你是检索员，只负责一个子任务：把指定书里与子问题相关的原文找出来。
-
-输出 JSON，二选一：
-{"thought": "为什么这么搜", "action": "search_classics", "args": {"query": "...", "k": 8, "mode": "rrf"}}
-{"thought": "已经拿到能回答的原文", "action": "done"}
-
-规则：
-1. book 由系统填入任务指定的书名，你不用写，也不许改成别的书或做全库检索。
-2. mode：精确术语用 bm25，口语化转述用 dense，不确定用 rrf。
-3. 一次检索拿到 3 条以上相关原文就 done，不要换个 mode 再搜一遍同样的词。
-4. 如果命中的片段只有结论（断语、条款、口诀），却没有前提条件，
-   必须调 {"action": "fetch_chunk", "args": {"chunk_id": 123, "with_neighbors": true}}
-   读完整上下文再 done。
-"""
-
-VERIFIER_PROMPT = """你是校验员。只判断材料够不够支撑回答，不写答案。
-
-材料有两类，都算证据：
-- 前置工具的确定性输出（排盘四柱、星盘、书目、术语表条目）
-- 古籍原文片段
-
-输出 JSON：
-{
-  "sufficient": true 或 false,
-  "gaps": [...],
-  "notes": "材料实际支持到哪一步；哪些说法没有依据"
-}
-
-gaps 里每一项二选一：
-{"action": "search_classics", "book": "书名", "query": "检索词"}
-{"action": "fetch_chunk", "chunk_id": 123}
-
-判据：
-1. 问题点名的每本书都要有原文证据；少一本就 sufficient=false，并写进 gaps。
-2. 前置工具的输出本身就是证据。不要因为「古籍原文里没有排盘过程」判证据不足——
-   四柱是工具算出来的事实，不是该去古籍里找的东西。
-3. 古籍之间说法不一致时，只要分歧本身有原文支撑，就算 sufficient=true：
-   回答完全可以陈述「甲书这样说、乙书那样说」。
-4. 证据只有结论、没有前提条件时，用 fetch_chunk 的 gap 让检索员读上下文。
-5. out_of_scope=true 时 sufficient=false，notes 写明「语料不支持该结论」，gaps 留空。
-6. gaps 最多 2 条。
-"""
-
-SYNTHESIZER_PROMPT = """你是古籍问答的终稿撰写者。只能使用给定材料里的信息，不得使用常识或记忆补充。
-
-输出 JSON：
-{
-  "can_answer": true 或 false,
-  "answer": "回答正文",
-  "citations": [chunk_id, ...],
-  "refusal_reason": null 或 "为什么证据不足"
-}
-
-规则：
-1. citations 只能填古籍证据里出现过的 chunk_id，不许自己编号，不许猜。
-2. 引用了多本书时，按书写明出处，例如「《渊海子平·论伤官》说……」。
-3. 前置工具输出的四柱、行星度数、命主星是已经算好的事实：直接引用，不许重算、
-   不许补充盘里没有的星体或神煞。
-4. 材料不足、或材料只沾边不正面回答，必须 can_answer=false，
-   answer 固定为「语料中没有足够的依据回答这个问题。」，citations 为 []。
-5. 古代概念不能套现代生活：科举/功名≠考研，田宅≠商品房，官星≠考公，财星≠工资。
-6. 不预测金融行情、现代医学结果，不判断生死疾病灾祸。
-7. 你自己的推断必须明确标成「推断」，不能和原文所述混在一起说。
-8. 不同书说法冲突时分别陈述，不要强行统一。
-"""
+SYNTHESIZER_PROMPT = agent_state.load_prompt("synthesizer")
 
 
 def _plan(question, counter, feedback="", api_key=None, history=""):

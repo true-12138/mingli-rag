@@ -15,6 +15,57 @@ import json
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
+
+def _ids_after(flag: str) -> list[int]:
+    """取 `--accept 12 13 14` 后面的整数列表，遇到下一个 --flag 停。"""
+    if flag not in sys.argv:
+        return []
+    out = []
+    for token in sys.argv[sys.argv.index(flag) + 1:]:
+        if token.startswith("--"):
+            break
+        try:
+            out.append(int(token))
+        except ValueError:
+            break
+    return out
+
+
+def _db_report() -> bool:
+    """账本模式：--accept/--candidate 判接受，--matrix 看 case × run。
+
+    返回 True 表示已经处理完，不再走逐文件比较。
+    """
+    ref = _ids_after("--accept")
+    cand = _ids_after("--candidate")
+    matrix_ids = _ids_after("--matrix")
+    if not ref and not matrix_ids:
+        return False
+
+    import evalhub
+
+    if ref:
+        result = evalhub.accept_candidate(ref, cand)
+        result.pop("reference_runs", None)
+        result.pop("candidate_runs", None)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return True
+
+    matrix = evalhub.case_matrix(matrix_ids)
+    s = matrix["summary"]
+    print("runs={} cases={} 翻转 {}（{:.0%}） 稳定通过 {}（{:.0%}）".format(
+        s["n_runs"], s["n_cases"], s["flip"], s["flip_rate"] or 0,
+        s["stable_pass"], s["stable_pass_rate"] or 0))
+    for case in matrix["cases"]:
+        flag = "flip" if case["flip"] else ("pass" if case["stable_pass"] else "fail")
+        print("  {:<6} {:<5} {}/{}  {}".format(
+            case["case_id"], flag, case["passes"], case["total"],
+            "".join("P" if x else "F" for x in case["runs"])))
+    return True
+
 
 def load(paths):
     rows = []
@@ -75,9 +126,15 @@ def _per_task(rows):
 
 
 def main():
-    paths = sys.argv[1:]
+    if _db_report():
+        return
+
+    paths = [a for a in sys.argv[1:] if not a.startswith("--")]
     if not paths:
-        print("用法：python eval/compare_runs.py eval/results_agent_*.json")
+        print("用法：\n"
+              "  python eval/compare_runs.py eval/results_agent_*.json\n"
+              "  python eval/compare_runs.py --accept 12 13 14 --candidate 15 16 17\n"
+              "  python eval/compare_runs.py --matrix 12 13 14")
         raise SystemExit(1)
     rows = load(paths)
     if not rows:

@@ -1,0 +1,9 @@
+{
+  "_comment": "Agent State 的运行参数。改这里会改变 state_version，评测会把它记进入库的 run。",
+  "max_steps": 6,
+  "evidence_char": 420,
+  "retriever_max_calls": 2,
+  "history_turns": 3,
+  "history_chars": 1200,
+  "answer_top_k": 5
+}

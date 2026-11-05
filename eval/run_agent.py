@@ -26,8 +26,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "eval"))
+
+import agent_state  # noqa: E402
+import benchmark as benchmark_mod  # noqa: E402
+import usage  # noqa: E402
 
 TASKS_PATH = ROOT / "eval" / "agent_tasks.jsonl"
+BENCHMARK_PATH = ROOT / "eval" / "tasks" / "agent_v1"
 
 
 def die(msg: str) -> None:
@@ -57,7 +63,7 @@ _AGENT_GUARD = (
 
 # ---------- 任务与判据 ----------
 
-def load_tasks(path: Path) -> list[dict]:
+def load_legacy_tasks(path: Path) -> list[dict]:
     tasks = []
     for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         line = line.strip()
@@ -68,6 +74,53 @@ def load_tasks(path: Path) -> list[dict]:
         except json.JSONDecodeError as e:
             raise SystemExit("{} 第 {} 行不是合法 JSON：{}".format(path, i, e))
     return tasks
+
+
+def load_tasks(path: Path | None = None, split: str = "all") -> list[dict]:
+    """优先读冻结的 Benchmark（公开题面 + 私有判据），没有则退回 legacy JSONL。"""
+    if path and not Path(path).exists():
+        raise SystemExit("找不到 benchmark：{}".format(path))
+    target = Path(path) if path else BENCHMARK_PATH
+    if benchmark_mod.available(target):
+        return benchmark_mod.load_tasks(target, split=split)
+    if split not in ("all", ""):
+        raise SystemExit(
+            "没有冻结的 Benchmark，--split {} 不可用。"
+            "先跑 python eval/build_benchmark.py 生成划分。".format(split))
+    legacy = TASKS_PATH if path is None else Path(path)
+    if not legacy.exists():
+        raise SystemExit("没有可用的任务集：{}".format(legacy))
+    return load_legacy_tasks(legacy)
+
+
+def run_index_from_tag(tag: str) -> int:
+    """从 tag 里取第几次运行：multi_r3 -> 3，baseline -> 1。"""
+    m = re.search(r"(?:^|_)r(\d+)$", tag or "")
+    return int(m.group(1)) if m else 1
+
+
+def check_prediction(pred: dict, results: list[dict]) -> dict:
+    """对照「跑之前写下的预测」与「跑完的结果」。
+
+    预测正确的 case 不是重点；重点是把「预测会翻绿但没翻」的 case 单独列出来，
+    它们是下一轮假设的输入。这一步必须在看结果之前写，否则只是事后解释。
+    """
+    actual = {r["id"] for r in results if (r.get("judge") or {}).get("auto_pass")}
+    want_pass = set(pred.get("predicted_pass") or [])
+    want_fail = set(pred.get("predicted_fail") or [])
+    missed = sorted(want_pass - actual)      # 预测过、实际没过
+    unexpected = sorted(want_fail & actual)  # 预测不过、实际过了
+    confirmed = sorted(want_pass & actual)
+    return {
+        "hypothesis": pred.get("hypothesis"),
+        "round": pred.get("round"),
+        "predicted_pass": sorted(want_pass),
+        "predicted_fail": sorted(want_fail),
+        "confirmed": confirmed,
+        "missed": missed,
+        "unexpected": unexpected,
+        "ok": not missed and not unexpected,
+    }
 
 
 def build_id2book() -> dict[int, str]:
@@ -209,11 +262,28 @@ def get_agent(name: str):
     return fn
 
 
+def benchmark_info(path) -> dict:
+    if path and benchmark_mod.available(path):
+        return benchmark_mod.verify(path)
+    if not path and benchmark_mod.available(BENCHMARK_PATH):
+        return benchmark_mod.verify(BENCHMARK_PATH)
+    return {"ok": True, "frozen": False, "version": None, "status": None, "splits": None}
+
+
 def run(tasks: list[dict], args) -> dict:
     id2book = build_id2book()
     solve = get_agent(args.agent)
+    state = agent_state.manifest()
+    bench = benchmark_info(args.benchmark)
+    run_index = args.run_index or run_index_from_tag(args.tag)
     results = []
     t0 = time.time()
+
+    print("Agent State: {} · benchmark {} · run #{}{}".format(
+        agent_state.short(state["version"]), bench.get("version") or "legacy",
+        run_index, "" if bench.get("ok", True) else " · !! 题面已被改动，结果不可与旧 run 直接比"))
+    if bench.get("splits"):
+        print("划分：{}".format(bench["splits"]))
 
     for i, task in enumerate(tasks, start=1):
         tid = task["id"]
@@ -221,8 +291,10 @@ def run(tasks: list[dict], args) -> dict:
         started = time.time()
         record = {"id": tid, "type": task.get("type"), "name": task.get("name"),
                   "question": task.get("question")}
+        usage.reset()  # 每题单独计 token，才能回答「这条用例花了多少」
         try:
             res = solve(task["question"], max_steps=int(task.get("max_steps", 6)))
+            record["usage"] = usage.snapshot() or {}
             record.update({
                 "can_answer": res.get("can_answer"),
                 "answer": res.get("answer"),
@@ -263,6 +335,14 @@ def run(tasks: list[dict], args) -> dict:
         "errors": sum(1 for r in results if r.get("error")),
         "elapsed_seconds": round(time.time() - t0, 1),
         "by_type": {},
+        # 归因：这次 run 用的是哪版 Agent、哪版题目、第几次跑
+        "state_version": state["version"],
+        "state_manifest": state,
+        "benchmark_version": bench.get("version"),
+        "benchmark_frozen": bench.get("frozen"),
+        "benchmark_ok": bench.get("ok"),
+        "split": args.split,
+        "run_index": run_index,
     }
     for r in results:
         s = summary["by_type"].setdefault(r["type"], {"n": 0, "pass": 0})
@@ -272,8 +352,20 @@ def run(tasks: list[dict], args) -> dict:
     calls = [r["llm_calls"] for r in results if isinstance(r.get("llm_calls"), int)]
     if calls:
         summary["llm_calls"] = {"total": sum(calls), "mean": round(sum(calls) / len(calls), 1)}
+        # 每通过一题要多少次 LLM 调用：多 Agent 的「更准」要连同这个数一起看
+        if summary["auto_pass"]:
+            summary["llm_calls_per_pass"] = round(sum(calls) / summary["auto_pass"], 2)
+    tokens = [r["usage"].get("total_tokens", 0) for r in results if r.get("usage")]
+    if any(tokens):
+        summary["total_tokens"] = sum(tokens)
+        if summary["auto_pass"]:
+            summary["tokens_per_pass"] = round(sum(tokens) / summary["auto_pass"], 1)
 
     out = {"summary": summary, "tasks": results}
+    if args.predict:
+        pred = json.loads(Path(args.predict).read_text(encoding="utf-8"))
+        out["prediction"] = check_prediction(pred, results)
+
     out_path = ROOT / "eval" / "results_agent_{}.json".format(args.tag)
     out_path.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
 
@@ -281,14 +373,48 @@ def run(tasks: list[dict], args) -> dict:
     print("[{}] 通过 {}/{}，报错 {}，用时 {}s".format(
         args.agent, summary["auto_pass"], summary["total"],
         summary["errors"], summary["elapsed_seconds"]))
+    print("  state {} · benchmark {} · run #{}".format(
+        agent_state.short(summary["state_version"]),
+        summary.get("benchmark_version") or "legacy", run_index))
     print("  双书显式检索 {}/{}（只算点了名的题；诊断项，不计入通过）".format(
         summary["dual_book_explicit"], summary["dual_book_applicable"]))
     if "llm_calls" in summary:
-        print("  LLM 调用 {} 次，均值 {}".format(
-            summary["llm_calls"]["total"], summary["llm_calls"]["mean"]))
+        print("  LLM 调用 {} 次，均值 {}{}".format(
+            summary["llm_calls"]["total"], summary["llm_calls"]["mean"],
+            "，每通过一题 {:.2f} 次".format(summary["llm_calls_per_pass"])
+            if summary.get("llm_calls_per_pass") else ""))
+    if "total_tokens" in summary:
+        print("  token {}，每通过一题 {}".format(
+            summary["total_tokens"], summary.get("tokens_per_pass")))
     for typ, s in summary["by_type"].items():
         print("  {:<4} {}/{}".format(typ, s["pass"], s["n"]))
+
+    check = out.get("prediction")
+    if check:
+        print("\n===== 预测对照（跑之前写下的） =====")
+        print("  假设：{}".format(check.get("hypothesis") or "（未写）"))
+        print("  预测翻绿且确实翻绿：{}".format(", ".join(check["confirmed"]) or "—"))
+        print("  预测翻绿但没翻：{}".format(", ".join(check["missed"]) or "—"))
+        print("  预测失败但过了：{}".format(", ".join(check["unexpected"]) or "—"))
+        print("  -> 下一步假设应优先从「没翻」的那几条里找。")
+
     print("明细：{}".format(out_path))
+
+    if args.record:
+        try:
+            import evalhub
+
+            run_id = evalhub.record_agent_run(
+                out, out_path.name,
+                state_version=summary["state_version"],
+                benchmark_version=summary.get("benchmark_version"),
+                run_index=run_index,
+                state_manifest=state,
+            )
+            print("评测账本：run id {}（source {}）".format(run_id, out_path.name))
+        except Exception as e:  # 记账失败不该让一次已经跑完的评测作废
+            print("! 写入评测账本失败（结果文件已保存）：{}".format(e))
+
     return out
 
 
@@ -323,20 +449,40 @@ def rescore(path: Path, tasks: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="批量跑 Agent 轨迹评测")
-    ap.add_argument("--tasks", default=str(TASKS_PATH))
+    ap.add_argument("--benchmark", default=None,
+                    help="冻结的 Benchmark 目录，默认 eval/tasks/agent_v1")
+    ap.add_argument("--tasks", default=None,
+                    help="legacy 任务文件（eval/agent_tasks.jsonl）；给 --benchmark 时忽略")
+    ap.add_argument("--split", default="all", choices=("all", "dev", "holdout"),
+                    help="只跑某一切分；holdout 自冻结起不应参与调参")
     ap.add_argument("--only", default="", help="逗号分隔的任务 id，如 a01,b02")
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 条")
     ap.add_argument("--tag", default="baseline", help="结果文件名后缀，用于区分基线/多 Agent")
+    ap.add_argument("--run-index", type=int, default=0,
+                    help="同一实验的第几次运行；不传则从 tag 的 _rN 推断")
     ap.add_argument("--agent", default="single", choices=("single", "multi"),
                     help="single=src/agent.py，multi=src/agent_multi.py")
+    ap.add_argument("--predict", default="",
+                    help="跑之前写好的预测 JSON（eval/rounds/*.json），跑完自动对照")
+    ap.add_argument("--record", dest="record", action="store_true", default=True,
+                    help="把结果写进评测账本（默认开）")
+    ap.add_argument("--no-record", dest="record", action="store_false",
+                    help="只写结果文件，不记账本")
     ap.add_argument("--rescore", default="",
                     help="不跑 API，用已有结果文件重新判一遍（加新诊断项时用）")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
 
-    tasks = load_tasks(Path(args.tasks))
+    if args.benchmark:
+        tasks = load_tasks(Path(args.benchmark), split=args.split)
+    elif args.tasks:
+        tasks = load_legacy_tasks(Path(args.tasks))
+    else:
+        tasks = load_tasks(None, split=args.split)
+
     if args.rescore:
-        rescore(Path(args.rescore), tasks)
+        # 重判要用全部题目，不受 --split / --only 影响
+        rescore(Path(args.rescore), load_tasks(None, split="all"))
         return
     if args.only:
         wanted = {x.strip() for x in args.only.split(",") if x.strip()}

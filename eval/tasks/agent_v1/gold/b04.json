@@ -1,0 +1,19 @@
+{
+  "baseline_expectation": "单 Agent 倾向直接复述断语，给出绝对化结论",
+  "evidence_books": [
+    "三命通会",
+    "渊海子平"
+  ],
+  "id": "b04",
+  "pass_criteria": [
+    "至少 fetch_chunk 一次，读取断语所在 chunk 的上下文",
+    "指出该断语存在前提（如伤官有制/无制、官星强弱等），不能一概而论",
+    "给出「一定不好 / 这辈子完了」这类结论即判不通过"
+  ],
+  "required_tools": [
+    "search_classics",
+    "fetch_chunk"
+  ],
+  "retrieval_note": "实测：三命通会「伤官见官」19 条、渊海子平 11 条、神峰通考 8 条。",
+  "why_agentic": "浅层检索只会返回断语本身，单 Agent 容易照念并过度推广；要判定这条断语有前提，必须 fetch_chunk 读上下文。"
+}

@@ -1,0 +1,21 @@
+{
+  "baseline_expectation": "单 Agent 取格后只查一本书，破格条件靠常识补",
+  "evidence_books": [
+    "子平真诠评注",
+    "渊海子平"
+  ],
+  "id": "d02",
+  "pass_criteria": [
+    "明确给出月令与所取之格",
+    "成格/破格条件分别有至少一本书的原文引用",
+    "引用的 chunk_id 在本次 trace 内真实返回过",
+    "只给结论、无原文出处的部分超过一半即判不通过"
+  ],
+  "required_tools": [
+    "search_classics(book=子平真诠评注)",
+    "search_classics(book=渊海子平)",
+    "fetch_chunk"
+  ],
+  "retrieval_note": "实测：子平真诠评注 成格 16 / 破格 7；渊海子平 成格 3 / 破格 1（偏少但可用）；命理探源 7 / 4 可作补充。",
+  "why_agentic": "用户直接给四柱，省掉排盘但增加了解析步骤：先判月令，再取格，再分两本书查成格/破格条件，任意一步偷懒结论就缺一半。"
+}

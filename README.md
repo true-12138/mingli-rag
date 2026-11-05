@@ -182,6 +182,7 @@ Key 与额度：服务端配了 `DEEPSEEK_API_KEY` 就走服务端 Key，否则�
 | 拒答正确 | 8 / 9 | **9 / 9** |
 | 复合题通过 | 0 / 6 | **5 / 6** |
 | LLM 调用 / 题 | ≈3.8 | 8.3 |
+| **每通过一题消耗的 LLM 调用** | **≈7.1** | **≈9.8（+38%）** |
 | 单次跑完 15 题 | 150s | 204s |
 
 两个区间不重叠（单 Agent 最高 9 < 多 Agent 最低 12），但样本只有 15 条，**不作显著性推断**。
@@ -210,6 +211,83 @@ Key 与额度：服务端配了 `DEEPSEEK_API_KEY` 就走服务端 Key，否则�
 | 多轮失败回退 | 改写超时 / 额度 / 非法 JSON 时退回原问题，单轮链路不受影响 | `src/conversation.py` 的 `rewrite_question` |
 
 还没做的：长期记忆与会话摘要、按 token 精确截断（目前按字符）、多轮专项评测集、reranker、RAGAS 忠实度。
+
+### 3.5 评测的可归因性：state 版本、冻结题集、单轮单变量
+
+§3.3 的数字回答「多 Agent 比单 Agent 高多少」，但回答不了另一个问题：
+**这个数字是哪一版提示词跑出来的，两次 run 之间到底改了什么。**
+
+v1.6 把评测从「有分数」推进到「可归因」，一共四件事。
+
+**① 提示词与参数是一个带哈希的整体。** `src/prompts/*.md` 与 `src/agent_config.json`
+组成 Agent State，`src/agent_state.py` 对它们算一个 `state_version`。每次 run 把它写进
+`eval_runs`，同时存每个文件的哈希。于是：
+
+```text
+state a1b2c3d4e5f6 → 7a8b9c0d1e2f
+  只改了 prompts/verifier.md
+```
+
+改动是哪次分数变化的来源，从「回忆」变成「查表」。历史 run 没有这个字段（NULL），
+只用于对照，不参与改动前后的强结论。
+
+**② 题面与判据分开，Benchmark 冻结。** 以前 `agent_tasks.jsonl` 把题目和
+`required_tools` / `pass_criteria` 写在同一行，调提示词时很容易顺手看到判据。
+现在：
+
+```text
+eval/tasks/agent_v1/
+├── benchmark.json     # 版本、冻结时间、cases 的 sha256、dev/holdout 划分
+├── cases.jsonl        # 公开：id / split / type / name / question / max_steps
+└── gold/<id>.json     # 私有：required_tools / evidence_books / pass_criteria
+```
+
+`cases.jsonl` 的 sha256 写进 `benchmark.json`；改了题却没有重新冻结，`run_agent.py`
+会直接提示「结果不可与旧 run 直接比」。15 条按 10 dev / 5 holdout 划分。
+
+> 需要说清楚的边界：这 15 条在冻结前都参与过提示词迭代，所以 v1 的 holdout
+> **不是无污染的泛化指标**，它只能约束**之后**的改动。扩到 30 条时重新冻结，
+> 才会有一份真正没见过的 holdout。
+
+**③ 先写预测，再跑。** 每轮优化的记录放在 `eval/rounds/`，跑之前写
+`.prediction.json`（假设 + 预测翻绿的 case），`run_agent.py --predict` 跑完打印三行：
+
+- 预测翻绿且确实翻绿；
+- **预测翻绿但没翻**——下一轮假设的入口；
+- 预测失败但过了——收益来自别处，别急着归因。
+
+这比事后写"因为改了 X 所以涨了"更难自欺，也和 §4.6 的教训一致：判据要有方向，也要有幅度。
+
+**④ 接受规则不用「比上次高」。** 15 题里 1 题就是 6.7 个点，单次高 1 题可能只是波动。
+`evalhub.accept_candidate()` 只在两种情况下接受：
+
+| 证据 | 判定 |
+|---|---|
+| 候选最差的一次 > 基准最好的一次（3 次 run 区间不重叠） | accept（强） |
+| 均值涨幅换算成题数 ≥ 1 题，且无指标跌破回归门 | accept（弱） |
+| 候选最差低于基准均值超过阈值 | reject |
+| 其余 | inconclusive——不当作改进，也不当作退步 |
+
+同时，`case_matrix()` 把同一实验的多次 run 对齐成 case × run 矩阵，
+「翻转率」和「稳定通过率」和总分一起看——§3.3 里「多 Agent 的收益是可复现性」
+这句话，现在是一个可以算出来的数，而不是手工数出来的结论。
+
+用法：
+
+```bash
+# 跑 dev，先写预测
+python eval/run_agent.py --agent multi --tag multi_r4 --split dev \
+  --predict eval/rounds/some-round.prediction.json
+
+# 判接受：引用 3 次基准 run 和 3 次候选 run
+python eval/compare_runs.py --accept 18 19 20 --candidate 21 22 23
+
+# 看翻转
+python eval/compare_runs.py --matrix 18 19 20
+```
+
+每题还会记录 `trace_id`、`llm_calls` 与 token 数，分数可以直接跳回
+`eval/results_agent_<tag>.json` 里对应的那条 trace，也能算「每通过一题花了多少次调用」。
 
 ---
 
@@ -451,6 +529,9 @@ python scripts/demo_closed_loop.py
 │   ├── db/                    # 业务库：base(连接) / models(7 张表) / repo(读写)
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂；版式、对话、排盘卡片）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
+│   ├── agent_state.py         # Agent State：提示词 + 参数的版本哈希与 diff
+│   ├── prompts/               # 提示词（*.md）：single / rag / rewriter / planner / retriever / verifier / synthesizer
+│   ├── agent_config.json      # max_steps、证据截断长度等；改它也会改变 state_version
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
 │   ├── rag.py                 # DeepSeek 调用、JSON 强制、引用校验、拒答
 │   ├── conversation.py        # 多轮：历史裁剪、追问改写、失败回退
@@ -477,7 +558,11 @@ python scripts/demo_closed_loop.py
 │   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
-│   ├── agent_tasks.jsonl      # 15 题 Agent 评测集（多跳/换工具/拒答/复合）
+│   ├── agent_tasks.jsonl      # 15 题 Agent 评测集（legacy；冻结后由 tasks/ 取代）
+│   ├── tasks/agent_v1/        # 冻结 Benchmark：cases.jsonl（公开）+ gold/（私有）+ benchmark.json
+│   ├── benchmark.py           # 读冻结题集、校验 sha256
+│   ├── build_benchmark.py     # 由 agent_tasks.jsonl 生成 dev/holdout 并冻结
+│   ├── rounds/                # 每轮优化的记录：假设、预测、改动、run id、结论
 │   ├── eval_matrics.py        # 三档检索 × exact/line 两种口径
 │   ├── eval_refusal.py        # 拒答评测
 │   ├── run_agent.py           # 单/多 Agent 批量跑批 + auto_judge
@@ -514,6 +599,9 @@ python scripts/demo_closed_loop.py
 - **MRR**：第一个 gold 命中的排名取倒数，无命中为 0；
 - **拒答**：`can_answer=false` 才算拒答；可答题被判 false = 误拒；语料外题被判 true = 漏拒。
 - **回归门**（`src/evalhub.py`）：检索 `line_recall` 下降超过 2 个点、Agent `pass_rate` 下降超过 5 个点、拒答 `refusal_accuracy` 下降超过 2 个点，判 fail；阈值写在 `GATE` 里，改阈值会被代码评审看见。
+- **接受规则**（`evalhub._decide`）：回归门只回答「有没有变差」，接受规则回答「算不算变好」。候选 3 次 run 的最差值高于基准 3 次的最好值才算强证据；否则要求均值涨够 1 题；都不满足记 inconclusive。
+- **题集冻结**（`eval/benchmark.py`）：`cases.jsonl` 的 sha256 与 `benchmark.json` 不一致时，`run_agent.py` 开跑即提示，`compare()` 把 `comparable` 标为 false。
+- **状态版本**（`src/agent_state.py`）：提示词与 `agent_config.json` 的内容决定 `state_version`；两次 run 的版本不同，`compare()` 会列出具体改了哪几个文件。
 - **数据质量门**（`src/datahub.py`）：空正文、重复 `chunk_id`、embedding 行数错位、维度不是 1024、NaN/Inf 直接 fail；缺 sourcefile / 行号、短 chunk、重复正文超过 1% 记 warn。
 
 ---
@@ -524,6 +612,7 @@ python scripts/demo_closed_loop.py
 - **v1.3（已完成，11/03）**：多轮对话（追问改写 + 历史裁剪 + 引用隔离）、数据中台 MVP（版本/血缘/质量门）、评测中台 MVP（16 个 run、逐题明细、回归门）
 - **v1.4（已完成，11/03）**：FastAPI `/chat` `/retrieve` `/trace` `/health`、并发信号量、可选 Bearer token、token 用量旁路采集、Dockerfile + compose、10 条 API 测试、CI 跑全量 42 条测试
 - **v1.5（已完成，11/04）**：界面按「面向访客」重做——只留问古籍 / 排盘两页，引用改成可展开的原文出处，加可点追问与拒答说明；检索后端、轨迹和中台收进 `?admin=1` 维护页
+- **v1.6（已完成，11/05）**：评测可归因——提示词外置为 Agent State（`state_version`）、题面与判据分离并冻结（dev 10 / holdout 5）、case × run 矩阵与接受规则、单轮预测对照、每题 `trace_id` 与 token 记录
 - **下一步（11/15 前）**：ECS + Nginx + systemd 部署、Langfuse 全链路 trace、P50/P95 延迟统计、30 条 Agent 评测、20 条多轮评测
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）

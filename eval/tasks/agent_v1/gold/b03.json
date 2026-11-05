@@ -1,0 +1,18 @@
+{
+  "baseline_expectation": "单 Agent 跳过 list_books，直接凭猜测的书名检索失败",
+  "evidence_books": [
+    "星学大成"
+  ],
+  "id": "b03",
+  "pass_criteria": [
+    "调用 list_books 并从中选出正确书名",
+    "检索时 book 参数使用列表返回的确切书名",
+    "引用至少 1 条命中该书且与命宫相关的原文"
+  ],
+  "required_tools": [
+    "list_books",
+    "search_classics(book=星学大成)"
+  ],
+  "retrieval_note": "实测：星学大成 953 块，「命主」203 条；张果星宗「命主」91 条。",
+  "why_agentic": "用户给的是模糊记忆，必须先调 list_books 定位到确切书名（星学大成），再用 book 参数定向检索。单 Agent 常直接猜书名硬检索。"
+}

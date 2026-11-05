@@ -8,17 +8,13 @@
 3. 改写失败时退回原问题：多轮是增强，不能把单轮能力拖垮。
 """
 
-MAX_TURNS = 3
-MAX_CHARS = 1200
+import agent_state
 
-REWRITE_PROMPT = """你是检索查询改写器。根据对话历史，把用户最后一句追问改写成不依赖上文、可以独立检索的问题。
+_CONFIG = agent_state.load_config()
+MAX_TURNS = _CONFIG["history_turns"]
+MAX_CHARS = _CONFIG["history_chars"]
 
-规则：
-1. 只补全指代和省略，不添加历史里没有的事实，不回答问题。
-2. 保留原问题里的限定条件（书名、性别、时间、术语）。
-3. 如果最后一句本身已经完整，原样返回。
-4. 只输出 JSON：{"standalone": "改写后的问题"}
-"""
+REWRITE_PROMPT = agent_state.load_prompt("rewriter")
 
 
 def normalize_history(history, max_turns=MAX_TURNS, max_chars=MAX_CHARS):

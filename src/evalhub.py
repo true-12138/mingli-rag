@@ -19,6 +19,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+import agent_state
 import corpus
 from platform_db import connect
 
@@ -125,21 +126,27 @@ def score_one(gold_ids, retrieved_ids, spans, top_k=TOP_K):
 # ---------- run 写入 ----------
 
 def _insert_run(conn, name, source, suite, backend, dataset_version, config,
-                metrics, status, notes, created_at, cases):
+                metrics, status, notes, created_at, cases,
+                state_version=None, benchmark_version=None, run_index=1,
+                state_manifest=None):
     cur = conn.execute(
         "INSERT INTO eval_runs(name, source, suite, backend, dataset_version, config_json,"
-        " metrics_json, status, notes, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        " metrics_json, status, notes, created_at, state_version, benchmark_version,"
+        " run_index, state_manifest_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (name, source, suite, backend, dataset_version,
          json.dumps(config or {}, ensure_ascii=False),
          json.dumps(metrics or {}, ensure_ascii=False),
-         status, notes, created_at),
+         status, notes, created_at, state_version, benchmark_version,
+         run_index,
+         json.dumps(state_manifest, ensure_ascii=False) if state_manifest else None),
     )
     run_id = cur.lastrowid
     for c in cases:
         conn.execute(
             "INSERT INTO eval_cases(run_id, case_id, question, answerable, category, output,"
-            " can_answer, citations_json, recall, mrr, passed, latency_ms, detail_json)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " can_answer, citations_json, recall, mrr, passed, latency_ms, detail_json,"
+            " trace_id, llm_calls, prompt_tokens, completion_tokens, total_tokens)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (run_id, c.get("case_id"), c.get("question"),
              1 if c.get("answerable") else 0, c.get("category"), c.get("output"),
              None if c.get("can_answer") is None else (1 if c.get("can_answer") else 0),
@@ -147,7 +154,9 @@ def _insert_run(conn, name, source, suite, backend, dataset_version, config,
              c.get("recall"), c.get("mrr"),
              None if c.get("passed") is None else (1 if c.get("passed") else 0),
              c.get("latency_ms"), json.dumps(c.get("detail"), ensure_ascii=False)
-             if c.get("detail") is not None else None),
+             if c.get("detail") is not None else None,
+             c.get("trace_id"), c.get("llm_calls"),
+             c.get("prompt_tokens"), c.get("completion_tokens"), c.get("total_tokens")),
         )
     return run_id
 
@@ -414,28 +423,39 @@ def run_feedback(mode=None, limit=0, name=None, cases_path=FEEDBACK_CASES):
 
 # ---------- 导入历史结果 ----------
 
-def _agent_case(t):
+def _agent_case(t, tag=None):
     judge = t.get("judge") or {}
     passed = judge.get("auto_pass")
+    usage = t.get("usage") or {}
+    cid = t.get("id")
     return {
-        "case_id": t.get("id"), "question": t.get("question"),
+        "case_id": cid, "question": t.get("question"),
         "answerable": t.get("can_answer") is not False,
         "category": t.get("type"), "output": t.get("answer"),
         "can_answer": t.get("can_answer"), "citations": t.get("citations"),
         "passed": None if passed is None else bool(passed),
         "latency_ms": (t.get("seconds") or 0) * 1000,
         "detail": judge,
+        # 分数 -> 轨迹 -> 成本：trace_id 是结果文件里的定位串（tag:case_id），
+        # 不做成 UUID，是为了能直接从库跳回 eval/results_agent_<tag>.json 的那一条。
+        "trace_id": "{}:{}".format(tag, cid) if tag else cid,
+        "llm_calls": t.get("llm_calls"),
+        "prompt_tokens": usage.get("prompt_tokens"),
+        "completion_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
     }
 
 
-def _import_agent(conn, path: Path):
-    data = json.loads(path.read_text(encoding="utf-8"))
+def _agent_metrics(data: dict) -> dict:
+    """从结果文件（或内存里的同结构 dict）算出 run 级指标。"""
     s = data.get("summary") or {}
     tasks = data.get("tasks") or []
     total = s.get("total") or len(tasks)
     auto_pass = s.get("auto_pass")
     if auto_pass is None:
         auto_pass = sum(1 for t in tasks if (t.get("judge") or {}).get("auto_pass"))
+    tokens = [((t.get("usage") or {}).get("total_tokens") or 0) for t in tasks]
+    calls = [t.get("llm_calls") for t in tasks if isinstance(t.get("llm_calls"), int)]
     metrics = {
         "pass_rate": (auto_pass / total) if total else None,
         "auto_pass": auto_pass,
@@ -444,14 +464,75 @@ def _import_agent(conn, path: Path):
         "elapsed_seconds": s.get("elapsed_seconds"),
         "llm_mean": (s.get("llm_calls") or {}).get("mean"),
         "by_type": s.get("by_type") or {},
+        "benchmark_version": s.get("benchmark_version"),
+        "state_version": s.get("state_version"),
+        "run_index": s.get("run_index"),
     }
-    version = IMPORTED_VERSION
-    backend = s.get("agent") or ("multi" if "multi" in path.name else "single")
-    created = datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds")
+    if calls:
+        metrics["llm_calls_total"] = sum(calls)
+        # 每通过一题花掉多少次 LLM 调用：比「总分」更能说明多 Agent 的代价
+        metrics["llm_calls_per_pass"] = round(sum(calls) / auto_pass, 2) if auto_pass else None
+    if any(tokens):
+        metrics["total_tokens"] = sum(tokens)
+        metrics["tokens_per_pass"] = round(sum(tokens) / auto_pass, 1) if auto_pass else None
+    return metrics
+
+
+def _record(conn, data, source, *, state_version=None, benchmark_version=None,
+            run_index=1, state_manifest=None, created_at=None, extra_config=None,
+            backend=None, dataset_version=None):
+    s = data.get("summary") or {}
+    backend = s.get("agent") or backend or "single"
+    config = {"tag": s.get("tag"), "source_file": source}
+    config.update(extra_config or {})
     return _insert_run(
-        conn, path.stem, path.name, "agent", backend, version,
-        {"source_file": path.name, "tag": s.get("tag")}, metrics,
-        "done", None, created, [_agent_case(t) for t in tasks],
+        conn, Path(source).stem if isinstance(source, str) else str(source),
+        str(source), "agent", backend,
+        dataset_version or _dataset_version(conn) or IMPORTED_VERSION,
+        config, _agent_metrics(data), "done", None,
+        created_at or datetime.now().isoformat(timespec="seconds"),
+        [_agent_case(t, s.get("tag")) for t in (data.get("tasks") or [])],
+        state_version=state_version or s.get("state_version"),
+        benchmark_version=benchmark_version or s.get("benchmark_version"),
+        run_index=run_index or s.get("run_index") or 1,
+        state_manifest=state_manifest or s.get("state_manifest"),
+    )
+
+
+def record_agent_run(data: dict, source: str, *, state_version=None,
+                     benchmark_version=None, run_index=1, state_manifest=None,
+                     replace=True) -> int:
+    """把一次 Agent 跑批直接记进账本（run_agent.py 结束时调用）。
+
+    与 import_existing() 的区别：这里的数据是刚跑完的，不用等文件落盘再扫一遍。
+    replace=True 时同一 source 覆盖旧记录，避免同一 tag 重跑后出现两条同名 run。
+    """
+    with connect() as conn:
+        if replace:
+            conn.execute("DELETE FROM eval_runs WHERE source=?", (str(source),))
+        run_id = _record(conn, data, str(source),
+                         state_version=state_version,
+                         benchmark_version=benchmark_version,
+                         run_index=run_index,
+                         state_manifest=state_manifest)
+        conn.commit()
+    return run_id
+
+
+def _import_agent(conn, path: Path):
+    data = json.loads(path.read_text(encoding="utf-8"))
+    created = datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds")
+    s = data.get("summary") or {}
+    return _record(
+        conn, data, path.name, created_at=created,
+        state_version=s.get("state_version"),
+        benchmark_version=s.get("benchmark_version"),
+        run_index=s.get("run_index") or 1,
+        state_manifest=s.get("state_manifest"),
+        # 老结果文件不一定写 agent 字段，退回按文件名判断
+        backend="multi" if "multi" in path.name else "single",
+        # 导入的是历史结果，不知道它当时跑在哪版数据集上，不能冒充当前版本
+        dataset_version=IMPORTED_VERSION,
     )
 
 
@@ -647,6 +728,27 @@ def compare(baseline_id, candidate_id, conn=None):
             status = "fail"
         elif gate is None:
             status = "warn"
+
+        # 归因信息：两条 run 的 Agent 状态、题目版本是否一致。
+        # 不改变 pass/fail（避免历史 run 因为缺字段被一刀切判为不可比），只标注。
+        state = {
+            "baseline": a["state_version"],
+            "candidate": b["state_version"],
+            "benchmark_baseline": a["benchmark_version"],
+            "benchmark_candidate": b["benchmark_version"],
+        }
+        state["same_state"] = bool(a["state_version"]) and a["state_version"] == b["state_version"]
+        state["same_benchmark"] = a["benchmark_version"] == b["benchmark_version"]
+        ma_manifest = json.loads(a["state_manifest_json"] or "null")
+        mb_manifest = json.loads(b["state_manifest_json"] or "null")
+        if ma_manifest and mb_manifest:
+            state["diff"] = agent_state.diff(ma_manifest, mb_manifest)
+        comparable = state["same_benchmark"] and (
+            a["dataset_version"] == b["dataset_version"]
+        )
+        if not comparable:
+            state["warning"] = "dataset 或 benchmark 版本不同，分数不可直接比较"
+
         return {
             "status": status,
             "suite": a["suite"],
@@ -655,7 +757,168 @@ def compare(baseline_id, candidate_id, conn=None):
             "gate_metric": gate_key,
             "threshold": threshold,
             "checks": checks,
+            "comparable": comparable,
+            "state": state,
         }
+    finally:
+        if own:
+            conn.close()
+
+
+# ---------- 多次运行：case 矩阵与接受规则 ----------
+
+def case_matrix(run_ids, conn=None):
+    """把同一实验的多次 run 对齐成 case × run 矩阵。
+
+    单次分数回答「这次过了几题」，矩阵回答另外两个问题：
+    - 哪些题是稳定过的（每次都对），哪些是抽签过的（flip）；
+    - 改动之后翻转的是哪几条，而不是只有一个总分。
+
+    只统计 passed 不为 NULL 的记录；如果某次 run 只跑了部分题（--limit），
+    那个 case 的 total 会小于 run 数，标 partial=True。
+    """
+    ids = [int(x) for x in run_ids]
+    if not ids:
+        return {"runs": [], "cases": [], "summary": {"n_runs": 0, "n_cases": 0}}
+    own = conn is None
+    conn = conn or connect()
+    try:
+        marks = ",".join("?" for _ in ids)
+        rows = conn.execute(
+            "SELECT run_id, case_id, passed FROM eval_cases"
+            " WHERE run_id IN ({}) AND case_id IS NOT NULL ORDER BY run_id, id".format(marks),
+            ids,
+        ).fetchall()
+        order, by_case = [], {}
+        for r in rows:
+            if r["passed"] is None:
+                continue
+            cid = r["case_id"]
+            if cid not in by_case:
+                by_case[cid] = []
+                order.append(cid)
+            by_case[cid].append(bool(r["passed"]))
+
+        cases = []
+        for cid in order:
+            vals = by_case[cid]
+            passes, total = sum(vals), len(vals)
+            cases.append({
+                "case_id": cid,
+                "runs": vals,
+                "passes": passes,
+                "total": total,
+                "flip": 0 < passes < total,
+                "stable_pass": passes == total,
+                "partial": total < len(ids),
+            })
+
+        n = len(cases)
+        flips = sum(1 for c in cases if c["flip"])
+        stable = sum(1 for c in cases if c["stable_pass"])
+        summary = {
+            "n_runs": len(ids), "n_cases": n,
+            "flip": flips, "flip_rate": round(flips / n, 3) if n else None,
+            "stable_pass": stable,
+            "stable_pass_rate": round(stable / n, 3) if n else None,
+            "mean_pass_rate": round(sum(c["passes"] for c in cases)
+                                    / max(1, sum(c["total"] for c in cases)), 3),
+            "partial_cases": sum(1 for c in cases if c["partial"]),
+        }
+        return {"runs": ids, "cases": cases, "summary": summary}
+    finally:
+        if own:
+            conn.close()
+
+
+def _decide(reference: list[float | None], candidate: list[float | None], n_cases: int,
+            threshold: float, min_gain_cases: float = 1.0) -> dict:
+    """纯函数：给定基准与候选各次 run 的主指标，判断是否接受候选。
+
+    为什么不直接照搬「候选分数 > 基准分数就接受」：15 题里 1 题就是 6.7 个点，
+    单次高 1 题可能只是模型波动。这里用两种证据：
+
+      区间不重叠（候选最差 > 基准最好）——强证据，直接接受；
+      均值涨够（换算成题数 >= min_gain_cases）——弱证据，接受但标注；
+      候选最差比基准均值还低超过阈值——回归，拒绝；
+      其余——inconclusive，不当作改进，也不当作退步。
+
+    reference / candidate 是同一实验里各次 run 的主指标（0~1）。
+    """
+    ref = [float(x) for x in reference if x is not None]
+    cand = [float(x) for x in candidate if x is not None]
+    if not ref or not cand:
+        return {"decision": "invalid", "reason": "缺少可比较的指标", "reference": ref,
+                "candidate": cand}
+    ref_mean = sum(ref) / len(ref)
+    cand_mean = sum(cand) / len(cand)
+    ref_max, ref_min = max(ref), min(ref)
+    cand_max, cand_min = max(cand), min(cand)
+    gain = cand_mean - ref_mean
+    gain_cases = gain * max(1, int(n_cases))
+
+    if cand_min < ref_mean - threshold:
+        decision, strength = "reject", "regression"
+        reason = "候选最差 {:.3f} 低于基准均值 {:.3f} 超过阈值 {:.2f}".format(
+            cand_min, ref_mean, threshold)
+    elif cand_min > ref_max:
+        decision, strength = "accept", "interval"
+        reason = "候选最差 {:.3f} 高于基准最好 {:.3f}，区间不重叠".format(cand_min, ref_max)
+    elif gain_cases >= min_gain_cases:
+        decision, strength = "accept", "mean"
+        reason = "均值涨 {:.1f} 题（阈值 {:.1f} 题），但区间仍重叠".format(
+            gain_cases, min_gain_cases)
+    else:
+        decision, strength = "inconclusive", None
+        reason = "均值只涨 {:.1f} 题，低于 {:.1f} 题的噪声阈值".format(
+            gain_cases, min_gain_cases)
+
+    return {
+        "decision": decision, "strength": strength, "reason": reason,
+        "reference": {"runs": ref, "mean": round(ref_mean, 4),
+                      "min": ref_min, "max": ref_max},
+        "candidate": {"runs": cand, "mean": round(cand_mean, 4),
+                      "min": cand_min, "max": cand_max},
+        "gain": round(gain, 4), "gain_cases": round(gain_cases, 2),
+        "threshold": threshold, "min_gain_cases": min_gain_cases,
+    }
+
+
+def accept_candidate(reference_run_ids, candidate_run_ids, suite="agent",
+                     min_gain_cases=1.0, conn=None):
+    """从账本里取两次实验的指标，判断候选是否可以被接受。
+
+    用法::
+
+        evalhub.accept_candidate([12, 13, 14], [15, 16, 17])
+
+    返回 decision = accept / reject / inconclusive，同时给出两组 run 的原始指标，
+    便于把判断依据一起贴进 round 记录。
+    """
+    own = conn is None
+    conn = conn or connect()
+    try:
+        def load(ids):
+            out = []
+            for rid in ids:
+                row = conn.execute(
+                    "SELECT * FROM eval_runs WHERE id=?", (int(rid),)).fetchone()
+                if row is None:
+                    continue
+                out.append({"id": row["id"], "name": row["name"],
+                            "metrics": json.loads(row["metrics_json"] or "{}")})
+            return out
+
+        ref_runs, cand_runs = load(reference_run_ids), load(candidate_run_ids)
+        key, threshold = GATE.get(suite, ("pass_rate", 0.0))
+        ref_vals = [r["metrics"].get(key) for r in ref_runs]
+        cand_vals = [r["metrics"].get(key) for r in cand_runs]
+        n_cases = max([int(r["metrics"].get("total") or 0) for r in ref_runs + cand_runs] or [0])
+        result = _decide(ref_vals, cand_vals, n_cases, threshold, min_gain_cases)
+        result.update({"suite": suite, "metric": key,
+                       "reference_runs": ref_runs, "candidate_runs": cand_runs,
+                       "n_cases": n_cases})
+        return result
     finally:
         if own:
             conn.close()

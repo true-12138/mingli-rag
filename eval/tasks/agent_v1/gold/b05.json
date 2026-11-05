@@ -1,0 +1,18 @@
+{
+  "baseline_expectation": "单 Agent 跳过星盘，或星盘结果与检索内容对不上",
+  "evidence_books": [
+    "张果星宗"
+  ],
+  "id": "b05",
+  "pass_criteria": [
+    "调用 draw_astro 并给出命主星",
+    "检索 query 中包含排出的星曜名",
+    "引用至少 1 条《张果星宗》中与该星曜相关的原文"
+  ],
+  "required_tools": [
+    "draw_astro",
+    "search_classics(book=张果星宗)"
+  ],
+  "retrieval_note": "实测：张果星宗「命主」91 条；星学大成「命主」203 条，检索时须限定 book 才不会跑到星学大成。",
+  "why_agentic": "先用 draw_astro 得到命主星，再用该星曜名去《张果星宗》定向检索。工具输出的星曜名是检索参数来源。"
+}
