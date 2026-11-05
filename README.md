@@ -324,6 +324,15 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `POST` | `/retrieve` | 只检索，`mode` 可选 `dense` / `bm25` / `rrf` |
 | `POST` | `/chat` | 问答，`mode` 可选 `rag` / `agent` / `multi`，支持 `history` |
 | `GET` | `/trace/{trace_id}` | 取回最近一次请求的完整结果（内存里保留最近 200 条） |
+| `GET` | `/metrics` | Prometheus 文本格式：请求数、耗时直方图、在途数、LLM token |
+| `POST` | `/v1/conversations` | 新建会话，返回 `conversation_id` |
+| `GET` | `/v1/conversations` | 会话列表（含消息数） |
+| `GET` | `/v1/conversations/{id}` | 会话详情与全部消息 |
+| `DELETE` | `/v1/conversations/{id}` | 删除会话（级联删消息、运行、反馈） |
+| `POST` | `/v1/conversations/{id}/chat` | 带服务端记忆的问答，返回 `run_id` |
+| `GET` | `/v1/conversations/{id}/runs` | 该会话的运行记录 |
+| `GET` | `/v1/runs/{run_id}` | 回放：答案、耗时、token、工具调用、反馈 |
+| `POST` | `/v1/runs/{run_id}/feedback` | 好评/差评，差评可带 `expected_answer` |
 
 ```bash
 curl -s localhost:8000/chat \
@@ -342,6 +351,9 @@ curl -s localhost:8000/chat \
 - **并发**：默认同时最多 4 个生成请求（`MINGLI_MAX_CONCURRENCY`），超了立刻 429，不排队。
 - **trace**：内存缓存，进程重启即清空；持久化 trace 留给 Langfuse（下一步）。
 - **token 用量**：`/chat` 响应里的 `usage` 汇总本次请求内所有 LLM 调用的 token（含追问改写、Agent 每一步、JSON 重试），字段为 `prompt_tokens / completion_tokens / total_tokens / cached_tokens / llm_calls`；采集是线程内旁路累加（`src/usage.py`），不改变 `_chat` 的签名，脚本直接调 `rag.answer` 时自动静默。日志行同时输出 `tokens=`，可直接接成本看板。
+- **request id**：每个请求分配 `X-Request-Id`（客户端传了就沿用），响应头带回，JSON 日志里也带；未捕获异常返回体里有 `request_id`，用户报障时能直接对上日志。
+- **结构化日志**：`MINGLI_LOG_JSON=1`（默认）输出一行一个 JSON；设 `0` 回到人类可读格式。
+- **指标**：`/metrics` 输出 `mingli_http_requests_total`、耗时直方图、在途请求数、`mingli_llm_calls_total` 和 `mingli_llm_tokens_total`。path 标签用路由模板（`/trace/{trace_id}`），不会随 id 无限增长。
 
 Docker：
 
@@ -364,6 +376,35 @@ docker compose up --build       # http://localhost:8000/docs
 
 计数落在 `data/.quota.json`（已 gitignore），只保留最近 7 天；进程重启不清零。单会话挡不住脚本（换个会话就重置），**全站每日上限才是硬闸门**：刷满 300 次后当天所有人只能自带 key。DeepSeek 是预付费，余额为 0 自动停，不会欠费。
 
+### 6.2 会话记忆、运行回放与反馈闭环
+
+`/v1` 把"一次问答"落成可回放、可评价、可回归的实体：
+
+1. `POST /v1/conversations` 建会话，拿到 `conversation_id`；
+2. `POST /v1/conversations/{id}/chat` 问答。服务端从库里读最近 3 轮历史（客户端只传 id），调用模型前先落一条 `running` 运行记录，返回 `run_id`；
+3. `GET /v1/runs/{run_id}` 回放：答案、耗时、token、工具调用、已有反馈；
+4. `POST /v1/runs/{run_id}/feedback` 打分（`rating` 只接受 `1` / `-1`），差评可带 `expected_answer`。
+
+差评会变成回归用例：
+
+```bash
+python eval/promote_feedback.py            # 差评 -> eval/feedback_cases.jsonl
+python eval/run_feedback.py --mode rag     # 重跑并登记基线，记下 run id
+python eval/run_feedback.py --mode rag --baseline <id>   # 回归门，掉超过 5 个点退出码 1
+```
+
+自动判据在 `src/evalhub.py::judge_feedback_case`：
+
+- 上次是拒答 → 这次必须答出来且带有效引用；
+- 有 `expected_answer` → 新答案的字符二元组相似度必须**高于旧答案**，且引用合规；
+- 两者都没有 → `passed=None`，转人工复核，不计入通过率。
+
+不想配 key 也能看完整链路（假模型 + 临时数据库，不联网）：
+
+```bash
+python scripts/demo_closed_loop.py
+```
+
 ---
 
 ## 7. 目录结构
@@ -376,7 +417,11 @@ docker compose up --build       # http://localhost:8000/docs
 ├── deploy/                    # ECS：Nginx 限流反代 + systemd 开机自启
 ├── src/
 │   ├── app.py                 # 界面：问古籍 + 排盘；维护页（?admin=1）放中台与后端开关
-│   ├── api.py                 # FastAPI：/chat /retrieve /trace /health
+│   ├── api.py                 # FastAPI：/chat /retrieve /trace /health /metrics
+│   ├── api_conversations.py   # /v1：会话记忆、运行回放、差评
+│   ├── guards.py              # Bearer 鉴权 + 并发信号量
+│   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
+│   ├── db/                    # 业务库：base(连接) / models(7 张表) / repo(读写)
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂；版式、对话、排盘卡片）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
@@ -412,7 +457,11 @@ docker compose up --build       # http://localhost:8000/docs
 │   ├── REPORT.md              # 单 Agent vs 多 Agent 实验报告
 │   ├── results_8681_tuned.csv # 8,681 条、k=10/cand=40 的检索明细
 │   ├── refusal_results.csv    # 拒答明细（含模型原始回答）
+│   ├── promote_feedback.py    # 差评 -> eval/feedback_cases.jsonl
+│   ├── run_feedback.py        # 重跑差评用例 + 回归门
 │   └── make_chart.py          # 由评测明细生成对比图
+├── scripts/
+│   └── demo_closed_loop.py    # 一条命令跑通反馈闭环（假模型、临时库）
 ├── data/
 │   ├── chunks/punct.jsonl     # 标点组（2,830 行，chunk_id 1..2830）
 │   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681）
