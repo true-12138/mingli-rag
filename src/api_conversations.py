@@ -34,6 +34,7 @@ from db import repo
 from db.base import get_session
 from db.models import Conversation
 from guards import _require_token, _slot
+from observability import METRICS
 
 logger = logging.getLogger("mingli.api.conversations")
 
@@ -427,6 +428,7 @@ def chat_in_conversation(
     elapsed_ms = (time.perf_counter() - started) * 1000
     answer_text = str(result.get("answer") or "")
     tokens = usage.snapshot()
+    METRICS.observe_llm(tokens)
 
     # 消息、运行结果、工具调用在同一个事务里提交，避免只存了半轮。
     repo.rename_if_untitled(session, conv, req.question)

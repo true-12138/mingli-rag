@@ -32,7 +32,7 @@ from typing import Any, Literal
 
 import requests
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,6 +44,12 @@ import rag
 import retrieval
 import usage
 from guards import MAX_CONCURRENCY, _SLOTS, _require_token, _slot
+from observability import (
+    METRICS,
+    configure_logging,
+    current_request_id,
+    install_observability,
+)
 
 API_VERSION = "1.0.0"
 logger = logging.getLogger("mingli.api")
@@ -59,6 +65,8 @@ app = FastAPI(
     description="45 部古籍 / 8,681 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
 )
 app.include_router(api_conversations.router)
+# request id、结构化日志、/metrics 共用这一个中间件
+install_observability(app)
 
 
 # ---------- 请求 / 响应模型 ----------
@@ -186,6 +194,7 @@ def root() -> dict[str, Any]:
         "docs": "/docs",
         "endpoints": [
             "/health",
+            "/metrics",
             "/chat",
             "/retrieve",
             "/trace/{trace_id}",
@@ -214,6 +223,12 @@ def health() -> dict[str, Any]:
         "max_concurrency": MAX_CONCURRENCY,
         "trace_cache": len(_TRACES),
     }
+
+
+@app.get("/metrics", response_class=PlainTextResponse, tags=["ops"])
+def metrics() -> str:
+    """Prometheus 文本格式。只暴露计数和直方图，不含任何用户内容。"""
+    return METRICS.render()
 
 
 @app.get("/trace/{trace_id}", response_model=TraceResponse)
@@ -300,6 +315,7 @@ def chat(
     elapsed_ms = (time.perf_counter() - started) * 1000
     out = dict(result)
     tokens = usage.snapshot()
+    METRICS.observe_llm(tokens)
     out.update({
         "trace_id": trace_id,
         "mode": req.mode,
@@ -319,16 +335,17 @@ def chat(
 @app.exception_handler(Exception)
 async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("unhandled error path=%s", request.url.path)
-    return JSONResponse(status_code=500, content={"detail": "服务内部错误"})
+    # 把 request id 回给调用方，用户报障时能直接对上日志
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "服务内部错误", "request_id": current_request_id()},
+    )
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
+    configure_logging()
     uvicorn.run(
         app,
         host=os.environ.get("MINGLI_HOST", "0.0.0.0"),
