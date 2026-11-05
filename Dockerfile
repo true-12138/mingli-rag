@@ -15,6 +15,9 @@ RUN pip install -r requirements.txt
 COPY src ./src
 COPY data ./data
 COPY eval ./eval
+# 业务库表结构由 Alembic 管理，容器启动时先跑迁移
+COPY alembic.ini .
+COPY migrations ./migrations
 
 ENV MINGLI_HOST=0.0.0.0 \
     MINGLI_PORT=8000 \
@@ -26,4 +29,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)"
 
-CMD ["python", "src/api.py"]
+# 先建表再起服务；alembic upgrade 可重复执行，已有表时是空操作
+CMD ["sh", "-c", "alembic upgrade head && python src/api.py"]

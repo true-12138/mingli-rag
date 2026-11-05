@@ -291,6 +291,7 @@ cd mingli-rag
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+alembic upgrade head               # 首次运行：创建业务库 7 张表，可重复执行
 
 export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
