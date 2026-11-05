@@ -839,6 +839,8 @@ def _decide(reference: list[float | None], candidate: list[float | None], n_case
     单次高 1 题可能只是模型波动。这里用两种证据：
 
       区间不重叠（候选最差 > 基准最好）——强证据，直接接受；
+      但只有双方都至少跑 2 次才有「区间」可言；单次 run 的区间退化为一个点，
+      这时 cand > ref 只是普通波动，不能当强证据；
       均值涨够（换算成题数 >= min_gain_cases）——弱证据，接受但标注；
       候选最差比基准均值还低超过阈值——回归，拒绝；
       其余——inconclusive，不当作改进，也不当作退步。
@@ -856,12 +858,14 @@ def _decide(reference: list[float | None], candidate: list[float | None], n_case
     cand_max, cand_min = max(cand), min(cand)
     gain = cand_mean - ref_mean
     gain_cases = gain * max(1, int(n_cases))
+    # 单次 run 没有方差信息；把它当「区间不重叠」会把一次波动误判成强证据。
+    has_intervals = len(ref) >= 2 and len(cand) >= 2
 
     if cand_min < ref_mean - threshold:
         decision, strength = "reject", "regression"
         reason = "候选最差 {:.3f} 低于基准均值 {:.3f} 超过阈值 {:.2f}".format(
             cand_min, ref_mean, threshold)
-    elif cand_min > ref_max:
+    elif has_intervals and cand_min > ref_max:
         decision, strength = "accept", "interval"
         reason = "候选最差 {:.3f} 高于基准最好 {:.3f}，区间不重叠".format(cand_min, ref_max)
     elif gain_cases >= min_gain_cases:
