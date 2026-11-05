@@ -163,6 +163,28 @@ def test_validation_and_auth(client, monkeypatch):
     assert r.status_code == 503
 
 
+def test_default_deny_when_token_and_allow_open_are_absent(client, monkeypatch):
+    """忘了配 token 不能再等于「全公开」；只有显式 ALLOW_OPEN 才放行。"""
+    monkeypatch.delenv("MINGLI_API_TOKEN", raising=False)
+    monkeypatch.delenv("MINGLI_ALLOW_OPEN", raising=False)
+
+    r = client.post("/chat", json={"question": "q"})
+    assert r.status_code == 503
+    assert "MINGLI_API_TOKEN" in r.json()["detail"]
+
+
+def test_ready_reports_deny_auth_mode(client, monkeypatch):
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.delenv("MINGLI_API_TOKEN", raising=False)
+    monkeypatch.delenv("MINGLI_ALLOW_OPEN", raising=False)
+
+    r = client.get("/ready")
+    assert r.status_code == 503
+    body = r.json()
+    assert body["auth"] == "deny"
+    assert any("MINGLI_API_TOKEN" in p for p in body["problems"])
+
+
 def test_chat_reports_token_usage(client, monkeypatch):
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
         # 模拟 rag._chat 里 usage.add 的旁路采集：两次调用各记一次

@@ -8,8 +8,16 @@ services:
       # 从宿主机环境或同目录 .env 读取；.env 不进仓库
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       MINGLI_API_TOKEN: ${MINGLI_API_TOKEN:-}
+      # 默认拒绝：没配 token 时接口返回 503；只有本地开发才设成 1
+      MINGLI_ALLOW_OPEN: ${MINGLI_ALLOW_OPEN:-0}
       MINGLI_MAX_CONCURRENCY: ${MINGLI_MAX_CONCURRENCY:-4}
       MINGLI_TRACE_CACHE: ${MINGLI_TRACE_CACHE:-200}
+      # 服务端 key 的每日额度：单匿名 ID / 单 IP / 全站
+      MINGLI_QUOTA_USER_DAILY: ${MINGLI_QUOTA_USER_DAILY:-20}
+      MINGLI_QUOTA_IP_DAILY: ${MINGLI_QUOTA_IP_DAILY:-60}
+      MINGLI_QUOTA_GLOBAL_DAILY: ${MINGLI_QUOTA_GLOBAL_DAILY:-300}
+      # 放在 Nginx 后面时设 1，才信任 X-Forwarded-For 取真实客户端 IP
+      MINGLI_TRUST_PROXY: ${MINGLI_TRUST_PROXY:-0}
       # 运行时数据（业务库、评测库、额度计数）必须落在卷里，不能留在容器可写层，
       # 否则 docker compose up --build 一执行，用户/会话/run 全部丢失。
       # 注意：/var/lib/mingli 和镜像里的语料目录 /app/data 分开，挂载不会遮住语料。

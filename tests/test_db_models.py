@@ -2,7 +2,7 @@
 """业务表结构测试：不连真实数据库、不调模型。
 
 只验证三件事：
-1. 7 张表能建出来；
+1. 8 张表能建出来；
 2. 外键和关系能正常用；
 3. 删除会话时，消息 / 运行 / 工具调用 / 反馈会跟着删。
 """
@@ -21,6 +21,7 @@ from db.models import (
     Feedback,
     Message,
     QuotaLedger,
+    QuotaUsage,
     Run,
     ToolCall,
     User,
@@ -51,7 +52,7 @@ def _conversation(session: Session, user: User) -> Conversation:
     return conv
 
 
-def test_creates_seven_business_tables(session):
+def test_creates_business_tables(session):
     assert set(Base.metadata.tables) == {
         "users",
         "conversations",
@@ -60,6 +61,7 @@ def test_creates_seven_business_tables(session):
         "tool_calls",
         "feedback",
         "quota_ledger",
+        "quota_usage",
     }
 
 
@@ -144,6 +146,17 @@ def test_deleting_conversation_cascades_to_children(session):
 
 def test_foreign_key_is_enforced(session):
     session.add(Conversation(id="c" * 32, user_id=999))
+    with pytest.raises(IntegrityError):
+        session.commit()
+    session.rollback()
+
+
+def test_quota_usage_is_unique_per_bucket_day(session):
+    row = dict(bucket="global", day="2026-11-05", used=1)
+    session.add(QuotaUsage(**row))
+    session.commit()
+
+    session.add(QuotaUsage(**row))
     with pytest.raises(IntegrityError):
         session.commit()
     session.rollback()

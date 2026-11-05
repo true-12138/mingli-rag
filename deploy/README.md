@@ -49,8 +49,14 @@ docker run --rm -v mingli-rag_mingli_state:/src -v "$PWD":/backup alpine \
 ```
 
 **存活与就绪**：`/health` 是存活探针，`/ready` 是就绪探针。`/ready` 在
-`DEEPSEEK_API_KEY` 未配置或索引不一致时返回 503；接负载均衡时用它摘流量，
-不要用 `/health`。
+`DEEPSEEK_API_KEY` 未配置、`MINGLI_API_TOKEN` 未配置（默认拒绝访问）或索引
+不一致时返回 503；接负载均衡时用它摘流量，不要用 `/health`。
+
+**鉴权与额度**：没有 `MINGLI_API_TOKEN` 时接口默认返回 503，不会悄悄公开。
+用服务端 key 的生成请求按「匿名 ID / IP / 全站」三层每日计数（默认 20/60/300），
+超了返回 429；计数在 `quota_usage` 表，重启不丢。Nginx 反代后设
+`MINGLI_TRUST_PROXY=1`，并确保 8000 端口不直接暴露公网，否则客户端可伪造
+`X-Forwarded-For` 绕过单 IP 额度。
 
 带 token 调用：
 
@@ -93,6 +99,8 @@ sudo systemctl status mingli-api
 - [ ] `docker compose down && docker compose up -d` 后，之前的会话仍能查到（卷生效）
 - [ ] `/chat` 三种 `mode` 都能返回；`rag` 和 `agent` 至少各跑 1 条真实问题
 - [ ] 不带 token 返回 401（设置了 `MINGLI_API_TOKEN` 时）
+- [ ] 临时删除 `MINGLI_API_TOKEN` 且不设 `MINGLI_ALLOW_OPEN`，`/chat` 返回 503
+- [ ] 把单用户额度改成 1，第二次生成返回 429，带 `Retry-After`；容器重启后仍返回 429
 - [ ] 并发打 10 个请求，超出部分返回 429，服务不崩
 - [ ] `docker compose logs -f api` 里没有 key、没有 traceback
 - [ ] 重启机器后 `systemctl status mingli-api` 是 active，`/health` 自动恢复

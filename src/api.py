@@ -14,9 +14,13 @@
 
 环境变量：
     DEEPSEEK_API_KEY      必填，服务端 key
-    MINGLI_API_TOKEN      可选，设置后所有接口要求 Bearer token
+    MINGLI_API_TOKEN      强烈建议设置；未设置时默认拒绝访问（503）
+    MINGLI_ALLOW_OPEN     仅本地开发：设为 1 才允许无 token 访问
     MINGLI_MAX_CONCURRENCY 可选，默认 4
     MINGLI_TRACE_CACHE    可选，内存里保留的 trace 条数，默认 200
+    MINGLI_QUOTA_USER_DAILY / _IP_DAILY / _GLOBAL_DAILY
+                          可选，服务端 key 的每日额度，默认 20 / 60 / 300
+    MINGLI_TRUST_PROXY    可选，设为 1 时信任 X-Forwarded-For 取客户端 IP
 """
 from __future__ import annotations
 
@@ -40,10 +44,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent
 import agent_multi
 import api_conversations
+import quotas
 import rag
 import retrieval
 import usage
-from guards import MAX_CONCURRENCY, _SLOTS, _require_token, _slot
+from guards import (
+    MAX_CONCURRENCY,
+    _SLOTS,
+    _quota_gate,
+    _refund_quota,
+    _require_token,
+    _slot,
+)
 from observability import (
     METRICS,
     configure_logging,
@@ -232,7 +244,8 @@ def ready() -> JSONResponse:
 
     和 `/health` 的分工：
     - `/health` 是存活探针，进程还在就给 200，用于 Docker 判断要不要重启；
-    - `/ready` 是就绪探针，缺 key / 索引不一致时给 503，负载均衡据此摘流量。
+    - `/ready` 是就绪探针，缺 key / 未配置 token / 索引不一致时给 503，
+      负载均衡据此摘流量。
 
     这里**不加载** BGE-M3：加载要下载几 GB 权重，探针不能触发它。
     模型按需加载是刻意的，所以 `embedding_loaded=false` 不算未就绪。
@@ -240,6 +253,14 @@ def ready() -> JSONResponse:
     problems: list[str] = []
     if not (os.environ.get("DEEPSEEK_API_KEY") or "").strip():
         problems.append("DEEPSEEK_API_KEY 未配置（访客自带 key 仍可用，但服务端无法兜底）")
+
+    token_configured = bool((os.environ.get("MINGLI_API_TOKEN") or "").strip())
+    allow_open = os.environ.get("MINGLI_ALLOW_OPEN", "").strip() == "1"
+    if not token_configured and not allow_open:
+        problems.append(
+            "MINGLI_API_TOKEN 未配置，服务默认拒绝访问；"
+            "仅本地开发可设 MINGLI_ALLOW_OPEN=1"
+        )
 
     n_chunks = len(retrieval.chunks)
     n_rows = int(retrieval.embeds.shape[0])
@@ -259,6 +280,8 @@ def ready() -> JSONResponse:
         "server_key_configured": bool(
             (os.environ.get("DEEPSEEK_API_KEY") or "").strip()
         ),
+        "auth": "token" if token_configured else ("open" if allow_open else "deny"),
+        "quota_enabled": quotas.enabled(),
     }
     return JSONResponse(status_code=503 if problems else 200, content=payload)
 
@@ -317,7 +340,9 @@ def chat(
     req: ChatRequest,
     x_deepseek_key: str | None = Header(default=None),
     _: None = Depends(_require_token),
+    # 先拿并发槽再扣额度：服务繁忙被 429 时不应该消耗用户当天的次数
     __: None = Depends(_slot),
+    quota: quotas.Reservation | None = Depends(_quota_gate),
 ) -> dict[str, Any]:
     started = time.perf_counter()
     trace_id = uuid.uuid4().hex
@@ -339,14 +364,17 @@ def chat(
                 req.question, max_steps=req.max_steps, api_key=key, history=history
             )
     except requests.HTTPError as exc:
+        _refund_quota(quota)
         status = exc.response.status_code if exc.response is not None else 502
         logger.warning("upstream failed trace_id=%s status=%s", trace_id, status)
         raise HTTPException(status_code=502, detail="上游模型调用失败（%s）" % status) from exc
     except RuntimeError as exc:
         # 没配 DEEPSEEK_API_KEY 时 rag._get_api_key 抛这个
+        _refund_quota(quota)
         logger.warning("configuration error trace_id=%s: %s", trace_id, exc)
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
+        _refund_quota(quota)
         logger.exception("chat failed trace_id=%s mode=%s", trace_id, req.mode)
         raise HTTPException(status_code=500, detail="生成失败") from exc
 

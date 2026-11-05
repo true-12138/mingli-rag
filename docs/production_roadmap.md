@@ -11,7 +11,7 @@
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | M1 | 并发与持久化地基 | ✅ 代码完成，待 CI |
-| M2 | 身份与配额 | ⬜ 未开始 |
+| M2 | 身份与配额 | ✅ 代码完成，待 CI |
 | M3 | Postgres 与备份 | ⬜ 未开始 |
 | M4 | 记忆压缩 | ⬜ 未开始 |
 | M5 | 高可用与上游韧性 | ⬜ 未开始 |
@@ -47,25 +47,35 @@ pytest -q tests/test_db_models.py tests/test_api.py tests/test_retrieval_runtime
 
 ---
 
-## M2 身份与配额
+## M2 身份与配额（已完成）
 
 **问题**：API 只有一个全局静态 Bearer token；`X-Anonymous-Id` 客户端可伪造；
 Streamlit 的 `.quota.json` 无锁、多进程会丢计数；API 路径完全没有额度，单 token
 泄露即可烧穿预算。
 
-**范围**：
+**改动**：
 
-1. 把 `quota_ledger` 接进请求路径（模型已存在，见 `src/db/models.py:223`）：
-   - 三层额度：单匿名 ID 每日、单 IP 每日、全站每日；
-   - 只在用服务端 key 时计数；访客自带 key 不占额度；
-   - 用一条 `UPDATE ... WHERE used < limit` 或事务 + 唯一约束做原子递增，
-     不依赖进程内计数。
-2. `/chat` 与 `/v1/.../chat` 共用同一套额度检查；Streamlit 逐步改用同一账本。
-3. API token 改为**默认拒绝**：未配置 `MINGLI_API_TOKEN` 时，非本机请求返回 503
-   并提示配置，避免“忘了设置就全公开”。
-4. 额度耗尽返回 429，并在响应里带 `Retry-After` 与剩余额度。
+- `src/guards.py`：`MINGLI_API_TOKEN` 改为**默认拒绝**；未配置且
+  `MINGLI_ALLOW_OPEN != 1` 时所有接口 503，`/ready` 同时报出该问题；
+- 新增 `quota_usage` 表（复合主键 `(bucket, day)`）与迁移
+  `7b9d1a2c3e4f`，专门做请求计数；`quota_ledger` 继续记 token / 成本，两者不混用；
+- `src/quotas.py`：三层额度（`user:<anonymous_id>`、`ip:<addr>`、`global`），
+  每层用一条 `UPDATE ... WHERE used < limit` 原子占用；任意一层失败会退回前面
+  已占用的层；额度按 UTC 自然日重置；
+- `/chat` 与 `/v1/conversations/{id}/chat` 共用 `_quota_gate`；超限 429 +
+  `Retry-After` + `X-Quota-Remaining`；生成失败（5xx / 配置错误）整笔退回；
+- 只统计使用服务端 key 的请求；`X-DeepSeek-Key` 访客不占额度；
+- `MINGLI_TRUST_PROXY=1` 时才信任 `X-Forwarded-For`，避免伪造 IP 绕过单 IP 额度。
 
-**验收**：并发 50 个请求只放行额度内的数量；重启进程后计数不重置；多进程共享同一上限。
+**验收**：
+
+```bash
+pytest -q tests/test_quotas.py tests/test_api.py tests/test_conversations_api.py
+# 50 并发只有 global_limit 个成功；重启后计数仍在；失败请求会退回
+```
+
+**仍然不解决**：匿名 ID 仍是客户端自报，清 localStorage 就能换身份；真正的
+用户体系、按账号计费与多租户要到 L3。
 
 ---
 

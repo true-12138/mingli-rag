@@ -29,6 +29,10 @@ TMP = Path(_TMP.name)
 os.environ["MINGLI_DB_URL"] = "sqlite:///" + str(TMP / "app.sqlite3").replace("\\", "/")
 os.environ["MINGLI_PLATFORM_DB"] = str(TMP / "platform.sqlite3")
 os.environ.pop("MINGLI_API_TOKEN", None)
+# 鉴权默认拒绝；这个脚本只跑本机临时库，显式开放。额度也关掉，
+# 免得演示脚本受当天计数影响。
+os.environ["MINGLI_ALLOW_OPEN"] = "1"
+os.environ["MINGLI_QUOTA_ENABLED"] = "0"
 
 from fastapi.testclient import TestClient  # noqa: E402
 

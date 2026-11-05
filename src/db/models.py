@@ -244,3 +244,25 @@ class QuotaLedger(Base):
     updated_at = Column(
         DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
     )
+
+
+class QuotaUsage(Base):
+    """API 每日请求额度计数。
+
+    和 `quota_ledger` 的区别：
+    - `quota_ledger` 记「花了多少 token / 多少钱」，用于成本对账；
+    - `quota_usage` 记「放行了多少次请求」，是限流闸门本身，要求原子递增。
+
+    复合主键 `(bucket, day)` 让「同一匿名 ID / 同一 IP / 全站」各自一行，
+    用 `UPDATE ... WHERE used < limit` 一条语句完成判断和占用，多进程也安全。
+    `bucket` 形如 `user:<anonymous_id>`、`ip:<addr>`、`global`。
+    """
+
+    __tablename__ = "quota_usage"
+
+    bucket = Column(String(160), primary_key=True)
+    day = Column(String(10), primary_key=True)  # UTC 的 YYYY-MM-DD
+    used = Column(Integer, nullable=False, default=0, server_default="0")
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )

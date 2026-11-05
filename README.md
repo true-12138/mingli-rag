@@ -395,7 +395,7 @@ cd mingli-rag
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-alembic upgrade head               # 首次运行：创建业务库 7 张表，可重复执行
+alembic upgrade head               # 首次运行：创建业务库 8 张表，可重复执行
 
 export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
@@ -418,6 +418,7 @@ Streamlit 适合演示，不适合被别的服务调用。`src/api.py` 把 RAG /
 
 ```bash
 export DEEPSEEK_API_KEY=sk-xxxx
+export MINGLI_ALLOW_OPEN=1        # 仅本地 127.0.0.1；公网部署改用 MINGLI_API_TOKEN
 python src/api.py                 # http://127.0.0.1:8000/docs
 # 或
 uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
@@ -426,7 +427,7 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | `GET` | `/health` | 存活探针：语料条数、embedding 形状、模型是否已加载、并发上限 |
-| `GET` | `/ready` | 就绪探针：缺 `DEEPSEEK_API_KEY` 或索引不一致时返回 503 |
+| `GET` | `/ready` | 就绪探针：缺 `DEEPSEEK_API_KEY`、未配置 `MINGLI_API_TOKEN` 或索引不一致时返回 503 |
 | `POST` | `/retrieve` | 只检索，`mode` 可选 `dense` / `bm25` / `rrf` |
 | `POST` | `/chat` | 问答，`mode` 可选 `rag` / `agent` / `multi`，支持 `history` |
 | `GET` | `/trace/{trace_id}` | 取回最近一次请求的完整结果（内存里保留最近 200 条） |
@@ -452,7 +453,8 @@ curl -s localhost:8000/chat \
         {"role":"assistant","content":"羊刃有……"}]}'
 ```
 
-- **鉴权**：设置 `MINGLI_API_TOKEN` 后，所有接口要求 `Authorization: Bearer <token>`；不设置则开放。
+- **鉴权（默认拒绝）**：设置 `MINGLI_API_TOKEN` 后，所有接口要求 `Authorization: Bearer <token>`；**不设置时接口返回 503**，只有本地开发显式设 `MINGLI_ALLOW_OPEN=1` 才开放。
+- **每日额度**：使用服务端 key 的生成请求按「匿名 ID / IP / 全站」三层计数，默认 20 / 60 / 300 次每天（`MINGLI_QUOTA_USER_DAILY` 等），超了返回 429 + `Retry-After` 与剩余额度。计数在 `quota_usage` 表，多进程共享、重启不清零；访客自带 key 不占额度。反向代理后需设 `MINGLI_TRUST_PROXY=1` 才信任 `X-Forwarded-For`。
 - **访客自带 key**：请求头 `X-DeepSeek-Key`，只作用于本次请求，不落日志、不进 trace。不要放在浏览器前端。
 - **并发**：默认同时最多 4 个生成请求（`MINGLI_MAX_CONCURRENCY`），超了立刻 429，不排队。
 - **trace**：内存缓存，进程重启即清空；持久化 trace 留给 Langfuse（下一步）。
@@ -525,9 +527,10 @@ python scripts/demo_closed_loop.py
 │   ├── app.py                 # 界面：问古籍 + 排盘；维护页（?admin=1）放中台与后端开关
 │   ├── api.py                 # FastAPI：/chat /retrieve /trace /health /metrics
 │   ├── api_conversations.py   # /v1：会话记忆、运行回放、差评
-│   ├── guards.py              # Bearer 鉴权 + 并发信号量
+│   ├── guards.py              # Bearer 鉴权（默认拒绝）+ 每日额度闸门 + 并发信号量
+│   ├── quotas.py              # 三层每日额度：原子占用、失败退回、UTC 重置
 │   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
-│   ├── db/                    # 业务库：base(连接) / models(7 张表) / repo(读写)
+│   ├── db/                    # 业务库：base(连接) / models(8 张表) / repo(读写)
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂；版式、对话、排盘卡片）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── agent_state.py         # Agent State：提示词 + 参数的版本哈希与 diff
@@ -614,6 +617,7 @@ python scripts/demo_closed_loop.py
 - **v1.4（已完成，11/03）**：FastAPI `/chat` `/retrieve` `/trace` `/health`、并发信号量、可选 Bearer token、token 用量旁路采集、Dockerfile + compose、10 条 API 测试、CI 跑全量 42 条测试
 - **v1.5（已完成，11/04）**：界面按「面向访客」重做——只留问古籍 / 排盘两页，引用改成可展开的原文出处，加可点追问与拒答说明；检索后端、轨迹和中台收进 `?admin=1` 维护页
 - **v1.6（已完成，11/05）**：评测可归因——提示词外置为 Agent State（`state_version`）、题面与判据分离并冻结（dev 10 / holdout 5）、case × run 矩阵与接受规则、单轮预测对照、每题 `trace_id` 与 token 记录
+- **v1.7（进行中，11/05）**：生产化 M1/M2——持久卷与 SQLite WAL、就绪探针、模型单次加载；默认拒绝鉴权、三层每日额度（`quota_usage`）、429 与失败退回。剩余里程碑见 [`docs/production_roadmap.md`](docs/production_roadmap.md)
 - **下一步（11/15 前）**：ECS + Nginx + systemd 部署、Langfuse 全链路 trace、P50/P95 延迟统计、30 条 Agent 评测、20 条多轮评测
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）

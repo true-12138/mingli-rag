@@ -28,12 +28,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent
 import agent_multi
+import quotas
 import rag
 import usage
 from db import repo
 from db.base import get_session
 from db.models import Conversation
-from guards import _require_token, _slot
+from guards import _quota_gate, _refund_quota, _require_token, _slot
 from observability import METRICS
 
 logger = logging.getLogger("mingli.api.conversations")
@@ -377,7 +378,9 @@ def chat_in_conversation(
     x_deepseek_key: str | None = Header(default=None),
     anonymous_id: str = Depends(current_anonymous_id),
     session: Session = Depends(get_session),
+    # 先拿并发槽再扣额度：服务繁忙被 429 时不应该消耗用户当天的次数
     __: None = Depends(_slot),
+    quota: quotas.Reservation | None = Depends(_quota_gate),
 ) -> dict[str, Any]:
     user = repo.get_or_create_user(session, anonymous_id)
     conv = _get_owned(session, conversation_id, user.id)
@@ -405,6 +408,7 @@ def chat_in_conversation(
                 req.question, max_steps=req.max_steps, api_key=key, history=history
             )
     except requests.HTTPError as exc:
+        _refund_quota(quota)
         status = exc.response.status_code if exc.response is not None else 502
         logger.warning("upstream failed trace_id=%s status=%s", trace_id, status)
         repo.fail_run(
@@ -413,12 +417,14 @@ def chat_in_conversation(
         )
         raise HTTPException(status_code=502, detail="上游模型调用失败（%s）" % status) from exc
     except RuntimeError as exc:
+        _refund_quota(quota)
         logger.warning("configuration error trace_id=%s: %s", trace_id, exc)
         repo.fail_run(
             session, run, str(exc), (time.perf_counter() - started) * 1000
         )
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
+        _refund_quota(quota)
         logger.exception("chat failed trace_id=%s mode=%s", trace_id, req.mode)
         repo.fail_run(
             session, run, str(exc), (time.perf_counter() - started) * 1000
