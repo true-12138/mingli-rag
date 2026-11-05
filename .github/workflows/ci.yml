@@ -19,6 +19,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest numpy lunar_python ephem rank-bm25 requests python-dotenv \
-            fastapi uvicorn httpx
+            fastapi uvicorn httpx SQLAlchemy
       - name: Run tests
         run: pytest -q
