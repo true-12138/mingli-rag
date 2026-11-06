@@ -46,6 +46,7 @@ def die(msg: str) -> None:
 
 try:
     import corpus
+    import usage
 except ModuleNotFoundError as e:  # pragma: no cover
     die("导入 corpus 失败：{}\n请确认在项目根目录运行，且已 pip install -r requirements.txt".format(e))
 
@@ -222,6 +223,7 @@ def run(tasks: list[dict], args) -> dict:
         turn_records = []
         record = {"id": task["id"], "category": task.get("category"),
                   "name": task.get("name"), "note": task.get("note"), "turns": turn_records}
+        usage.reset()
 
         for idx, turn_spec in enumerate(task["turns"]):
             q = turn_spec["question"]
@@ -262,6 +264,7 @@ def run(tasks: list[dict], args) -> dict:
                     print("          step {} {:<16} -> {}".format(
                         t.get("step"), t.get("action"), t.get("chunk_ids")), flush=True)
 
+        record["usage"] = usage.snapshot()
         judge = judge_conversation(task, turn_records, id2book)
         record["judge"] = judge
         record["seconds"] = round(time.time() - started, 1)

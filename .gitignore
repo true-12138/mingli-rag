@@ -27,5 +27,7 @@ data/app.sqlite3
 data/app.sqlite3-*
 # 界面走查的临时脚本与截图（design-taste 工具产物）
 .taste-skill/
+# 成本报表由 eval/report_cost.py 生成，数字随跑批变化，不进仓库
+eval/cost_report.json
 
 

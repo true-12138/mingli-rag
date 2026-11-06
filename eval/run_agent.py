@@ -39,6 +39,7 @@ def die(msg: str) -> None:
 
 try:
     import corpus
+    import usage
 except ModuleNotFoundError as e:  # pragma: no cover
     die("导入 corpus 失败：{}\n请确认在项目根目录运行，且已 pip install -r requirements.txt".format(e))
 
@@ -221,8 +222,10 @@ def run(tasks: list[dict], args) -> dict:
         started = time.time()
         record = {"id": tid, "type": task.get("type"), "name": task.get("name"),
                   "question": task.get("question")}
+        usage.reset()
         try:
             res = solve(task["question"], max_steps=int(task.get("max_steps", 6)))
+            record["usage"] = usage.snapshot()
             record.update({
                 "can_answer": res.get("can_answer"),
                 "answer": res.get("answer"),
@@ -239,6 +242,7 @@ def run(tasks: list[dict], args) -> dict:
             record["judge"] = auto_judge(task, res, id2book)
             status = "PASS" if record["judge"]["auto_pass"] else "FAIL"
         except Exception as e:  # 单条失败不拖垮整批
+            record["usage"] = usage.snapshot()
             record["error"] = "{}: {}".format(type(e).__name__, e)
             record["traceback"] = traceback.format_exc()[-1200:]
             status = "ERR"

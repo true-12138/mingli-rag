@@ -233,6 +233,34 @@ python eval/run_multiturn.py --agent multi --tag multi
 
 **当前状态：集子与跑批脚本已完成并通过离线测试（10 条），还没有带 key 跑出真实分数。** README 不会先写一个没跑过的改写准确率。
 
+### 3.6 延迟与成本：先报 token，再谈钱
+
+[`eval/report_cost.py`](eval/report_cost.py) 把两类数据汇总成一张表：跑批结果 JSON 里的逐题 `seconds`/`usage`，以及业务库 `runs` 表的 `elapsed_ms`/token。延迟用 nearest-rank 分位数，样本小的时候不插值。
+
+先用 2026-11-02 的 15 条 Agent 结果跑一遍（那批还没采集 token，所以金额列是 —，不是 0）：
+
+| 批次 | 通过 | P50 / 题 | P95 / 题 |
+|---|---:|---:|---:|
+| baseline（单 Agent） | 9/15 | 10.7s | 15.1s |
+| single_r2 | 8/15 | 10.4s | 14.4s |
+| single_r3 | 7/15 | 9.8s | 15.2s |
+| multi | 13/15 | 14.0s | 19.0s |
+| multi_r2 | 13/15 | 14.9s | 20.7s |
+| multi_r3 | 12/15 | 14.1s | 18.1s |
+
+多 Agent 每题 P50 比单 Agent 高约 3–4 秒，换来通过数 +4～+6；这是延迟与质量的直接交换，不是「多 Agent 免费变好」。
+
+单价没有写死：DeepSeek 的价格会变，缓存命中和未命中也是两档。用环境变量传入，不填就只报 token：
+
+```bash
+export MINGLI_INPUT_PRICE_PER_M=...      # 每百万 input token
+export MINGLI_CACHED_INPUT_PRICE_PER_M=...
+export MINGLI_OUTPUT_PRICE_PER_M=...
+python eval/report_cost.py               # 同时读 eval/results_*.json 和 data/app.sqlite3
+```
+
+`run_agent.py` / `run_multiturn.py` 从 2026-11-06 起会在每条记录里写 `usage`；旧结果没有这个字段，报表会显式标出「N 条缺 usage」，不会把缺失当 0。`runs.cost_usd` 仍按设计写 0，等对账单回来再回填。
+
 ---
 
 ## 4. 失败案例
@@ -321,7 +349,7 @@ pass_rate = 0.0
 | 6 | RRF 参数已在 8,681 条上重扫（k=10 / 候选 40），但**没有 reranker** | q01 说明融合仍会伤害单路强命中；reranker 未做前后对比 | 上 bge-reranker-v2-m3，补一组同题对比 |
 | 7 | 生成侧只校验**引用编号是否合法**，不校验"这段原文是否支持这句话" | 4/19 题回答没有任何 gold 引用；没有忠实度指标 | 加 RAGAS faithfulness / 人工抽检 |
 | 8 | 多轮只做最近 3 轮 / 1200 字的追问改写，没有长期记忆与会话摘要；20 条多轮集已建但未跑出分数 | 长会话会丢早期约束；改写本身也消耗一次 LLM 调用 | 带 key 跑 20 条，统计改写准确率 / 引用隔离违规 |
-| 9 | API 的 `/chat` 已汇总 token（`usage` 字段）并在 `/metrics` 暴露总量，但还没有按题/按用户的成本报表 | 能回答"一共烧了多少 token"，还不能回答"这条用例花了多少钱" | 按 run 累计金额，接成本看板 |
+| 9 | 已有 P50/P95 + token/成本报表（`eval/report_cost.py`），但 `runs.cost_usd` 仍写 0、没有按用户维度聚合 | 能回答"这条用例花了多少 token、延迟多少"，金额要靠你填单价估算 | 对账单回填 cost_usd + 按用户聚合 |
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 加 Nginx 限流 + 接 Langfuse 做持久化 trace |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
 | 12 | 多 Agent 只在 15 条任务上测过，30 条版尚未重跑；未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 重跑 30 条 + 逐轮 token/耗时/成本 |
@@ -536,12 +564,14 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 │   ├── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
 │   ├── test_mcp_server.py     # MCP 工具注册 / schema / 可复现 / 错误返回
 │   ├── test_multiturn_eval.py # 多轮集书名 / 判分器通过-失败形态
+│   ├── test_cost_report.py    # P50/P95 / 缓存价拆分 / 缺 usage 处理
 │   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
 │   ├── agent_tasks.jsonl      # 30 题 Agent 评测集（多跳 10 / 换工具 9 / 拒答 6 / 复合 5）
 │   ├── multiturn.jsonl        # 20 条多轮对话（指代/省略/跨轮约束/引用隔离各 5）
 │   ├── run_multiturn.py       # 多轮跑批 + 改写/隔离/拒答机械判定
+│   ├── report_cost.py         # P50/P95 + token/成本报表（单价从环境变量读）
 │   ├── eval_matrics.py        # 三档检索 × exact/line 两种口径
 │   ├── eval_refusal.py        # 拒答评测
 │   ├── run_agent.py           # 单/多 Agent 批量跑批 + auto_judge
