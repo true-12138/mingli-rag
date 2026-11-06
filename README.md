@@ -186,6 +186,8 @@ Key 与额度：服务端配了 `DEEPSEEK_API_KEY` 就走服务端 Key，否则�
 
 两个区间不重叠（单 Agent 最高 9 < 多 Agent 最低 12），但样本只有 15 条，**不作显著性推断**。
 
+> 2026-11-06 已把任务集扩到 30 条（新增多跳 5、换工具 4、拒答 3、复合 3，见 `eval/agent_tasks.jsonl`）。上表仍是**原 15 条**的配对结果；30 条版本需要带 API key 重跑后替换，不能把旧数字直接套到新集合上。
+
 多 Agent 的收益来自三个具体修复，而不是「多一个角色」本身：规划时枚举必须查的书、检索员的书名由代码强制覆写、Verifier 逐本核对并回补缺口。第一版多 Agent 只有 1/15，修完才到 13/15；`a02` 和 `b04` 是两条已知失效，判据本身有缺陷，报告里没有为了好看改判据。
 
 公网 Demo 的「古籍问答」页可以在「单轮 RAG / 单 Agent / 多 Agent」之间切换；Agent 模式会展开每一步的工具、参数、chunk_id 与总耗时，引用仍走同一套白名单校验。
@@ -302,7 +304,7 @@ pass_rate = 0.0
 | 9 | API 的 `/chat` 已汇总 token（`usage` 字段）并在 `/metrics` 暴露总量，但还没有按题/按用户的成本报表 | 能回答"一共烧了多少 token"，还不能回答"这条用例花了多少钱" | 按 run 累计金额，接成本看板 |
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 加 Nginx 限流 + 接 Langfuse 做持久化 trace |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
-| 12 | 多 Agent 只在 15 条任务上测，且未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 扩到 30 条 + 逐轮 token/耗时/成本 |
+| 12 | 多 Agent 只在 15 条任务上测过，30 条版尚未重跑；未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 重跑 30 条 + 逐轮 token/耗时/成本 |
 | 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
 
 > 关于"没做完"的部分：微调、换 LangChain/LlamaIndex 重写、向量库仍然**不做**；reranker 与 RAGAS 忠实度已排进 v2 路线图，不属于 v1.6。多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
@@ -516,7 +518,7 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 │   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
-│   ├── agent_tasks.jsonl      # 15 题 Agent 评测集（多跳/换工具/拒答/复合）
+│   ├── agent_tasks.jsonl      # 30 题 Agent 评测集（多跳 10 / 换工具 9 / 拒答 6 / 复合 5）
 │   ├── eval_matrics.py        # 三档检索 × exact/line 两种口径
 │   ├── eval_refusal.py        # 拒答评测
 │   ├── run_agent.py           # 单/多 Agent 批量跑批 + auto_judge

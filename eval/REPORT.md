@@ -2,14 +2,14 @@
 
 评测日期：2026-11-02
 模型：`deepseek-chat`，`temperature=0`
-任务集：`eval/agent_tasks.jsonl`（15 条）
+任务集：`eval/agent_tasks.jsonl`（本报告为 2026-11-02 的 15 条版本；2026-11-06 已扩到 30 条，新增 15 条尚未重跑）
 跑批脚本：`eval/run_agent.py`
 
 ---
 
 ## 1. 实验设置
 
-**任务集构成**：多跳 5 条（a01–a05）、换工具 5 条（b01–b05）、拒答 3 条（c01–c03）、复合 2 条（d01–d02）。
+**任务集构成**（本报告范围）：多跳 5 条（a01–a05）、换工具 5 条（b01–b05）、拒答 3 条（c01–c03）、复合 2 条（d01–d02）。扩到 30 条后新增 a06–a10、b06–b09、c04–c06、d03–d05，不在下文的统计内。
 
 每条任务的判据写在自己的 `required_tools` / `evidence_books` / `max_steps` / `pass_criteria` 字段里，由 `run_agent.auto_judge` 自动判定，判定不了的列进 `needs_human` 留待人工。`auto_pass` 要求全部可判项通过。
 
