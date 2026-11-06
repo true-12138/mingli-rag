@@ -88,6 +88,10 @@ def _chat(messages, temperature=0.0, api_key=None):
     )
     resp.raise_for_status()
     payload = resp.json()
+    if not isinstance(payload, dict):
+        raise RuntimeError("DeepSeek 返回了空/非对象 JSON：{!r}".format(payload))
+    if payload.get("error"):
+        raise RuntimeError("DeepSeek 返回错误：{}".format(payload["error"]))
     # 旁路累计 token；没有 reset() 的调用方（脚本 / 测试）不记录，不影响行为
     usage.add(payload.get("usage"))
     return payload["choices"][0]["message"]["content"]
