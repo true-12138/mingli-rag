@@ -51,6 +51,7 @@ SYSTEM_PROMPT = """你是古籍检索 Agent。你不能凭记忆回答，只能�
 7. 同一个出生时间只调一次排盘工具，不要反复调用；解读用倾向性语言，不做生死/疾病/灾祸/婚姻成败的断言。
 8. 对话历史和长期记忆只用于理解追问/个性化，不能作为回答证据；citations 只能来自本次工具实际返回过的 chunk_id。
 9. 检索词用术语本身（2–8 字），不要把整句问题塞进 query；同一个概念的古称可能不同（如七杀/偏官、羊刃/阳刃、空亡/旬空），某个词 0 命中或结果明显不相关时，换同义词、别名或缩短检索词再试一次。
+10. 命中的是目录/篇名（如「三十一．论正官」）却没有正文时，用 fetch_chunk(chunk_id, with_neighbors=true) 取相邻正文，不要只凭目录片段下结论。
 """
 
 
@@ -110,10 +111,29 @@ def _finalize(data, seen, trace):
             "steps": len(trace),
         }
 
+    tool_fact = any(
+        t.get("action") in ("draw_bazi", "draw_astro", "draw_tarot")
+        and t.get("ok") is not False
+        for t in (trace or [])
+    )
     if not answer or not valid:
-        # 声称能答却没有一条可用引用 —— 和单轮流程一样判为不合规输出
+        if answer and tool_fact:
+            # 排盘/抽牌是确定性工具输出，回答可以不带 chunk 引用。
+            return {
+                "can_answer": True,
+                "answer": answer,
+                "citations": [],
+                "citations_chunk_ids": [],
+                "invalid_citations": invalid,
+                "invalid_output": bool(invalid),
+                "refusal_reason": None,
+                "retrieved_chunk_ids": sorted(seen),
+                "trace": trace,
+                "steps": len(trace),
+            }
+        # 声称能答却没有引用，也没有确定性工具支撑 → 归一化为拒答。
         return {
-            "can_answer": None if not answer else can_answer,
+            "can_answer": False,
             "answer": answer or REFUSAL_TEXT,
             "citations": [],
             "citations_chunk_ids": [],

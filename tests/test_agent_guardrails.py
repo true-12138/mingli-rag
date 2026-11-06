@@ -76,3 +76,22 @@ def test_refusal_uses_fixed_text(agent_mod):
     assert res["can_answer"] is False
     assert res["answer"] == agent_mod.REFUSAL_TEXT
     assert res["citations_chunk_ids"] == []
+
+
+def test_chart_tool_allows_answer_without_chunk_citation(agent_mod):
+    res = agent_mod._finalize(
+        {"can_answer": True, "answer": "四柱为壬申、辛亥、乙未、癸未。", "citations": []},
+        seen=set(), trace=[{"action": "draw_bazi", "ok": True}],
+    )
+    assert res["can_answer"] is True
+    assert res["invalid_output"] is False
+    assert res["citations_chunk_ids"] == []
+
+
+def test_answer_without_citation_or_tool_is_normalized_to_refusal(agent_mod):
+    res = agent_mod._finalize(
+        {"can_answer": True, "answer": "不能，我没有紫微工具。", "citations": []},
+        seen=set(), trace=[{"action": "list_books", "ok": True}],
+    )
+    assert res["can_answer"] is False
+    assert res["invalid_output"] is True

@@ -158,10 +158,13 @@ def judge_turn(spec: dict, rec: dict, id2book: dict[int, str]) -> dict:
     for text in spec.get("must_not_contain") or []:
         add("must_not_contain:" + text, text not in answer, "")
 
-    if rec.get("invalid_citations"):
-        add("citation_integrity", False, "非法引用={}".format(rec["invalid_citations"]))
-    if rec.get("invalid_output"):
-        add("citation_integrity", False, "声称能答但没有有效引用")
+    # 已经明确拒答（can_answer=False）时，不再追究「没有引用」；
+    # 只有声称能答却没有有效引用，才算引用完整性问题。
+    if rec.get("can_answer") is not False:
+        if rec.get("invalid_citations"):
+            add("citation_integrity", False, "非法引用={}".format(rec["invalid_citations"]))
+        if rec.get("invalid_output"):
+            add("citation_integrity", False, "声称能答但没有有效引用")
 
     problems = [c["name"] + "：" + c["detail"] for c in checks if not c["ok"]]
     return {

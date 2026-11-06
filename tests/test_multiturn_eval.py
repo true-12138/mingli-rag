@@ -31,6 +31,17 @@ def _rec(answer="", rewritten="", citations=None, can_answer=True,
     }
 
 
+def test_refusal_does_not_fail_on_empty_citations():
+    # 模型已明确拒答时，invalid_output 可能仍为 True（历史契约），
+    # 但不应再因为「没有引用」判 citation_integrity 失败。
+    spec = {"expect_refusal": True,
+            "must_contain_any": [["不能", "没有足够的依据"]]}
+    rec = _rec(answer="语料中没有足够的依据回答这个问题。",
+               can_answer=False, invalid_output=True)
+    got = rm.judge_turn(spec, rec, ID2BOOK)
+    assert got["pass"] is True
+
+
 def test_set_shape_and_categories():
     assert len(TASKS) == 20
     cats = {}
