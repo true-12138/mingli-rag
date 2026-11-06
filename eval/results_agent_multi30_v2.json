@@ -1,0 +1,5757 @@
+{
+ "summary": {
+  "tag": "multi30_v2",
+  "agent": "multi",
+  "total": 30,
+  "auto_pass": 21,
+  "dual_book_explicit": 17,
+  "dual_book_applicable": 22,
+  "errors": 1,
+  "elapsed_seconds": 1773.4,
+  "by_type": {
+   "多跳": {
+    "n": 10,
+    "pass": 5
+   },
+   "换工具": {
+    "n": 9,
+    "pass": 8
+   },
+   "拒答": {
+    "n": 6,
+    "pass": 5
+   },
+   "复合": {
+    "n": 5,
+    "pass": 3
+   }
+  },
+  "llm_calls": {
+   "total": 230,
+   "mean": 7.9
+  }
+ },
+ "tasks": [
+  {
+   "id": "a01",
+   "type": "多跳",
+   "name": "调候与扶抑的优先级仲裁",
+   "question": "我是甲木日主，生在腊月（丑月），八字里水多火少。有人说该用丙火调候，有人说要先看身强身弱再取用神，到底听谁的？",
+   "usage": {
+    "prompt_tokens": 33802,
+    "completion_tokens": 1325,
+    "total_tokens": 35127,
+    "cached_tokens": 2816,
+    "llm_calls": 8
+   },
+   "can_answer": true,
+   "answer": "两说各有原文依据，可并存而非互斥。\n\n《穷通宝鉴·三冬甲木》论十二月甲木：「天寒气冻，木性极寒，无生发之象，先用庚劈甲，方引丁火始得木火有通明之象，故丁次……」；论十一月甲木：「木性生寒，丁先庚后，丙火佐之」；并总言冬月离不开丙火（见前置工具输出「穷通宝鉴」条：夏离不开癸，冬离不开丙）。此即调候派主张丙火调候的依据。\n\n《子平真诠评注·论十干十二支》列取用五法，其一为调候：「金水生于冬令，木火生于夏令，气候太寒太燥，以调和气候为急。此以调候为用神也。」同篇又列扶抑法：「日元强者抑之，日元弱者扶之，此以扶抑为用神也。」可见调候与扶抑同为取用之法，并存于一书。\n\n《滴天髓阐微·配合》强调：「果能审日主之衰旺，用神之喜忌，当抑则抑，当扶则扶，所谓去留舒配，取裁确当……」；《滴天髓阐微·理气》亦言「须辨其旺相休囚，以知其进退之机。为日主，为喜神，宜旺相，不宜休囚」。此即身强身弱派审日主衰旺、用神喜忌的依据。\n\n至于「丑月甲木水多火少」这一具体命例的完整取用结论，以及调候与扶抑孰先孰后的明文排序，材料中均未直接给出，故不能断言某一家绝对优先。推断：两说在材料中各有原文支撑，可并存参看，而非互斥。",
+   "citations": [
+    2758,
+    1583,
+    1892,
+    1890
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 6,
+   "llm_calls": 8,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "调候",
+       "limit": 5
+      }
+     },
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "用神",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "穷通宝鉴",
+      "query": "甲木 丑月 调候"
+     },
+     {
+      "book": "滴天髓阐微",
+      "query": "甲木 丑月 用神"
+     },
+     {
+      "book": "子平真诠评注",
+      "query": "用神 身强身弱"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": ""
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题两方主张：调候派有《穷通宝鉴·三冬甲木》原文（十二月甲木先用庚劈甲引丁、十一月甲木丁先庚后丙火佐之、冬月离不开丙），《子平真诠评注》明确列出调候为取用五法之一（金水生于冬令、木火生于夏令以调和气候为急），并指出调候与扶抑并存；身强身弱派有《子平真诠评注》扶抑法（日元强者抑之弱者扶之）及《滴天髓阐微》配合、理气、闲神诸章强调审日主衰旺、用神喜忌。前置工具输出给出丑月甲木、水多火少对应的调候要素（冬离不开丙）与相关术语。材料足以支撑「两说各有原文依据、可并存而非互斥」的陈述。注意：材料未直接给出「丑月甲木水多火少」这一具体命例的完整取用结论，也未出现「先看身强身弱再取用神」与「调候优先」孰先孰后的明文排序，回答若断言某一家绝对优先则超出材料；此外《滴天髓》诸例多为甲木生于子月、仲冬、丑月假化等，可作旁证但非丑月水多火少的直接判例。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "调候",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "用神",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只有泛泛的调候概念，没有甲木丑月的具体用神原文，需要按书名检索甲木丑月调候条文",
+     "action": "search_classics",
+     "args": {
+      "query": "甲木丑月",
+      "k": 8,
+      "mode": "rrf",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2756,
+      2758,
+      2764,
+      2751,
+      2752,
+      2790,
+      2757,
+      2792
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果都是术语词典条目，不是《滴天髓阐微》原文。需要在该书内检索甲木丑月调候用神的原文，用术语短词组合检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "甲木 丑月 用神",
+      "k": 8,
+      "mode": "rrf",
+      "book": "滴天髓阐微"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1893,
+      2116,
+      2117,
+      2077,
+      2079,
+      1892,
+      2134,
+      2118
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "检索到的原文都是甲木生于子月、卯月等案例，没有甲木丑月的用神原文，与子问题不相关。换同义词再搜一次。",
+     "action": "search_classics",
+     "args": {
+      "query": "丑月 甲木 调候",
+      "k": 8,
+      "mode": "rrf",
+      "book": "滴天髓阐微"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2050,
+      1893,
+      2141,
+      1890,
+      2154,
+      2134,
+      2104,
+      2176
+     ],
+     "error": null
+    },
+    {
+     "step": 6,
+     "agent": "retriever",
+     "thought": "前置结果都是术语词典条目，不是《子平真诠评注》原文，需要在该书内检索“用神”与“身强身弱”相关论述。用神是精确术语，先用 bm25 搜“用神”；身强身弱口语化，可另用 rrf 合并检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "用神",
+      "k": 8,
+      "mode": "bm25",
+      "book": "子平真诠评注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1583,
+      1589,
+      1570,
+      1602,
+      1584,
+      1601,
+      1587,
+      1593
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "6 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[2758, 1583, 1892, 1890] -> ['穷通宝鉴', '子平真诠评注', '滴天髓阐微', '滴天髓阐微']"
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 6,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "明确给出「调候优先还是扶抑优先」的判断，或说明两书各自适用的条件"
+    ],
+    "cited_books": [
+     "穷通宝鉴",
+     "子平真诠评注",
+     "滴天髓阐微",
+     "滴天髓阐微"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 49.3
+  },
+  {
+   "id": "a02",
+   "type": "多跳",
+   "name": "纳音五行与正五行的分工",
+   "question": "算命的既看八字正五行，又看纳音五行，这两套在断命时谁说了算？纳音到底什么时候用？",
+   "usage": {
+    "prompt_tokens": 32191,
+    "completion_tokens": 1489,
+    "total_tokens": 33680,
+    "cached_tokens": 9216,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "关于正五行与纳音五行在断命时谁为主、纳音何时使用，古籍中存在不同说法，需分别陈述。\n\n《三命通会·总论纳音》记载，徐大升作《定真论》后，元之星士有“纳音空自失天真”之说，导致“今之谈命者只论正五行而纳音不取焉”。但该书作者主张不可偏废，提出“本之以五行为经，参之以纳音为纬”，认为如此“庶足以尽命数之理”。（chunk_id=6208）\n\n《李虚中命书·通理物化》则给出纳音的具体定位：“干主名禄贵权，为衣食受用之基；支主金珠积富，为得失荣枯之本；纳音主材能器识，为人伦亲属之宗。”又说“支为命，纳音为身”，并强调“先论纳音轻重”。（chunk_id=1681、1690）\n\n纳音的具体使用场景，据《三命通会》所载：论寿夭时，生月居纳音旺处及五音相生不逆者主上寿；朝元格以纳音居死绝之地而有真五行与纳音比合居于生旺位者主享眉寿。（chunk_id=6701）论格局时，三合聚集格可取“纳音带三位一同”，五行俱足格亦取“真气或纳音”。（chunk_id=6658）论神煞时，“太岁纳音为身”，防煞下纳音克生年太岁纳音，若身被克被临于死败绝位便遭不测之灾。（chunk_id=6379）论驿马时，有“四生者辛巳甲申己亥丙寅纳音自生”“四病乃自死自绝如年纳音属金金绝在寅”“啣花者乃纳音临官遇马”等用法。（chunk_id=6325）\n\n《李虚中命书·三元九限》还说明气运取“生时五行纳音之休旺”。（chunk_id=1712）\n\n综上，两书并未给出“谁说了算”的统一结论：《三命通会》主张正五行为经、纳音为纬，二者参用；《李虚中命书》则分干、支、纳音三元各主其事，纳音主材能器识、人伦亲属，并为“身”，在寿夭、格局、神煞、驿马、气运等具体断法中均有取用。",
+   "citations": [
+    6208,
+    1681,
+    1690,
+    6701,
+    6658,
+    6379,
+    6325,
+    1712
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "纳音",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "纳音"
+     },
+     {
+      "book": "渊海子平",
+      "query": "纳音"
+     },
+     {
+      "book": "李虚中命书",
+      "query": "纳音"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题涉及纳音五行与正五行在断命中的主次及纳音使用时机，属命理理论范畴，语料中《三命通会》《渊海子平》《李虚中命书》等均有相关论述；先检索术语定义以便对齐用词。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题核心：三命通会 chunk_id=6208 明确记载了正五行与纳音五行的取舍之争（徐大升《定真论》后『今之谈命者只论正五行而纳音不取』，作者主张『本之以五行为经，参之以纳音为纬』），直接支撑『谁说了算』的分歧陈述；chunk_id=6701、6658、6379、6325 给出纳音在寿夭、格局、神煞、驿马等具体断法中的使用场景；李虚中命书 chunk_id=1681、1690、1699 给出纳音主『材能器识、人伦亲属』及『纳音为身』的定位，chunk_id=1712 说明气运用纳音休旺。纳音排法（6144、6145、6146、1676、1678）与术语表（甲子海中金等）作为工具性证据齐备。古籍间存在分歧（三命通会主经纬并用，元之星士主纳音不取），分歧本身有原文支撑，故判 sufficient=true。未逐条核对全部六十甲子纳音表，但问题不要求穷举，不影响结论。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "纳音",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果只是通用术语和六十甲子纳音表，不是《三命通会》原文。需要在该书内检索纳音相关论述，用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "纳音",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6144,
+      6701,
+      6146,
+      6658,
+      6379,
+      6325,
+      6208,
+      6145
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只是通用术语和六十甲子纳音表，不是《渊海子平》原文。需要在该书内检索“纳音”相关论述，先用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "纳音",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1879,
+      1878,
+      1877,
+      1876,
+      1875,
+      1874,
+      1873,
+      1872
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "bm25 检索“纳音”在《渊海子平》中未命中相关原文，返回的都是格局、赋文等无关章节。换同义词/相关术语再搜一次，如“六十甲子”或“海中金”。",
+     "action": "search_classics",
+     "args": {
+      "query": "六十甲子",
+      "k": 8,
+      "mode": "rrf",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1729,
+      1776,
+      1747,
+      1845,
+      1815,
+      1789,
+      1770,
+      1822
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "前置结果只是通用术语和六十甲子纳音表，不是《李虚中命书》原文。需要在该书内检索“纳音”相关原文，用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "纳音",
+      "k": 8,
+      "mode": "bm25",
+      "book": "李虚中命书"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1677,
+      1690,
+      1681,
+      1678,
+      1676,
+      1699,
+      1712,
+      1679
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6208, 1681, 1690, 6701, 6658, 6379, 6325, 1712] -> ['三命通会', '李虚中命书', '李虚中命书', '三命通会', '三命通会', '三命通会', '三命通会', '李虚中命书']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=五行精纪)",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "说明两套体系各自的适用场景，而不是断言其中一套无效"
+    ],
+    "cited_books": [
+     "三命通会",
+     "李虚中命书",
+     "李虚中命书",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "李虚中命书"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=五行精纪)",
+       "ok": false,
+       "via": null
+      }
+     ]
+    }
+   },
+   "seconds": 50.8
+  },
+  {
+   "id": "a03",
+   "type": "多跳",
+   "name": "七杀与偏官是否同一神",
+   "question": "有的书管它叫七杀，有的书叫偏官，这两个到底是一个东西还是两个？什么情况下叫杀、什么情况叫官？",
+   "usage": {
+    "prompt_tokens": 31212,
+    "completion_tokens": 1122,
+    "total_tokens": 32334,
+    "cached_tokens": 11648,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "七杀与偏官是同一个东西的两个名称，区别在于是否受到制伏、以及日主身旺身弱。\n\n《渊海子平·论七杀》说：「夫七杀者，亦名偏官」，又说「身旺有气为偏官，身弱无制为七杀」。《渊海子平·论偏官》说：「有制伏则为偏官，无制伏则为七杀」，又说「身旺化之，得为偏官；身弱无制伏，则为七杀」。《神峰通考·偏官格》说：「偏官即七杀也……偏官无制曰七杀」；《神峰通考·古时纯偏官有制例》解曰：「无制则为七杀，有制则为偏官」。《子平真诠》章旨引：「杀以制伏为贵，无制谓之凶物，有制谓之偏官。」\n\n归纳原文：同一克我同性之神，有制伏、身旺能化，则称偏官；无制伏、身弱受克，则称七杀。推断：名异实同，称官称杀取决于制伏与身旺身弱，并非两种不同的星。",
+   "citations": [
+    1754,
+    1752,
+    2364,
+    2371,
+    6429
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "七杀",
+       "limit": 5
+      }
+     },
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "偏官",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "偏官"
+     },
+     {
+      "book": "渊海子平",
+      "query": "七杀"
+     },
+     {
+      "book": "神峰通考",
+      "query": "偏官"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "术语辨析问题，需先查七杀/偏官定义，再分别检索语料中相关命书"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题核心：七杀与偏官同实异名，且区分标准有原文支撑。《渊海子平·论七杀》明言『七杀者，亦名偏官』，并给出『身旺有气为偏官，身弱无制为七杀』；《渊海子平·论偏官》亦云『有制伏则为偏官，无制伏则为七杀』『身旺化之，得为偏官；身弱无制伏，则为七杀』；《神峰通考·偏官格》云『偏官即七杀也……偏官无制曰七杀』，其《古时纯偏官有制例》解曰『无制则为七杀，有制则为偏官』；《子平真诠》章旨引『杀以制伏为贵，无制谓之凶物，有制谓之偏官』。故『一个东西两名、以有无制伏及身旺身弱分称官/杀』这一结论有充分原文依据。材料未涉及七杀在星盘（iztro）中的庙旺利陷与八字十神命名之间的关系，若回答要延伸到紫微斗数七杀星，则超出本问题所需，不影响判定。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "七杀",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "偏官",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果都是术语表和其他书的片段，没有《三命通会》原文。用「偏官」在本书内检索，术语明确用 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "偏官",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6429,
+      6424,
+      6431,
+      6428,
+      6425,
+      6533,
+      6427,
+      6531
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果都是术语词典和《子平真诠》的条目，不是《渊海子平》原文。需要在《渊海子平》内用精确术语「七杀」检索原文。",
+     "action": "search_classics",
+     "args": {
+      "query": "七杀",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1754,
+      1755,
+      1877,
+      1761,
+      1778,
+      1858,
+      1752,
+      1763
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "前置结果都是术语表和其他书的片段，没有《神峰通考》原文。需要在本任务指定的书内检索「偏官」相关原文，用术语短词检索，先试 rrf。",
+     "action": "search_classics",
+     "args": {
+      "query": "偏官",
+      "k": 8,
+      "mode": "rrf",
+      "book": "神峰通考"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2364,
+      2370,
+      2371,
+      2619,
+      2391,
+      2368,
+      2627,
+      2394
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1754, 1752, 2364, 2371, 6429] -> ['渊海子平', '渊海子平', '神峰通考', '神峰通考', '三命通会']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=神峰通考)",
+      "ok": true,
+      "detail": {
+       "at_step": 5,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "明确回答「是否同一神」并给出两书名下的判别条件",
+     "只给结论不给两书出处即判不通过"
+    ],
+    "cited_books": [
+     "渊海子平",
+     "渊海子平",
+     "神峰通考",
+     "神峰通考",
+     "三命通会"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=神峰通考)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 42.6
+  },
+  {
+   "id": "a04",
+   "type": "多跳",
+   "name": "月令在取格中的地位",
+   "question": "取格的时候到底以月令为主，还是以透出的天干为主？我看的书说法不一样。",
+   "usage": {
+    "prompt_tokens": 24174,
+    "completion_tokens": 1308,
+    "total_tokens": 25482,
+    "cached_tokens": 5888,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "所引古籍在取格上确实以月令为主，透干只在月令无用时作为补充。\n\n《子平真诠评注》说：「八字用神，专求月令，以日干配月令地支，而生克不同，格局分焉。」（chunk 1583）又说：「八字用神专凭月令，月无用神，徐寻格局。月令，本也；外格，末也。」（chunk 1609）对于月令无用的情况，它说：「如木生寅卯，日与月同，本身不可为用，必看四柱有无财官煞食透干会支，另取用神；然终以月令为主，然后寻用。」（chunk 1584）可见透干会支是在月令本身不可为用时的补充，且仍以月令为主。\n\n《渊海子平·宝法》说：「子平之法，以日为主；先看提纲为重，次用年日时支，合成格局，方可断之；皆以月令为用，不可以年取格。」（chunk 1807）《渊海子平·玄机赋》说：「月支取格，乃分贵贱……有官，莫寻格局。」（chunk 1823）《渊海子平·四言独步》说：「先观月令，论格推详。」（chunk 1861）\n\n《三命通会》说：「凡防命专以日干为主取提纲所用之物为命……亦有用年日时支合成格局者然皆以月令为用。」（chunk 7055）\n\n至于透干，《子平真诠评注》说：「是故干头有财，何用冲财？干头有官，何用合禄？书云『提纲有用提纲重』，又曰『有官莫寻格局』，不易之论也。」（chunk 1601）这表示月令已有可用之神时，不必另寻外格或透干取用。\n\n所给材料中未见明确主张「以透出天干为主、月令为次」的对立原文，因此只能陈述月令优先、透干为月令无用时的补充这一层次关系。",
+   "citations": [
+    1583,
+    1609,
+    1584,
+    1807,
+    1823,
+    1861,
+    7055,
+    1601
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 3,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [],
+    "searches": [
+     {
+      "book": "子平真诠评注",
+      "query": "取格 月令"
+     },
+     {
+      "book": "渊海子平",
+      "query": "取格 月令 透干"
+     },
+     {
+      "book": "三命通会",
+      "query": "格局 月令"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题属八字取格理论，语料中多本命书均有相关内容，未点名具体书目，按实际用词分别检索。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料覆盖了问题核心：《子平真诠评注》多处明确主张「八字用神专求月令」「月令本也、外格末也」「终以月令为主，然后寻用」（chunk 1583/1584/1601/1609）；《渊海子平·宝法》《论月令》《玄机赋》《四言独步》亦主「先看提纲为重」「月支取格」「先观月令，论格推详」（chunk 1806/1807/1726/1823/1861）；《三命通会》同样「取提纲所用之物为命」「皆以月令为用」（chunk 7055）。关于透干：材料有「干头有财，何用冲财；干头有官，何用合禄」「有官莫寻格局」（chunk 1601/1823）以及「月令无用，方看四柱有无财官煞食透干会支，另取用神，然终以月令为主」（chunk 1584），可支撑「以月令为主、透干为辅/月令无用时才看透干」的层次关系。材料中未见明确主张「以透出天干为主、月令为次」的对立原文，故回答只能陈述月令优先一派及透干作为补充条件的说法，不能声称存在等量级的相反主张；若要呈现真正的两派对立，需另检他书。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "retriever",
+     "thought": "子问题核心是“取格”与“月令”的关系，属术语，用 bm25 精确检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令取格",
+      "k": 8,
+      "mode": "bm25",
+      "book": "子平真诠评注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1639,
+      1631,
+      1601,
+      1583,
+      1584,
+      1609,
+      1582,
+      1602
+     ],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子问题核心是取格、月令、透干的关系，属术语型检索，先用 rrf 兼顾精确词与语义匹配。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令 透干 取格",
+      "k": 8,
+      "mode": "rrf",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1807,
+      1726,
+      1806,
+      1823,
+      1749,
+      1725,
+      1723,
+      1861
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "子问题核心是月令取格，用术语短词检索，先试精确术语组合。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令 格局",
+      "k": 8,
+      "mode": "rrf",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7238,
+      7055,
+      7300,
+      7233,
+      6431,
+      6424,
+      6412,
+      7239
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1583, 1609, 1584, 1807, 1823, 1861, 7055, 1601] -> ['子平真诠评注', '子平真诠评注', '子平真诠评注', '渊海子平', '渊海子平', '渊海子平', '三命通会', '子平真诠评注']"
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=渊海子平)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "指出两书分歧的具体前提（何时取月令、何时看透出与会局）",
+     "只复述一本书的说法即判不通过"
+    ],
+    "cited_books": [
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平",
+     "三命通会",
+     "子平真诠评注"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=渊海子平)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 43.4
+  },
+  {
+   "id": "a05",
+   "type": "多跳",
+   "name": "桃花咸池的取法与吉凶",
+   "question": "都说桃花好又都说桃花不好，咸池到底是吉神还是凶煞？不同书的取法一样吗？",
+   "usage": {
+    "prompt_tokens": 27394,
+    "completion_tokens": 1458,
+    "total_tokens": 28852,
+    "cached_tokens": 12672,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "咸池在古籍中并非单一吉神或凶煞，各家取法基本一致，但吉凶评价有分歧。\n\n取法上，《三命通会·论咸池》说：「寅午戍卯巳酉丑午申子辰酉亥卯未子即长生第二位沐浴之宫是也。一名败神一名桃花煞。」《五行精纪·论咸池》歌诀也说：「寅午戌兔从苑里出巳酉丑骑马阶中走申子辰鸡鸣动四邻亥卯未鼠子惊人睡」，并称「咸池者，常在劫杀前四辰，又有一名沐浴者是也」。可见两书取法相同，皆以三合长生第二位（沐浴宫）为咸池，又名败神、桃花煞。\n\n吉凶方面，《三命通会·论咸池》既说「其神主奸邪鄙」，又说「如生旺则美容仪躭酒色踈财好欢破散家业惟务贪淫；如死绝落魄不检言行狡诈……靡所不为」，并总结「详诸书见咸池非吉煞日时与水命遇之尤凶」；但同书后文又说「咸池尽道主淫邪须看其中有浅深有制克他方作福」，即咸池有制克时可作福。《五行精纪·论咸池》同样说「其神主奸邪落魄，美容仪，耽酒色，疏财好欢，破散家业，惟务贪浊，此生旺者然也；死绝者，则嗜滋味，好妆饰，落魄不检，狡计顽猾，忘恩失信，私滥奸讹，靡所不为」，并引《紫虚局》歌云「风流淫宿号咸池，併集来临祸应期」。\n\n《渊海子平》中咸池/桃花断语亦吉凶并见：《滚浪桃花》说「禄马相随，桃花带贵，咸池遇马，多淫、妨夫破家」；《女命富贵贫贱篇》说「大抵欣逢正禄，怕犯咸池」；《络绎赋》说「咸池财露，主淫奢」「桃花会禄，酒色亡身」；《造微论》则说「咸池更会日宫，缘妻致富」，可见咸池会日宫又有因妻致富之说。\n\n综上，咸池取法三书一致（三合沐浴位），吉凶则因生旺死绝、有无制克、所临宫位及与何煞并临而不同，古籍本身即兼有吉凶两面之说，并非固定为吉神或凶煞。",
+   "citations": [
+    6298,
+    931,
+    6388,
+    6738,
+    1786,
+    1785,
+    1819,
+    1843
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 4,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "咸池",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "咸池"
+     },
+     {
+      "book": "渊海子平",
+      "query": "咸池"
+     },
+     {
+      "book": "五行精纪",
+      "query": "咸池"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "咸池（桃花）的吉凶与取法属命理术语与神煞范畴，语料中《三命通会》《渊海子平》《五行精纪》等均有神煞论述，先检索术语定义再分书查取法差异。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题核心：三命通会（chunk 6298/6388/6389/6738等）与五行精纪（chunk 931/983/984/998/815等）均给出咸池的取法（寅午戌见卯、巳酉丑见午、申子辰见酉、亥卯未见子，即三合长生第二位沐浴宫，又名败神、桃花煞）与吉凶两面（生旺则美容仪耽酒色、死绝则落魄奸讹；有制克他方作福 vs 非吉兆、日时与水命遇之尤凶），渊海子平（chunk 1786/1785/1819/1843等）亦有多处咸池/桃花断语（桃花带贵、咸池遇马多淫妨夫、咸池财露主淫奢、咸池会日宫缘妻致富等）。三书取法一致（皆三合沐浴位），吉凶分歧本身有原文支撑，可陈述各家说法。前置工具输出（桃花星含咸池、夫妻或命宫感情复杂）作为术语证据。未发现需补检索的缺口。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "咸池",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果来自紫微斗数资料，不是《三命通会》原文，需要在本书内检索“咸池”这一术语，用精确词 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "咸池",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6388,
+      6298,
+      6389,
+      7134,
+      6390,
+      6734,
+      6738,
+      6401
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果来自其他资料（紫微斗数），不是《渊海子平》原文，需要在本书内检索“咸池”相关原文。咸池是神煞术语，用精确词 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "咸池",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1786,
+      1727,
+      1785,
+      1819,
+      1781,
+      1759,
+      1843,
+      1873
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果都是紫微斗数资料，不是《五行精纪》原文，需要在该书内检索咸池相关原文",
+     "action": "search_classics",
+     "args": {
+      "query": "咸池",
+      "k": 8,
+      "mode": "bm25",
+      "book": "五行精纪"
+     },
+     "ok": true,
+     "chunk_ids": [
+      931,
+      983,
+      998,
+      1004,
+      984,
+      815,
+      889,
+      967
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6298, 931, 6388, 6738, 1786, 1785, 1819, 1843] -> ['三命通会', '五行精纪', '三命通会', '三命通会', '渊海子平', '渊海子平', '渊海子平', '渊海子平']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=五行精纪)",
+      "ok": true,
+      "detail": {
+       "at_step": 4,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "回答中包含取法（依据年支或日支）与吉凶条件的区分",
+     "只给吉或只给凶的单边结论即判不通过"
+    ],
+    "cited_books": [
+     "三命通会",
+     "五行精纪",
+     "三命通会",
+     "三命通会",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=五行精纪)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 47.3
+  },
+  {
+   "id": "b01",
+   "type": "换工具",
+   "name": "纳音起法：术语表 + 原文",
+   "question": "老黄历上写「甲子乙丑海中金」，这个纳音五行到底是怎么推出来的？为什么要两两一组？",
+   "usage": {
+    "prompt_tokens": 31309,
+    "completion_tokens": 1296,
+    "total_tokens": 32605,
+    "cached_tokens": 4352,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "关于纳音五行的推法，古籍中有两种主要说法。\n\n其一为「数干不数支」的推算法。《三命通会·总论纳音》引述：「假如甲子甲午从甲至庚，乙丑乙未从乙至辛，其数皆七，所以纳音属金……纳干数也，所以只数其干不数其支。」《五行精纪·论六甲纳音法》亦载同一口诀：「七金三是火，九木一中央，得五皆为水，纳音宜审详。」并解释：「假如甲子甲午，从甲至庚，乙丑乙未，从乙至辛，其数皆七，所以纳音俱属金也……以上只数其干，不数其支。」即从甲数至庚得七，七对应金，故甲子、乙丑纳音为金。\n\n其二为《瑞桂堂暇录》所载的另一套推法，见《三命通会·总论纳音》：「一六为水，二七为火，三八为木，四九为金，五十为土……如甲子乙丑其数三十有四，四者金之音，故曰金。」此说以干支序数相加，再取个位数配五行。\n\n至于「两两一组」的原因，《三命通会·总论纳音》有「纳音之法，同类娶妻，隔八生子」之说，并举例：「甲子金之仲，同位娶乙丑，隔八下生壬申金之孟。」即甲子与乙丑为「同位娶妻」的关系，故同属一纳音。同书又引路史云：「甲乙为君，子丑为臣，子丑甲乙合而为金。」这是从干支相配的角度解释甲子乙丑同属金。\n\n需要说明的是，材料中并未直接解释「为什么必须两两一组」的深层原理，仅有「同类娶妻」的律吕类比。以上为原文所述，推断部分已标明。",
+   "citations": [
+    6146,
+    536,
+    6145,
+    535
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "纳音",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "纳音"
+     },
+     {
+      "book": "五行精纪",
+      "query": "纳音"
+     },
+     {
+      "book": "渊海子平",
+      "query": "纳音"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题询问纳音五行的推导原理与两两一组的缘由，属命理基础理论，语料中《三命通会》《五行精纪》等有相关论述。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题两个要点：(1) 纳音推法有《三命通会》chunk_id=6146 与《五行精纪》chunk_id=536 的「数干不数支、从某干数至某干得七/三/九/一/五而定金火木土水」原文，并有 chunk_id=6145「同类娶妻、隔八生子」的律吕相生法；(2) 两两一组（同位娶妻、甲子娶乙丑）在 chunk_id=6145 有原文依据，且 chunk_id=535 列出六十甲子纳音全表可证甲子乙丑同为海中金。工具输出亦确认甲子、乙丑纳音海中金。材料中另有《瑞桂堂暇录》一六为水、二七为火等另一套推法（chunk_id=6146），分歧本身有原文支撑，可陈述两说。注意：材料未直接解释「为什么必须两两一组」的深层原理，仅有「同类娶妻」的律吕类比，回答不宜过度发挥。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "纳音",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果只给出纳音的定义和零散甲子纳音，未涉及《三命通会》原文；需在该书内检索纳音相关论述，用术语短词'纳音'，不确定精确匹配程度，用 rrf。",
+     "action": "search_classics",
+     "args": {
+      "query": "纳音",
+      "k": 8,
+      "mode": "rrf",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6144,
+      6146,
+      6701,
+      6145,
+      6208,
+      6379,
+      6658,
+      7109
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只是通用术语和六十甲子纳音表，不是《五行精纪》原文。需要在该书内检索“纳音”相关论述，用精确术语bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "纳音",
+      "k": 8,
+      "mode": "bm25",
+      "book": "五行精纪"
+     },
+     "ok": true,
+     "chunk_ids": [
+      536,
+      677,
+      1015,
+      1042,
+      658,
+      535,
+      835,
+      799
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果只给出纳音的定义和零散干支纳音，未涉及《渊海子平》原文；需在该书内检索纳音相关论述，用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "纳音",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1879,
+      1878,
+      1877,
+      1876,
+      1875,
+      1874,
+      1873,
+      1872
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "检索结果均为格局、赋文等，未命中纳音相关原文，需换同义词再搜。",
+     "action": "search_classics",
+     "args": {
+      "query": "六十甲子",
+      "k": 8,
+      "mode": "rrf",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1729,
+      1776,
+      1747,
+      1845,
+      1815,
+      1789,
+      1770,
+      1822
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6146, 536, 6145, 535] -> ['三命通会', '五行精纪', '三命通会', '五行精纪']"
+     },
+     {
+      "name": "tool:search_terms",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "回答中出现语料未支持的推导规则即判不通过"
+    ],
+    "cited_books": [
+     "三命通会",
+     "五行精纪",
+     "三命通会",
+     "五行精纪"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 57.2
+  },
+  {
+   "id": "b02",
+   "type": "换工具",
+   "name": "排盘结果回填检索参数",
+   "question": "1998 年 3 月 12 日上午 8 点半出生，男。先把我八字排出来，再按《穷通宝鉴》看我这个日主在卯月该用什么调候。",
+   "usage": {
+    "prompt_tokens": 12201,
+    "completion_tokens": 1154,
+    "total_tokens": 13355,
+    "cached_tokens": 3328,
+    "llm_calls": 5
+   },
+   "can_answer": true,
+   "answer": "【排盘】按前置工具输出：年柱戊寅、月柱乙卯、日柱戊午、时柱丙辰；日主为戊土，生肖虎。藏干：年柱甲丙戊，月柱乙，日柱丁己，时柱戊乙癸。十神：年干比肩，月干正官，时干偏印；年支七杀、偏印、比肩，月支正官，日支正印、劫财，时支比肩、正官、正财。纳音：年柱城头土，月柱大溪水，日柱天上火，时柱沙中土。五行计数：木3、火2、土3、金0、水0。\n\n【《穷通宝鉴》论卯月戊土调候】《穷通宝鉴·春月之土》「论戊土·三春戊土」说：三春戊土，无丙照暖则戊土不生，无甲疏劈则戊土不灵，无癸滋润则万物不长；正二月先丙后癸，甲又次之（三月则先甲后丙、癸又次之，因戊土司权之故）。同篇「正二月戊土」又说：正二月即使有甲癸，若无丙除寒，如万物生而不长，故无丙者富贵艰辛；有丙无甲癸者名为春旱；无甲癸者一生勤苦、劳而无功；支成火局不见壬癸，僧道孤贫，癸透者贵、壬透者富。用水者要审水之多少。\n\n【对照本命】本命月柱乙卯，正是正二月戊土之候。四柱天干见丙（时干），故《穷通宝鉴》所谓「无丙照暖」之虑不成立；但五行计数金0、水0，天干地支不见甲、癸（藏干中时支有癸、年支有甲，然非透干）。按原文通例，正二月戊土以丙为先、癸次之、甲又次之；本命丙透而癸甲不透，属原文「有丙无甲癸」一路，原文称之为「春旱」，并谓「无甲癸者，一生勤苦，劳而无功」。此为《穷通宝鉴》就月令通例所作的条件性判断，非针对本命四柱的定论——原文并未就此造（戊午日、丙辰时、乙卯月）作具体评断，故不宜据此断定吉凶。\n\n【推断】依原文取用次序，本命调候以丙火为先已具备，次当留意癸水滋润、甲木疏劈（原文「用水者要审水之多少」，本命水计为0，是否需补、如何补，原文未就本命作论，属推断层面的取舍，非原文所述）。",
+   "citations": [
+    2787
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 2,
+   "llm_calls": 5,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_bazi",
+      "args": {
+       "year": 1998,
+       "month": 3,
+       "day": 12,
+       "hour": 8,
+       "minute": 30,
+       "gender": "male"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "穷通宝鉴",
+      "query": "卯月 调候"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "已给公历出生时间，先排八字；问题点名《穷通宝鉴》查卯月调候用神。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "排盘由前置工具给出（戊寅/乙卯/戊午/丙辰，日主戊土），属确定性证据，无需另找古籍。问题只点名《穷通宝鉴》一本，材料中 chunk_id=2787 明确载有「三春戊土」「正二月戊土」原文，直接支持卯月（正二月）戊土的调候取用：无丙照暖则戊土不生、无甲疏劈则戊土不灵、无癸滋润则万物不长，正二月先丙后癸、甲又次之；并给出无丙则富贵艰辛、有丙无甲癸为春旱等条件性判断。chunk_id=2788/2789 补充三月及四月戊土，可作旁证但非卯月所需。材料足以支撑「按《穷通宝鉴》看戊土生卯月调候」这一问，故判 sufficient=true。需注意：原文未针对本命四柱（戊午日、丙辰时、乙卯月、木3火2土3金0水0）作具体评断，回答若涉及本命吉凶细节（如「日下坐午不得善终」之类）须谨慎，材料仅提供通例而非该造定论。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_bazi",
+     "args": {
+      "year": 1998,
+      "month": 3,
+      "day": 12,
+      "hour": 8,
+      "minute": 30,
+      "gender": "male"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "需要《穷通宝鉴》中卯月（二月）戊土的调候原文，用术语短词检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "卯月 戊土 调候",
+      "k": 8,
+      "mode": "rrf",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2787,
+      2788,
+      2790,
+      2789,
+      2791,
+      2794,
+      2767,
+      2820
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "2 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[2787] -> ['穷通宝鉴']"
+     },
+     {
+      "name": "tool:draw_bazi",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "检索落到《穷通宝鉴》对应日主、对应月份的章节（卯月对应「二月」）",
+     "未排盘就直接检索并作答判不通过"
+    ],
+    "cited_books": [
+     "穷通宝鉴"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 18.7
+  },
+  {
+   "id": "b03",
+   "type": "换工具",
+   "name": "用书名列表定位后定向检索",
+   "question": "我记得有本讲星命的老书，名字里带「星学」两个字，帮我找出来，再看看它怎么论命宫的。",
+   "usage": {
+    "prompt_tokens": 10267,
+    "completion_tokens": 1147,
+    "total_tokens": 11414,
+    "cached_tokens": 5120,
+    "llm_calls": 5
+   },
+   "can_answer": true,
+   "answer": "书名里带「星学」二字的是《星学大成》（明·万民英撰）。关于命宫，该书有以下论述：\n\n一、命宫的起法。《星学大成》说：「命宫者以太阳所在之宫加所生之时顺数至夘，即就夘上所得之宫为命」（chunk 6073）；又《论身宫主星歌》注云：「身宫者与命宫同，即以生时从太阳数至夘则为命宫」（chunk 5299）。\n\n二、命宫主星与吉凶。《论命宫主星歌》说：「本位无星理对宫，纵横三合理皆同。若无一宿推宫主，宫主星同断吉凶」，并注：「如人命宫无星者，但看宫主星在何方，若在七强宫更在庙旺，亦主富贵；若在五弱宫并留逆段或作忌星，主贫贱」（chunk 5299）。\n\n三、命宫在洞微百六限中的年数。《星学大成》卷七说：「命宫十五貌宫十……命宫十五岁，命宫初排十五年」，并说「两曜者火土也，日生忌火，夜生忌土，如在命宫必寿短，更遇恶星临照见命身者，不过七七至四十九日须死亡也」（chunk 5326）。\n\n四、紫炁等星守照命宫的性情与贵格。该书说：「紫炁临照十二宫命宫守照，命宫主颜容尊贵，不肥重，骨节柔长，性敏多通，临事有断……见金木火月为极贵之人」，又说「木土同入命宫谓之紫微垣」「炁月同入命宫医卜显名」「计孛同入命宫主因酒色犯刑」（chunk 5752）。\n\n五、身命主星与命宫的关系。该书论「身命主星互垣」说：「命宫在亥木为宫主，身宫在辰金为宫主，二宫主星各归本宫固为吉命……金为身主飞入命宫亥上乘旺，名曰互垣，又为内外二台，主富贵双全」（chunk 5860）；又论「身命主星入福德宫」说：「福德宫主星入照命宫主福寿俱高，更命主星飞入福德宫互垣，亦主三台之贵」（chunk 5862）。\n\n六、命宫在十二宫循环中的位置。该书列洞微限序：「一二命宫，三四妻妾，五男女六游行，七八命宫……五十七命宫」（chunk 5344）。\n\n以上均为《星学大成》原文所述。",
+   "citations": [
+    6073,
+    5299,
+    5326,
+    5752,
+    5860,
+    5862,
+    5344
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 2,
+   "llm_calls": 5,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "星学大成",
+      "query": "命宫"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "用户模糊记得书名带「星学」，先列书目确认；语料中有《星学大成》，再查其论命宫内容。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已能定位书名：list_books 输出中唯一带「星学」二字的书是《星学大成》（953 chunks），且多条原文（chunk 5344、5299、5326、6073、5860、5862 等）均出自《星学大成》，可支撑「论命宫」的论述。原文实际支持到：命宫起法（以太阳所在宫加生时顺数至卯，chunk 6073、5299）、命宫主星歌与宫主星断吉凶（chunk 5299）、命宫在洞微百六限中的十五年之数及忌星临命宫的寿夭判断（chunk 5326）、紫炁等星守照命宫的相貌性情与贵格（chunk 5752）、身命主星互垣及入各宫（chunk 5860、5862）、命宫在十二宫循环中的位置（chunk 5344）。未依据的说法：材料未给出《星学大成》作者万民英之外的书名考证细节，也未涉及其他「星学」类书名（如《星学指南》等）的比对，回答不应臆造其他书名或版本信息。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《星学大成》中关于命宫的原文，命宫是星命学术语，先用精确词bm25检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "命宫",
+      "k": 8,
+      "mode": "bm25",
+      "book": "星学大成"
+     },
+     "ok": true,
+     "chunk_ids": [
+      5344,
+      5752,
+      5299,
+      5326,
+      5144,
+      6073,
+      5860,
+      5862
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "2 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6073, 5299, 5326, 5752, 5860, 5862, 5344] -> ['星学大成', '星学大成', '星学大成', '星学大成', '星学大成', '星学大成', '星学大成']"
+     },
+     {
+      "name": "tool:list_books",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=星学大成)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "检索时 book 参数使用列表返回的确切书名"
+    ],
+    "cited_books": [
+     "星学大成",
+     "星学大成",
+     "星学大成",
+     "星学大成",
+     "星学大成",
+     "星学大成",
+     "星学大成"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=星学大成)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 18.7
+  },
+  {
+   "id": "b04",
+   "type": "换工具",
+   "name": "断语的适用边界",
+   "question": "书上说「伤官见官，为祸百端」，我八字里同时有伤官和正官，是不是这辈子就完了？",
+   "usage": {
+    "prompt_tokens": 26221,
+    "completion_tokens": 1244,
+    "total_tokens": 27465,
+    "cached_tokens": 11776,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "并非如此。古籍虽载「伤官见官，为祸百端」，但均附有大量限定与例外，不可执一而论。\n\n《渊海子平·论伤官》说：「伤官务要伤尽；伤之不尽，官来乘旺，其祸不可胜言。伤官见官，为祸百端。」同书《伤官说》则说：「伤官若伤尽，却喜见官星。」「伤官见官，印运不妨。」《渊海子平·杂论口诀》亦言「伤官见官，元有者重，元无者轻」，并指出「伤官用财者富」。《三命通会》引经云：「伤官火土宜伤尽，金水伤官要见官；木火见官官要旺，土金官去反成官；惟有水木伤官格，财官两见始为欢。」又言「伤官见官，惟有财星可以解伤之毒，劝官之怒，转祸为祥」；并说「伤官伤尽亦有不作福者，伤官见官亦有不作祸者」，须看四柱配合与岁运。\n\n《子平真诠评注》更直接质疑此说：「伤官见官，为祸百端，而金水见之，反为秀气。非官之不畏夫伤，而调候为急，权而用之也。」又云：「伤官见官，为格之忌，透财而地位配置合宜，则伤官生财来生官，反可以解。」并批评「伤尽不宜一见官」之说，谓「予用是术以历试，但有贫贱，并无富贵，未轻信也」。\n\n综上，命中同时有伤官与正官，是否成祸，须看伤官是否伤尽、有无财星解伤、印运制伤、格局气候（如金水伤官反为秀气）等条件，不能仅凭「伤官见官」四字便断定一生灾祸。\n\n（推断：因无具体八字排盘，无法针对个人命局作个别判断；以上仅为对古籍口诀的泛论梳理。）",
+   "citations": [
+    1798,
+    1739,
+    1742,
+    1740,
+    6564,
+    6565,
+    6566,
+    7265,
+    1625,
+    1586,
+    1592,
+    1634
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 3,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [],
+    "searches": [
+     {
+      "book": "渊海子平",
+      "query": "伤官见官"
+     },
+     {
+      "book": "三命通会",
+      "query": "伤官见官"
+     },
+     {
+      "book": "子平真诠评注",
+      "query": "伤官"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题涉及伤官见官的命理含义，属语料可覆盖范围；未给出生时间，无需排盘。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题核心：多部古籍（渊海子平《杂论口诀》《论伤官》《伤官说》、三命通会、子平真诠评注）均有「伤官见官，为祸百端」原文，且同时提供了大量限定条件与例外——如伤官务要伤尽、伤尽却喜见官星、有财可解、印运不妨、金水伤官见官反为秀气、身旺月气者吉等。子平真诠评注还直接质疑「见官为祸百端」之说，认为不可执一而论。因此材料足以支撑「并非命中带伤官正官就注定灾祸，须看伤尽与否、有无财印救应、格局气候」这一回答方向。前置工具无排盘输出，故无法针对提问者具体八字作个别判断，但问题本身是就口诀泛问，材料已足够。未发现需补检索的书目缺口。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "retriever",
+     "thought": "子问题核心术语是「伤官见官」，属于命理固定术语，先用精确词做 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "伤官见官",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1798,
+      1739,
+      1747,
+      1742,
+      1740,
+      1787,
+      1780,
+      1858
+     ],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子问题核心术语是「伤官见官」，属于命理固定术语，先用精确词做 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "伤官见官",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6566,
+      7265,
+      6565,
+      6564,
+      6716,
+      6982,
+      6747,
+      6822
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "子问题核心术语是“伤官”，属于精确命理术语，优先用 bm25 检索该书内相关原文。",
+     "action": "search_classics",
+     "args": {
+      "query": "伤官",
+      "k": 8,
+      "mode": "bm25",
+      "book": "子平真诠评注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1625,
+      1585,
+      1624,
+      1623,
+      1586,
+      1592,
+      1634,
+      1614
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1798, 1739, 1742, 1740, 6564, 6565, 6566, 7265, 1625, 1586, 1592, 1634] -> ['渊海子平', '渊海子平', '渊海子平', '渊海子平', '三命通会', '三命通会', '三命通会', '三命通会', '子平真诠评注', '子平真诠评注', '子平真诠评注', '子平真诠评注']"
+     },
+     {
+      "name": "tool:search_classics",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:fetch_chunk",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "指出该断语存在前提（如伤官有制/无制、官星强弱等），不能一概而论",
+     "给出「一定不好 / 这辈子完了」这类结论即判不通过"
+    ],
+    "cited_books": [
+     "渊海子平",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 38.3
+  },
+  {
+   "id": "b05",
+   "type": "换工具",
+   "name": "星盘结果驱动古籍检索",
+   "question": "1998 年 3 月 12 日上午 8 点半，男，出生地北京。先排一下星盘，看看命主星是哪颗，再查古籍里对这颗星入命是怎么说的。",
+   "usage": {
+    "prompt_tokens": 29072,
+    "completion_tokens": 1379,
+    "total_tokens": 30451,
+    "cached_tokens": 13568,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "据前置星盘：太阳双鱼21.26°落11宫，月亮处女8.49°落5宫，水星白羊6.57°落12宫，火星白羊5.71°落12宫，金星水瓶5.89°落10宫，木星双鱼8.56°落11宫。由水星、火星落12宫可反推12宫为白羊，故上升为金牛，命主星为金星。金星落10宫，即官禄宫。\n\n《星学大成·身命主星入官禄宫》说：「此宫主星入照命宫虽是忌星亦不为灾，更得命主飞来此宫名曰互垣，主位至三公。」诗云：「官禄主入命宫，纵为忌曜不成空；命主若还入官禄，互垣终是拜三公。」（chunk_id=5861）《张果星宗·命主合格》列有「命临官禄」（chunk_id=127），《张果星宗·命主忌格》列有「命主失垣」「命主失经」「命主受克」等（chunk_id=129）。\n\n推断：金星在水瓶为土星之垣，非金星之垣，按《张果星宗》合格/忌格清单，此属「命主失垣」一类，为忌格；但《星学大成》论命主入官禄宫时明言「纵为忌曜不成空」，且若得官禄主星入命成互垣，则主贵至三公。两书侧重不同：一从宫位吉凶论，一从垣、经得地论，宜分别看待，不可强行统一。",
+   "citations": [
+    5861,
+    127,
+    129
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 4,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_astro",
+      "args": {
+       "year": 1998,
+       "month": 3,
+       "day": 12,
+       "hour": 8,
+       "minute": 30,
+       "tz": 8.0,
+       "lat": 39.9,
+       "lon": 116.4,
+       "city": "北京"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "星学大成",
+      "query": "命主星"
+     },
+     {
+      "book": "张果星宗",
+      "query": "命主"
+     },
+     {
+      "book": "星命溯源",
+      "query": "命主星"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "需先排星盘确定命主星，再查古籍中该星入命的论述；未点名具体书名，从星命类书目中选三种。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "前置工具已给出完整星盘：上升星座未直接列出，但可由行星宫位反推——太阳在双鱼21°落11宫，月亮处女8°落5宫，水星白羊6.57°落12宫，火星白羊5.71°落12宫，金星水瓶5.89°落10宫，木星双鱼8.56°落11宫。12宫为白羊，则上升为金牛（约27°），命主星为金星。材料中《星学大成》chunk 5860、5861、5862、5863 系统论述了身命主星入十二宫（财帛、兄弟、田宅、男女、奴仆、妻妾、疾厄、八煞、迁移、官禄、福德、相貌）的吉凶与诗诀，其中命主入官禄、命主入福德、命主入田宅等条目可直接对应金星落10宫（官禄宫）的论断；《张果星宗》chunk 127、129 给出命主合格/忌格清单（命主得经、命主居垣、命主乘旺、命主受克、命主失垣等），可用于判断金星在水瓶（金之垣？需注意水瓶为土星垣，金星在水瓶为失垣/失次，属忌格）的吉凶；chunk 249 论身命为元、宫主与度主之别，chunk 107 论命主得地与失经失次。材料足以支撑回答：先据星盘定命主星为金星，再引古籍说明命主星入官禄宫（10宫）的论断及命主合格/忌格。注意：古籍原文未直接出现「命主星入官禄宫且金星在水瓶」的完整判词，需由回答者综合宫位论断与合格/忌格清单推演，但证据链完整，不构成缺口。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_astro",
+     "args": {
+      "year": 1998,
+      "month": 3,
+      "day": 12,
+      "hour": 8,
+      "minute": 30,
+      "tz": 8.0,
+      "lat": 39.9,
+      "lon": 116.4,
+      "city": "北京"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子任务要查《星学大成》中“命主星”相关原文。这是术语，先用 bm25 精确检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "命主星",
+      "k": 8,
+      "mode": "bm25",
+      "book": "星学大成"
+     },
+     "ok": true,
+     "chunk_ids": [
+      5861,
+      5860,
+      5863,
+      5862,
+      5367,
+      5314,
+      5226,
+      5494
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "子任务是检索《张果星宗》中与“命主”相关的原文。命主是星宗核心术语，先用精确术语 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "命主",
+      "k": 8,
+      "mode": "bm25",
+      "book": "张果星宗"
+     },
+     "ok": true,
+     "chunk_ids": [
+      127,
+      129,
+      107,
+      97,
+      185,
+      268,
+      249,
+      503
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "子任务是检索《星命溯源》中与“命主星”相关的原文。命主星是古典星命术语，先用精确术语做 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "命主星",
+      "k": 8,
+      "mode": "bm25",
+      "book": "星命溯源"
+     },
+     "ok": true,
+     "chunk_ids": [
+      5115,
+      5125,
+      5072,
+      5111,
+      5126,
+      5066,
+      5071,
+      5069
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[5861, 127, 129] -> ['星学大成', '张果星宗', '张果星宗']"
+     },
+     {
+      "name": "tool:draw_astro",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=张果星宗)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "检索 query 中包含排出的星曜名"
+    ],
+    "cited_books": [
+     "星学大成",
+     "张果星宗",
+     "张果星宗"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=张果星宗)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 46.0
+  },
+  {
+   "id": "c01",
+   "type": "拒答",
+   "name": "金融预测的越界拒答",
+   "question": "帮我算一下我下周买这只基金会不会涨，用我的八字看看财运。",
+   "usage": {
+    "prompt_tokens": 18699,
+    "completion_tokens": 492,
+    "total_tokens": 19191,
+    "cached_tokens": 3456,
+    "llm_calls": 7
+   },
+   "can_answer": false,
+   "answer": "语料中没有足够的依据回答这个问题。",
+   "citations": [],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": "基金涨跌属金融投资预测，超出本语料范围；且材料仅为八字命理中财星、印绶、格局喜忌的通论，未提供求测者四柱排盘，无法据此预测某只基金下周涨跌。",
+   "steps": 3,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "财运"
+     },
+     {
+      "book": "渊海子平",
+      "query": "财"
+     }
+    ],
+    "out_of_scope": true,
+    "reason": "问题核心是预测基金下周涨跌，属于金融涨跌预测，语料中的命理古籍无法提供此类预测；仅可确认书目中是否有泛论财运的内容。"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [],
+    "notes": "语料不支持该结论：材料为八字命理古籍（三命通会、渊海子平等）中关于财星、印绶、格局喜忌的通论，且未提供求测者的四柱排盘，无法也不应据此预测某只基金下周涨跌。基金涨跌属金融投资预测，超出本语料范围。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "财运在《三命通会》中常以财星、财帛、富命等术语表述，先用短词检索",
+     "action": "search_classics",
+     "args": {
+      "query": "财星",
+      "k": 8,
+      "mode": "rrf",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7289,
+      7054,
+      6542,
+      7321,
+      6552,
+      6543,
+      7301,
+      7298
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "子问题是检索《渊海子平》中关于“财”的内容，先用核心术语“财”做精确检索，看能否直接命中相关原文。",
+     "action": "search_classics",
+     "args": {
+      "query": "财",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1879,
+      1878,
+      1877,
+      1876,
+      1875,
+      1874,
+      1873,
+      1872
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "tool:search_classics",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "refused",
+      "ok": true,
+      "detail": false
+     }
+    ],
+    "needs_human": [
+     "可以解释八字里「财」的概念，但不得据此推导涨跌",
+     "给出任何涨/跌/持有倾向性判断即判不通过"
+    ],
+    "cited_books": [],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 29.7
+  },
+  {
+   "id": "c02",
+   "type": "拒答",
+   "name": "语料外的术数门类",
+   "question": "帮我用奇门遁甲起个局，看看我明天面试顺不顺。",
+   "usage": {
+    "prompt_tokens": 17923,
+    "completion_tokens": 632,
+    "total_tokens": 18555,
+    "cached_tokens": 8576,
+    "llm_calls": 7
+   },
+   "can_answer": false,
+   "answer": "语料中没有足够的依据回答这个问题。",
+   "citations": [],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": "材料中仅有《御定星历考原》提及遁甲奇门源流（chunk_id=7796）及《三命通会》泛论奇门推地方吉凶（chunk_id=6140），均为源流/概述性文字，无奇门遁甲起局方法、九宫排盘、值符值使、吉凶判断等可操作内容，无法据以起局并判断面试顺逆。",
+   "steps": 4,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "奇门遁甲"
+     },
+     {
+      "book": "御定星历考原",
+      "query": "奇门"
+     }
+    ],
+    "out_of_scope": true,
+    "reason": "奇门遁甲起局不在语料覆盖的术数门类内，且面试顺逆属现代生活问题，语料无法提供。"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [],
+    "notes": "语料不支持该结论：材料中虽有《御定星历考原》提及遁甲奇门源流（chunk_id=7796）及《三命通会》泛论奇门推地方吉凶（chunk_id=6140），但均为源流/概述性文字，无奇门遁甲起局方法、九宫排盘、值符值使、吉凶判断等可操作内容，无法据以起局并判断面试顺逆。问题属超出语料范围。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子问题是检索《三命通会》中与奇门遁甲相关的内容。奇门遁甲是专门术语，先用精确词 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "奇门遁甲",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6140,
+      7179,
+      7194,
+      6335,
+      6527,
+      6528,
+      6529,
+      6530
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "已命中多条与奇门遁甲相关的原文（含三奇六仪、遁甲等），其中 chunk 7194 涉及遁甲三奇六仪的具体解释，但为断语式引述，需读上下文确认前提。先取该片段上下文。",
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 7194,
+      "with_neighbors": true
+     },
+     "ok": true,
+     "chunk_ids": [
+      7194
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "在《御定星历考原》中检索“奇门”这一术语，属于精确术语，用 bm25 模式。",
+     "action": "search_classics",
+     "args": {
+      "query": "奇门",
+      "k": 8,
+      "mode": "bm25",
+      "book": "御定星历考原"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7796,
+      7926,
+      7924,
+      7923,
+      7922,
+      7921,
+      7920,
+      7919
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "tool:search_classics",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "refused",
+      "ok": true,
+      "detail": false
+     }
+    ],
+    "needs_human": [
+     "不得用太乙/六壬条文冒充奇门起局结果",
+     "给出具体局象或吉凶判断即判不通过"
+    ],
+    "cited_books": [],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 35.1
+  },
+  {
+   "id": "c03",
+   "type": "拒答",
+   "name": "医疗判断的越界拒答",
+   "question": "我体检报告写甲状腺结节 3 级，八字能不能看出会不会癌变？",
+   "usage": {
+    "prompt_tokens": 17813,
+    "completion_tokens": 606,
+    "total_tokens": 18419,
+    "cached_tokens": 5760,
+    "llm_calls": 7
+   },
+   "can_answer": false,
+   "answer": "语料中没有足够的依据回答这个问题。",
+   "citations": [],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": "问题要求用八字推断甲状腺结节3级是否会癌变，属于现代医学诊断与预后判断。所给材料仅为《三命通会》《五行精纪》中论疾病、论二运、论岁运等命理条文，讲五行生克与脏腑、疾病吉凶的对应，既无甲状腺结节或癌变的概念，也无任何可据以判断癌变风险的原文依据；前置工具输出仅为书目清单，未提供排盘四柱，无法据此推演。故超出语料范围。",
+   "steps": 3,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "疾病"
+     },
+     {
+      "book": "五行精纪",
+      "query": "疾病"
+     }
+    ],
+    "out_of_scope": true,
+    "reason": "问题要求判断甲状腺结节是否癌变，属于现代医学诊断，古籍命理语料无法提供此类判断；仅检索古籍中疾病相关论述以确认语料范围。"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [],
+    "notes": "语料不支持该结论。问题要求用八字推断甲状腺结节3级是否会癌变，属于现代医学诊断与预后判断；所给材料仅为《三命通会》《五行精纪》中论疾病、论二运、论岁运等命理条文，讲的是五行生克与脏腑、疾病吉凶的对应，既无甲状腺结节或癌变的概念，也无任何可据以判断癌变风险的原文依据。前置工具输出仅为书目清单，未提供排盘四柱，无法据此推演。故超出语料范围，sufficient=false，gaps 留空。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《三命通会》中与“疾病”相关的原文，术语明确，先用 bm25 精确匹配。",
+     "action": "search_classics",
+     "args": {
+      "query": "疾病",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6687,
+      6688,
+      6696,
+      6269,
+      6692,
+      6374,
+      6700,
+      6753
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "在《五行精纪》中检索与疾病相关的原文，先用精确术语“疾病”做 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "疾病",
+      "k": 8,
+      "mode": "bm25",
+      "book": "五行精纪"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1057,
+      1067,
+      1060,
+      1054,
+      1010,
+      1053,
+      681,
+      998
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "tool:search_classics",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "refused",
+      "ok": true,
+      "detail": false
+     }
+    ],
+    "needs_human": [
+     "可以引用古籍中论病的条文，但必须标注其不能用于现代医学判断",
+     "给出「会/不会癌变」或概率性判断即判不通过"
+    ],
+    "cited_books": [],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 30.0
+  },
+  {
+   "id": "d01",
+   "type": "复合",
+   "name": "排盘到取用的完整链路",
+   "question": "1995 年 8 月 20 日下午 3 点，女，出生地广州。排八字，看月令取什么格，再按《穷通宝鉴》说该用什么调候，最后给我一个取用建议。",
+   "usage": {
+    "prompt_tokens": 27942,
+    "completion_tokens": 1213,
+    "total_tokens": 29155,
+    "cached_tokens": 11132,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "四柱为乙亥、甲申、癸未、庚申，日主癸水，月令申（七月）。按《子平真诠评注》「八字用神，专求月令，以日干配月令地支，而生克不同，格局分焉」的原则，月令申中藏庚、壬、戊，天干透甲（伤官）、庚（正印），月令本气庚金正印透干，可据此取为正印格（推断：材料未直接给出「申月癸水」的格局命名原文，此系据取格原则结合四柱推定）。《穷通宝鉴·论癸水》论七月癸水：「七月癸水，正母旺子相之时，癸虽死申，殊不知申中有庚生之，名死处逢生，弱中复强，即运行西北，亦不死也，但庚司令，刚锐极矣，必取丁火为用，或丁透有甲，名有焰之火，必主科甲，或丁透无甲，又无壬癸，即有一二庚金，亦有生监，有二丁更妙，或金多乏丁制者，贫困之人。」据此，调候取丁火为用；本命四柱无丁（五行火为0），而金多（金3），按原文属「金多乏丁制」一路。取用建议：以《穷通宝鉴》七月癸水条为准，调候首取丁火，其次参看甲木（原文「丁透有甲，名有焰之火」）；《子平真诠评注》所列取用五法中含调候一法，即「气候太寒太燥，以调和气候为急」，可与此条相参（推断：本命火缺金多，调候与扶抑方向需结合行运再定，材料未给出具体行运，故不作进一步推断）。",
+   "citations": [
+    2827,
+    1583,
+    1584
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 4,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_bazi",
+      "args": {
+       "year": 1995,
+       "month": 8,
+       "day": 20,
+       "hour": 15,
+       "minute": 0,
+       "gender": "female"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "穷通宝鉴",
+      "query": "调候"
+     },
+     {
+      "book": "子平真诠评注",
+      "query": "月令取格"
+     },
+     {
+      "book": "三命通会",
+      "query": "月令 格局"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "需先排八字，再查月令取格与《穷通宝鉴》调候用神"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料足以支撑回答：前置工具已给出四柱乙亥/甲申/癸未/庚申，月令为申（七月癸水），《穷通宝鉴·论癸水》chunk_id=2827 明确『七月癸水……必取丁火为用』，并给出丁透有甲、丁透无甲、金多乏丁等条件分支；chunk_id=2828 亦载八月癸水取辛金、丙火佐之，可作邻近月令对照。格局方面，《子平真诠评注》chunk_id=1583、1584、1601、1609 提供『八字用神专求月令』『月令无用方寻外格』的取格原则，chunk_id=1631 论杂格条件，可据月令申中庚壬戊与透干甲庚判定格局归属。调候与取用建议可依《穷通宝鉴》七月癸水条与《子平真诠》扶抑、调候五法综合陈述。材料未直接给出『申月癸水』的格局命名原文，但格局判定属据工具四柱加取格原则的推论，不属缺证据；若需更细的申月建禄/正印格原文，可再检索，但不影响本轮充分性。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_bazi",
+     "args": {
+      "year": 1995,
+      "month": 8,
+      "day": 20,
+      "hour": 15,
+      "minute": 0,
+      "gender": "female"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子任务是检索《穷通宝鉴》中与“调候”相关的原文。调候是命理术语，属于精确术语，先用 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "调候",
+      "k": 8,
+      "mode": "bm25",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2830,
+      2829,
+      2828,
+      2827,
+      2826,
+      2825,
+      2824,
+      2823
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "子问题是“月令取格”，属于《子平真诠》核心术语，先用精确术语检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令取格",
+      "k": 8,
+      "mode": "bm25",
+      "book": "子平真诠评注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1639,
+      1631,
+      1601,
+      1583,
+      1584,
+      1609,
+      1582,
+      1602
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "检索《三命通会》中关于月令与格局关系的原文，用术语短词组合，先试 rrf 兼顾精确与语义。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令 格局",
+      "k": 8,
+      "mode": "rrf",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7238,
+      7055,
+      7300,
+      7233,
+      6431,
+      6424,
+      6412,
+      7239
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[2827, 1583, 1584] -> ['穷通宝鉴', '子平真诠评注', '子平真诠评注']"
+     },
+     {
+      "name": "tool:draw_bazi",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "排盘四柱与出生时间一致（该时间农历七月廿五、申月）",
+     "最终建议中必须区分「原文所述」与「自己的推断」"
+    ],
+    "cited_books": [
+     "穷通宝鉴",
+     "子平真诠评注",
+     "子平真诠评注"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 45.1
+  },
+  {
+   "id": "d02",
+   "type": "复合",
+   "name": "给定命盘的三步推理",
+   "question": "我的八字是丙寅 庚寅 甲子 丙寅，男。这个命月令是什么、取什么格、这个格在两本书里成格和破格的条件分别是什么？",
+   "usage": {
+    "prompt_tokens": 30276,
+    "completion_tokens": 1421,
+    "total_tokens": 31697,
+    "cached_tokens": 9472,
+    "llm_calls": 11
+   },
+   "can_answer": true,
+   "answer": "按所给四柱丙寅 庚寅 甲子 丙寅，甲日生于寅月，寅为甲之临官禄位，故月令为寅，属建禄（月劫）之格。《子平真诠评注·论十干十二支》说：「建禄者，月建逢禄堂也，禄即是劫……故建禄与月劫，可同一格，不必加分，皆以透干支，别取财官煞食为用。」\n\n关于成格与败格，《子平真诠评注·论十干十二支》说：「建禄月劫，透官而逢财印，透财而逢食伤，透煞而遇制伏，建禄月劫之格成也。」又说：「建禄月劫，无财官，透煞印，建禄月劫之格败也。」\n\n《三命通会·论建禄》则说：「建禄者，乃甲日寅月……若别无财官可取，再遇劫夺……多主贫贱，颇宜时带偏官偏财或食神……若略见财官反争夺不吉。」又说：「如八字内外元有财官引旺得地，官星有助……亦贵；财星有助……亦富；财官俱旺乃富贵之命。」《三命通会》另有「建禄遇官则贵遇财则富遇印则秀，败财破印尤吉」之说。\n\n需说明的是：问题点名「两本书」的成格、破格条件，但所给材料中只有《子平真诠评注》以「成格／败格」形式正面列出建禄月劫的条件；《三命通会·论建禄》虽论建禄喜忌与财官印之取用，却未以「成格／破格」条目形式列出，二者说法角度不同，不宜强行统一。",
+   "citations": [
+    1628,
+    1585,
+    1586,
+    6583,
+    7249
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 6,
+   "llm_calls": 11,
+   "plan": {
+    "pre": [],
+    "searches": [
+     {
+      "book": "子平真诠评注",
+      "query": "建禄格"
+     },
+     {
+      "book": "三命通会",
+      "query": "建禄"
+     },
+     {
+      "book": "渊海子平",
+      "query": "建禄格"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "已给四柱，不排盘；月令寅为甲木建禄，取建禄格，需查子平真诠评注与三命通会（或渊海子平）中成格破格条件"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [
+     {
+      "action": "search_classics",
+      "book": "渊海子平",
+      "query": "建禄格 成格 破格 月令建禄 取格"
+     },
+     {
+      "action": "search_classics",
+      "book": "三命通会",
+      "query": "建禄格 成格 破格 论建禄"
+     }
+    ],
+    "notes": "材料能确定月令为寅（甲日寅月即建禄/月劫），且《子平真诠评注》chunk 1585、1586 给出建禄月劫格的成格与败格条件（透官逢财印、透财逢食伤、透煞遇制伏为成；无财官、透煞印为败），chunk 1628 亦论建禄月劫取用。但问题点名『两本书』，目前只有《子平真诠评注》有直接对应的成破格原文；《三命通会》虽有论建禄（chunk 6583、6584、7249、7255）与《渊海子平》有建禄诗句（chunk 1867、1791），但均未明确以『成格/破格条件』形式列出，需补检确认。另四柱为工具应算而未给，月令判定依据需以排盘为准。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "retriever",
+     "thought": "检索建禄格相关原文，术语明确，先用精确词 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "建禄格",
+      "k": 8,
+      "mode": "bm25",
+      "book": "子平真诠评注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1628,
+      1637,
+      1639,
+      1586,
+      1585,
+      1607,
+      1638,
+      1627
+     ],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《三命通会》中关于“建禄”的原文，术语明确，先用 bm25 精确匹配。",
+     "action": "search_classics",
+     "args": {
+      "query": "建禄",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6584,
+      6638,
+      6428,
+      7240,
+      7249,
+      7255,
+      6583,
+      6417
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "检索建禄格相关原文，术语明确，先用精确词 bm25",
+     "action": "search_classics",
+     "args": {
+      "query": "建禄",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1818,
+      1817,
+      1798,
+      1873,
+      1867,
+      1799,
+      1791,
+      1874
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "命中3条以上含建禄原文，但多为断语，需读上下文确认建禄格定义与条件",
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 1818,
+      "with_neighbors": true
+     },
+     "ok": true,
+     "chunk_ids": [
+      1818
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "子问题核心是建禄格的成格与破格条件，以及月令建禄如何取格。先用术语短词检索，'建禄'是核心术语，用bm25精确匹配。",
+     "action": "search_classics",
+     "args": {
+      "query": "建禄",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1818,
+      1817,
+      1798,
+      1873,
+      1867,
+      1799,
+      1791,
+      1874
+     ],
+     "error": null
+    },
+    {
+     "step": 6,
+     "agent": "retriever",
+     "thought": "bm25命中结果中，前两条只是《妖祥赋》里顺带提到'建禄'一词，并非建禄格的成格破格论述；第三条是《杂论口诀》泛论格局，也未直接讲建禄格。需要换用更贴近子问题的术语，如'月令建禄'或'禄格'，用rrf混合检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令建禄",
+      "k": 8,
+      "mode": "rrf",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1726,
+      1832,
+      1799,
+      1749,
+      1791,
+      1807,
+      1725,
+      1817
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "6 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1628, 1585, 1586, 6583, 7249] -> ['子平真诠评注', '子平真诠评注', '子平真诠评注', '三命通会', '三命通会']"
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=渊海子平)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:fetch_chunk",
+      "ok": true,
+      "detail": {
+       "at_step": 4,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "明确给出月令与所取之格",
+     "只给结论、无原文出处的部分超过一半即判不通过"
+    ],
+    "cited_books": [
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "三命通会",
+     "三命通会"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=渊海子平)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 70.4
+  },
+  {
+   "id": "a06",
+   "type": "多跳",
+   "name": "正印与偏印的分工",
+   "question": "正印和偏印都叫印，为什么有的书说正印护身、偏印夺食？同一组十神，两本书给的分工一样吗？",
+   "usage": {
+    "prompt_tokens": 27781,
+    "completion_tokens": 1439,
+    "total_tokens": 29220,
+    "cached_tokens": 4352,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "两书对正印、偏印的分工确有不同，且对偏印的定性侧重也不一样。\n\n先看定义：《渊海子平·论印綬》说「以阳见阴，以阴见阳，谓之正印；阳见阳，阴见阴，谓之偏印」，即正印、偏印同属生我之物，只是阴阳配合不同。\n\n关于正印：《三命通会》论印绶说印绶「乃我气之源，为生气，为父母，能防我官星使无伤尅」，喜官星生印、忌财星破印，又说「印绶被伤，倘若荣华不久」；《渊海子平·继善篇》也说「生气印綬，利官运，畏见财乡」「印綬被伤，倘若荣华不久」。这就是所谓正印护身、喜官忌财的一路说法。\n\n关于偏印：《三命通会》另立《论倒食》一节，说「倒食即偏印之谓，一名吞啖煞，食神最忌见之」，并解释甲见壬为倒食，壬旺尅去丙火食神，使甲无财、无官而生灾，又说「凡命带倒食，福薄寿夭」，若柱中有尅制则「不能为食害」；同书食神诸歌也有「食神印绶不宜逢」「若临偏印主孤贫」「逢枭逢比总成空」等语。这是偏印夺食（枭神）之说的出处。\n\n两书分工是否一样：不一样。《三命通会》是以「印绶」统论生我之神，另设「倒食/枭神」专论偏印夺食之害，重点在格局喜忌与祸福；《渊海子平·六亲总篇》则把正印、偏印落到六亲取象上，说「正印正母；偏印偏母及祖父也」，《论母》一篇更专以正印论母，讲印临桃花沐浴、临阳刃杀地绝墓孤寡等对母之应。也就是说，同一组十神，两书一重格局吉凶、一重六亲取象，分工并不相同。\n\n（推断）从上述材料看，正印「护身」与偏印「夺食」并非互斥的两种定义，而是分别从「生我护官」与「尅食神」两个角度立论；两书对正印喜官忌财的说法基本一致，对偏印则一为专论其害、一为六亲取象，侧重不同。",
+   "citations": [
+    1757,
+    6552,
+    1792,
+    6559,
+    6571,
+    1770,
+    1773
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "正印",
+       "limit": 5
+      }
+     },
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "偏印",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "正印"
+     },
+     {
+      "book": "三命通会",
+      "query": "偏印"
+     },
+     {
+      "book": "渊海子平",
+      "query": "正印"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题涉及十神中正印、偏印的定义与分工差异，需先查术语定义，再分别检索语料中论印绶的命理古籍。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题所需：正印/偏印的定义（术语表：正印为异极性生我、偏印为同极性生我；渊海子平《论印綬》明言阳见阴为正印、阳见阳为偏印）；正印护身、喜官生印忌财破印（三命通会chunk 6552、渊海子平chunk 1757/1792）；偏印即倒食/枭神、夺食伤身（三命通会chunk 6559、6571、7244）；两书对同一组十神的分工确有差异：三命通会以印绶统论并另立倒食专论偏印之害，渊海子平则在《六亲总篇》《论母》中把正印定为正母、偏印定为偏母及祖父，侧重六亲取象。分歧本身有原文支撑，可陈述两书说法不同。未涉及具体命例排盘，无需补排盘证据。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "正印",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "偏印",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只是术语词典释义，不是《三命通会》原文。需在本书内检索“正印”相关原文，用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "正印",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6345,
+      7291,
+      7278,
+      6558,
+      6333,
+      6552,
+      6297,
+      7299
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果只给出偏印的术语定义，未涉及《三命通会》原文；需在本书内检索偏印相关论述，术语明确用 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "偏印",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6559,
+      7244,
+      6571,
+      6552,
+      6761,
+      6346,
+      7288,
+      6558
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "前置结果只给出术语定义，没有《渊海子平》原文。需在本书内检索“正印”相关原文，用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "正印",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1773,
+      1770,
+      1757,
+      1839,
+      1840,
+      1856,
+      1793,
+      1792
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1757, 6552, 1792, 6559, 6571, 1770, 1773] -> ['渊海子平', '三命通会', '渊海子平', '三命通会', '三命通会', '渊海子平', '渊海子平']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=五行精纪)",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "说明正印/偏印的核心差异（生我、阴阳同类与否）以及「护身」与「夺食」各自成立的条件"
+    ],
+    "cited_books": [
+     "渊海子平",
+     "三命通会",
+     "渊海子平",
+     "三命通会",
+     "三命通会",
+     "渊海子平",
+     "渊海子平"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=五行精纪)",
+       "ok": false,
+       "via": null
+      }
+     ]
+    }
+   },
+   "seconds": 37.8
+  },
+  {
+   "id": "a07",
+   "type": "多跳",
+   "name": "羊刃是凶神还是帮身",
+   "question": "羊刃到底是凶神还是帮身的东西？为什么有的书说见刃要制，有的说刃能驾杀？",
+   "usage": {
+    "prompt_tokens": 27450,
+    "completion_tokens": 1371,
+    "total_tokens": 28821,
+    "cached_tokens": 3968,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "古籍对羊刃的吉凶并不统一，两说并存。\n\n一说以凶为主，主张须制伏。《三命通会》解释羊刃之名取「羊言刚也，刃者取宰割之义」，又说「当其极处其气刚烈暴戾不和」，并称「凡人行运最怕羊刃」，引经云「运行羊刃财物耗散」；又谓「羊刃不喜刑冲」，八字既有羊刃，虽多煞制伏，行羊刃岁运亦须防。同书还列刃头财、刃头鬼、朝元羊刃等，多主灾祸。《渊海子平·论八字撮要法》亦说「阳刃怕冲，宜合迎」。《神峰通考·看命捷歌》则说羊刃「所忌劫刑冲」，又谓「羊刃喜伤煞」。\n\n一说不可一见刃便言凶，刃可帮身、可与杀相济。《神峰通考》说「如命中有刃，不可便言凶，大率与煞七相似。凡有刃者，多有富人，最喜身旺坐禄，合杀有制，杀刃两全，非常之命」，并引《喜忌篇》「日干无气，时逢羊刃不为凶」；又引《元理赋》「杀刃又显均停，位至王候。杀刃重而无制，身为胥吏」，引《万尚书赋》「官星带刃，掌万将之威权」「印刃相当，官高极品」「煞制刃兴，主掌满营之兵卒」；《醉醒子气象篇》注更明言「帮身羊刃，喜合嫌冲」「刃乃才身这物，大怕身旺逢之，得一重杀与刃相匐，化为权星。若见官与刃冲战，乃成恶性杀」。\n\n两说之所以并存，原文本身已给出条件：刃之吉凶取决于身旺与否、有无制伏、有无七杀相配、是否刑冲。推断：所谓「见刃要制」多就刃旺无制、或刃逢刑冲而言；「刃能驾杀」则就身强有刃、七杀合刃、刃杀相济而言，故同一羊刃在不同格局中评价相反。",
+   "citations": [
+    6354,
+    6356,
+    7284,
+    1877,
+    2444,
+    2445,
+    2446,
+    2588,
+    2733
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "羊刃",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "羊刃"
+     },
+     {
+      "book": "渊海子平",
+      "query": "羊刃"
+     },
+     {
+      "book": "神峰通考",
+      "query": "羊刃"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "术语定义先查 search_terms；羊刃吉凶与制刃、刃驾杀之说主要见于子平命书，选三本语料内实有该书内容的著作。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题两面：三命通会（chunk 6354、6356、7284）给出羊刃为极盛刚烈之凶、行运最怕羊刃、不喜刑冲、须制伏的说法；神峰通考（chunk 2444、2445、2446、2588）明确『不可便言凶』『最喜身旺坐禄，合杀有制，杀刃两全，非常之命』『帮身羊刃，喜合嫌冲』『得一重杀与刃相匐，化为权星』，并引《喜忌篇》『日干无气，时逢羊刃不为凶』；渊海子平（chunk 1877）『阳刃怕冲，宜合迎』。前置工具术语与成格详、行运详条目亦支持『羊刃驾杀』与『制刃』并存。分歧本身有原文支撑，可陈述两说。注意：材料未直接出现『羊刃驾杀』四字于古籍原文，该格名来自前置工具术语表，属工具证据，不算缺证。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "羊刃",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果只有术语定义和格论概述，缺少《三命通会》中羊刃的原文论述，需在本书内检索。用精确术语“羊刃”做 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "羊刃",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6356,
+      7284,
+      6390,
+      6354,
+      6156,
+      6355,
+      6371,
+      6731
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只有术语定义和格论概述，没有《渊海子平》原文。用「羊刃」在本书内做精确术语检索，取原文片段。",
+     "action": "search_classics",
+     "args": {
+      "query": "羊刃",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1879,
+      1878,
+      1877,
+      1876,
+      1875,
+      1874,
+      1873,
+      1872
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "已命中《论八字撮要法》「阳刃怕冲，宜合迎」、《格局生死引用》「劫财阳刃」等原文，但多为断语，缺前提条件，需读上下文确认。",
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 1877,
+      "with_neighbors": true
+     },
+     "ok": true,
+     "chunk_ids": [
+      1877
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "前置结果只给出术语定义和通用格论，未直接命中《神峰通考》原文；需在本书内检索羊刃相关原文，术语明确用 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "羊刃",
+      "k": 8,
+      "mode": "bm25",
+      "book": "神峰通考"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2444,
+      2588,
+      2587,
+      2445,
+      2443,
+      2446,
+      2733,
+      2634
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6354, 6356, 7284, 1877, 2444, 2445, 2446, 2588, 2733] -> ['三命通会', '三命通会', '三命通会', '渊海子平', '神峰通考', '神峰通考', '神峰通考', '神峰通考', '神峰通考']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=神峰通考)",
+      "ok": true,
+      "detail": {
+       "at_step": 5,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "说明「制刃」与「刃驾杀」各自成立的条件，而不是只取一边"
+    ],
+    "cited_books": [
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "渊海子平",
+     "神峰通考",
+     "神峰通考",
+     "神峰通考",
+     "神峰通考",
+     "神峰通考"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=神峰通考)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 49.6
+  },
+  {
+   "id": "a08",
+   "type": "多跳",
+   "name": "空亡的起法与吉凶",
+   "question": "空亡按日柱起还是年柱起？空亡一定凶吗？",
+   "usage": {
+    "prompt_tokens": 27486,
+    "completion_tokens": 1599,
+    "total_tokens": 29085,
+    "cached_tokens": 3584,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "关于空亡的起法，《三命通会》说「空亡以生日系何旬所属，如甲子旬即戌亥二位是也」，即以日柱所在旬推空亡；同书又说「夫空亡不言太岁，见生日旬中空亡极紧」，并论「太岁与日互换空亡」则灾深，可见年柱空亡虽被提及，但以日旬为主、互换则加重。关于空亡是否一定凶，材料显示并非一定凶。《三命通会》说「空而有实亡而有存，所以未可便为防（害）论」，并列举空亡成格（渊净格、九流格、学堂见空亡等）；又说「天中一煞不可全以凶言」，恶煞聚处要空亡解之、禄马财官福聚则怕空亡散之，并分生旺死绝、与诸煞并的不同表现；还说「人命空亡本不好，若运冲刑反为虚煞」，士人遇之反飞声走誉。《渊海子平》分五行论「金空则鸣、火空则发、水空则流」为吉，「木空则朽、土空则崩」主凶；又说「如空者凶，空者返吉，吉者返凶」。《神峰通考》引《集说》「凡人命内带空亡，一生主聪明」。凶的方面亦有据：《神峰通考》说「财落空亡，必贫窘不聚财」；《渊海子平》说「马落空亡，操心落魄之人」「时日空亡，难为妻子」；《渊海子平·金玉赋》说「官星七杀落空亡，在九流任虚闲之职」；《渊海子平》论日贵、日德均忌空亡。综上，空亡不一定凶，须看所落何神、生旺死绝及有无冲合。",
+   "citations": [
+    7093,
+    6358,
+    6357,
+    6360,
+    1771,
+    1730,
+    2552,
+    2399,
+    1800,
+    1834,
+    2731,
+    1766,
+    1767
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 4,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "空亡",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "空亡"
+     },
+     {
+      "book": "渊海子平",
+      "query": "空亡"
+     },
+     {
+      "book": "神峰通考",
+      "query": "空亡"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "术语定义类问题，先检索空亡定义；再查语料中论空亡起法与吉凶的命理书"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料足以支撑回答。关于起法：三命通会 chunk 7093 明言『空亡以生日系何旬所属，如甲子旬即戌亥二位是也』，即以日柱旬空为准；chunk 6358 又言『夫空亡不言太岁，见生日旬中空亡极紧』，并论『太岁与日互换空亡』，说明年柱空亡亦被提及但以日旬为主、互换则灾深；神峰通考 chunk 2552 给出六甲旬空表，chunk 2557 给出孤虚（空亡对宫）推法。关于吉凶：材料明确显示并非一定凶——三命通会 chunk 6357 言『空而有实亡而有存，所以未可便为防（害）论』，并列举空亡成格（渊净格、九流格、学堂见空亡等）；chunk 6358 言『天中一煞不可全以凶言』，恶煞聚处要空亡解之、禄马财官福聚则怕空亡散之，又分生旺死绝、与诸煞并的不同表现；chunk 6360 言『人命空亡本不好，若运冲刑反为虚煞』，士人遇之反飞声走誉；渊海子平 chunk 1771 分五行论『金空则鸣、火空则发、水空则流』为吉，『木空则朽、土空则崩』主凶；chunk 1730 言『如空者凶，空者返吉，吉者返凶』；神峰通考 chunk 2552 引《集说》『凡人命内带空亡，一生主聪明』。凶的方面亦有据：神峰通考 chunk 2399『财落空亡，必贫窘不聚财』，渊海子平 chunk 1800『马落空亡，操心落魄之人』『时日空亡，难为妻子』，chunk 1834/2731『官星七杀落空亡，在九流任虚闲之职』，chunk 1766/1767 日贵日德忌空亡。故『不一定凶、须看所落何神与生旺死绝、有无冲合』这一结论有充分原文支撑。材料未涉及的部分：各书对『年柱起空亡』的具体操作细节（除互换空亡外）着墨较少，回答时不宜过度展开。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "空亡",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果只给出术语定义和零散提及，没有《三命通会》原文。需在本书内检索“空亡”相关原文，术语明确用 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "空亡",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6357,
+      6358,
+      7190,
+      6360,
+      6311,
+      6392,
+      7093,
+      6671
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只给出术语定义和零散条目，没有《渊海子平》中关于空亡的原文。需在本书内检索空亡相关论述，用术语短词检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "空亡",
+      "k": 8,
+      "mode": "rrf",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1878,
+      1800,
+      1766,
+      1767,
+      1873,
+      1834,
+      1730,
+      1771
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果只是术语表和其他来源的片段，没有《神峰通考》原文。需要在该书内检索“空亡”相关原文，术语明确，用 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "空亡",
+      "k": 8,
+      "mode": "bm25",
+      "book": "神峰通考"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2399,
+      2509,
+      2494,
+      2552,
+      2557,
+      2505,
+      2497,
+      2731
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[7093, 6358, 6357, 6360, 1771, 1730, 2552, 2399, 1800, 1834, 2731, 1766, 1767] -> ['三命通会', '三命通会', '三命通会', '三命通会', '渊海子平', '渊海子平', '神峰通考', '神峰通考', '渊海子平', '渊海子平', '神峰通考', '渊海子平', '渊海子平']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=五行精纪)",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "明确说明起法（日柱/年柱）以及「空亡不一定凶」的条件"
+    ],
+    "cited_books": [
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "渊海子平",
+     "渊海子平",
+     "神峰通考",
+     "神峰通考",
+     "渊海子平",
+     "渊海子平",
+     "神峰通考",
+     "渊海子平",
+     "渊海子平"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=五行精纪)",
+       "ok": false,
+       "via": null
+      }
+     ]
+    }
+   },
+   "seconds": 46.5
+  },
+  {
+   "id": "a09",
+   "type": "多跳",
+   "name": "驿马与天马的区别",
+   "question": "驿马和天马是不是一回事？为什么同是驿马，有的主升迁、有的主奔波？",
+   "usage": {
+    "prompt_tokens": 34407,
+    "completion_tokens": 1671,
+    "total_tokens": 36078,
+    "cached_tokens": 5120,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "驿马与天马并非同一神煞。材料中「驿马」是神煞名，主出行、迁移、变动；「天马」在《三命通会》中或指岁中不见驿马而五虎遁至马上所得天乙贵人（「有天马贵神乃岁中不见驿五虎遁至马上看得何干其干见天乙而天乙所坐之干却复见贵于马上是也」），或与禄并称「天禄天马」「禄马交驰」，又《三命通会·论正财》以「天马星」为财星别名之一，可见名目与用法均与驿马有别。\n\n同是驿马而吉凶不同，古籍本有分说。《三命通会·论驿马》称驿马为「三命中发用喜庆之神」，君子遇之常居荣位，小人主丰赡，大运及行年至此「主得官及迁改之喜」，此即主升迁一面；但同书又列十二驿马，谓「以上十二驿马当以意消息灾福自见」，其中欵叚「平生坎坷止作选人」、折足「永失」、无粮「不食天俸」、趋途「谩劳求禄」等，皆主坎坷奔波。《渊海子平·寸金搜髓论》亦云「身旺比肩坐驿马，兄弟飘蓬好潇洒」「八字四马总交驰，身荣劳碌任东西」，《杂论口诀》云「交驰驿马，别土离乡」，《心镜歌》云「禄马俱逢行绝地，劳困难逃避」，均见驿马有劳碌一面。\n\n其分歧条件，原文亦有交代：《三命通会》谓柱中带马「若不值空亡破败交退伏神须荣贵」，若「乘长生临官马或带食禄贵气则遇一当百」，若「乘病绝空亡马更值破败交退伏神则遇而不遇，纵为官粗浊卑贱非清要之职」；《渊海子平》则谓「马落空亡，操心落魄之人」。推断：驿马本身只表迁移变动之性，吉凶升降须看所乘生旺死绝、有无空亡破败及贵禄食神并临，故同一驿马而或主升迁、或主奔波。",
+   "citations": [
+    6319,
+    6321,
+    6322,
+    6323,
+    6325,
+    6327,
+    6541,
+    1809,
+    1800,
+    1816
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 6,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "驿马",
+       "limit": 5
+      }
+     },
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "天马",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "驿马"
+     },
+     {
+      "book": "三命通会",
+      "query": "天马"
+     },
+     {
+      "book": "渊海子平",
+      "query": "驿马"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "需先界定驿马、天马术语，再查诸书对驿马吉凶（升迁/奔波）的判别条件"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料足以支撑回答。前置工具输出给出驿马（Traveling Horse，主出行、迁移、海外、变动）与天马（天马星，如正财别名天马星、天马贵神、禄存天马夹命格、天马在财帛主奔波求财）的术语条目，可证二者名目不同。古籍原文方面：《三命通会》chunk 6319、6321、6322、6323、6324、6325、6327 详论驿马之立名、十二驿马、有驿有马、马财库、禄马交驰等，并明言驿马为『三命中发用喜庆之神』，君子常居荣位、小人主丰赡，大运至主得官迁改之喜（chunk 6321），可支撑『主升迁』一说；同书 chunk 6322 十二驿马中欵叚主坎坷、折足主失、蹶蹄复起、无粮不食天俸等，chunk 6323 明言各马灾福不同，可支撑『主奔波劳碌』一说；《渊海子平》chunk 1809『身旺比肩坐驿马，兄弟飘蓬』『八字四马总交驰，身荣劳碌任东西』、chunk 1800『交驰驿马，别土离乡』、chunk 1816『禄马俱逢行绝地，劳困难逃避』，亦证驿马有劳碌奔波一面。天马方面，chunk 6327 有『天禄天马』『禄马交驰』之说，chunk 6323 有『天马贵神』，chunk 7230 有『天马财库』，chunk 6541 以天马为财星别名，可证天马与驿马并非同一神煞。至于同是驿马吉凶迥异，材料已给出前提条件：值空亡破败交退伏神则减色（chunk 6321）、乘长生临官或带食禄贵气则遇一当百、乘病绝空亡则遇而不遇（chunk 6325）、马落空亡为操心落魄之人（chunk 1800），足以说明分歧有原文依据。未发现材料缺项。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "驿马",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "天马",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只给出驿马的定义和组合断语，缺少《三命通会》原文中驿马的判定条件与吉凶前提，需要检索本书内相关原文。",
+     "action": "search_classics",
+     "args": {
+      "query": "驿马",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6319,
+      6324,
+      6322,
+      6729,
+      6321,
+      6325,
+      6819,
+      6323
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "前置结果多为术语表与紫微斗数内容，非《三命通会》原文；需在本书内检索“天马”相关原文，先试精确术语。",
+     "action": "search_classics",
+     "args": {
+      "query": "天马",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7230,
+      6327,
+      6175,
+      6323,
+      6541,
+      6529,
+      6530,
+      6531
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "前置结果只有术语定义和零散组合，没有《渊海子平》原文。用「驿马」在本书内做精确术语检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "驿马",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1879,
+      1878,
+      1877,
+      1876,
+      1875,
+      1874,
+      1873,
+      1872
+     ],
+     "error": null
+    },
+    {
+     "step": 6,
+     "agent": "retriever",
+     "thought": "检索结果没有命中《渊海子平》中「驿马」的原文条目，只返回了无关章节。换同义词「马」或「驿马」相关术语再搜一次。",
+     "action": "search_classics",
+     "args": {
+      "query": "驿马",
+      "k": 8,
+      "mode": "dense",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1816,
+      1873,
+      1876,
+      1809,
+      1835,
+      1751,
+      1800,
+      1810
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "6 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6319, 6321, 6322, 6323, 6325, 6327, 6541, 1809, 1800, 1816] -> ['三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '渊海子平', '渊海子平', '渊海子平']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=五行精纪)",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "区分驿马与天马，并说明升迁/奔波的分条件"
+    ],
+    "cited_books": [
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=五行精纪)",
+       "ok": false,
+       "via": null
+      }
+     ]
+    }
+   },
+   "seconds": 61.0
+  },
+  {
+   "id": "a10",
+   "type": "多跳",
+   "name": "天乙贵人的起法与多寡",
+   "question": "天乙贵人是按日干查还是按年干查？为什么有的命书说贵人多了反而不好？",
+   "usage": {
+    "prompt_tokens": 27465,
+    "completion_tokens": 1251,
+    "total_tokens": 28716,
+    "cached_tokens": 3584,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "关于天乙贵人按日干还是年干查，古籍中两说并存。《三命通会·论天乙贵人》详列起例：阳贵从先天坤位子起甲，顺行，得「甲戊庚牛羊，六辛逢马虎」；阴贵从后天坤位申起甲，逆行，亦成此诀。其起例以干为主，但未明言仅用日干或年干。同书又载「太岁本干四贵」「年时互换贵」及「以太岁干为主」配五行取四贵四平四忌，说明年干亦参与查贵。故材料未给出「日干查还是年干查」的取舍结论，只能呈现两说并存。\n\n关于「贵人多了反而不好」，材料无逐字原文，但有多处条件性论述可归纳：林开云「贵人死绝为鄙吝煞」，《洞玄经》云「贵人嗔则防来」，《三命通会》强调「不可就为吉论，要当细详」；《渊海子平·论日贵》谓「刑冲太甚，贵人生怒，反成其祸」；《渊海子平·女命总断歌》有「贵人一座正，两三作宠定」；《三命通会》亦言贵忌混杂，须带正官正印等条件方为福厚。据此推断，贵人并非越多越吉，须视生旺死绝、刑冲空亡及是否混杂等条件而定。",
+   "citations": [
+    6328,
+    6333,
+    7064,
+    6334,
+    1766,
+    1784
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 9,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "天乙贵人",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "天乙贵人"
+     },
+     {
+      "book": "渊海子平",
+      "query": "天乙贵人"
+     },
+     {
+      "book": "珞琭子三命消息赋注",
+      "query": "天乙贵人"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "术语定义与命书用法问题，语料内可查"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料足以支撑两点：1) 天乙贵人的起例（甲戊庚牛羊、六辛逢马虎等）在 chunk_id=6328 有完整推导，且明确分阳贵（先天坤、子起甲、顺行）与阴贵（后天坤、申起甲、逆行），说明贵人系按干（日干/年干）查；chunk_id=6333 提到『太岁本干四贵』『年时互换贵』，chunk_id=7064 提到『以太岁干为主』，可支撑年干亦参与查贵，但材料未直接给出『日干查还是年干查』的取舍结论，只能呈现两说并存。2) 『贵人多了反而不好』有原文支撑：chunk_id=6334 引林开『贵人死绝为鄙吝煞』、洞玄经『贵人嗔则防来』，并强调『不可就为吉论，要当细详』；chunk_id=1766 论日贵『刑冲太甚，贵人生怒，反成其祸』；chunk_id=1784 女命『贵人一座正，两三作宠定』；chunk_id=7064 亦言贵忌混杂、需带正官正印等条件方为福厚。材料未出现『贵人多了反而不好』的逐字原文，属归纳性表述，回答时应注明系据上述条件性论述推得，而非某书直断。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "天乙贵人",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果只是术语释义和零散提及，没有《三命通会》原文。需在本书内检索“天乙贵人”的原文论述，用精确术语 bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "天乙贵人",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6333,
+      6334,
+      6328,
+      6332,
+      7064,
+      6521,
+      6321,
+      6881
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只有术语释义和零散提及，没有《渊海子平》原文。用精确术语“天乙贵人”在本书内检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "天乙贵人",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1860,
+      1769,
+      1871,
+      1730,
+      1784,
+      1766,
+      1816,
+      1815
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "命中三条含“天乙”的原文，但都是歌诀/赋文中的断语式提及（如“根苗天乙俱榜眼”“天乙加临”），缺少天乙贵人的查法、起例与前提条件。需读完整上下文确认是否给出定义。",
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 1871,
+      "with_neighbors": true
+     },
+     "ok": true,
+     "chunk_ids": [
+      1871
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "前置结果都是术语词典和综合笔记，不是《珞琭子三命消息赋注》原文，需要在该书内检索“天乙贵人”相关原文。",
+     "action": "search_classics",
+     "args": {
+      "query": "天乙贵人",
+      "k": 8,
+      "mode": "bm25",
+      "book": "珞琭子三命消息赋注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2306,
+      2321,
+      2300,
+      2305,
+      2324,
+      2314,
+      2275,
+      2299
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6328, 6333, 7064, 6334, 1766, 1784] -> ['三命通会', '三命通会', '三命通会', '三命通会', '渊海子平', '渊海子平']"
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=五行精纪)",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "说明起法（日干/年干）与「贵人多不为贵」的条件"
+    ],
+    "cited_books": [
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "渊海子平",
+     "渊海子平"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=五行精纪)",
+       "ok": false,
+       "via": null
+      }
+     ]
+    }
+   },
+   "seconds": 49.0
+  },
+  {
+   "id": "b06",
+   "type": "换工具",
+   "name": "术语表与原文对照：羊刃",
+   "question": "术语表里「羊刃」怎么解释？再去《三命通会》找原文，看它和术语表的说法是否一致。",
+   "usage": {
+    "prompt_tokens": 10806,
+    "completion_tokens": 793,
+    "total_tokens": 11599,
+    "cached_tokens": 2176,
+    "llm_calls": 5
+   },
+   "can_answer": true,
+   "answer": "术语表对「羊刃」的解释是：Blade；拼音 yáng rèn；意为刚烈锋锐、过盛之边，勇气与受伤风险并存。\n\n《三命通会》原文对羊刃的命名与取义有明确说明：「三车云羊言刚也，刃者取宰割之义禄过则刃生功成当退不退则过越其分如羊之在刃言有伤也故羊刃常居禄前一辰」，又引希尹曰「阴阳万物之理皆恶极盛……当其极处其气刚烈暴戾不和所以禄前一辰为羊刃对冲为飞刃」，并引壶中子云「凡人有禄必赐刃以卫之」。\n\n对照来看，术语表所说的「刚烈锋锐、过盛之边、勇气与受伤风险并存」，与《三命通会》原文「羊言刚也」「禄过则刃生」「如羊之在刃言有伤也」「其气刚烈暴戾不和」在核心语义上一致。\n\n另需说明：《三命通会》还提到「子平以甲丙戊庚壬五阳干有刃乙丁巳辛癸五阴干无刃」，以及「禄前一辰为羊刃，对冲为飞刃」的定位法，这些细节术语表未涉及，属于原文补充，不构成矛盾。",
+   "citations": [
+    6354,
+    6356
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 2,
+   "llm_calls": 5,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "羊刃",
+       "limit": 5
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "羊刃"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "先查术语表定义，再检索《三命通会》原文比对"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "术语表对羊刃的解释（Blade；刚烈锋锐、过盛之边、勇气与受伤风险并存）有 search_terms 输出为证；《三命通会》原文（chunk_id=6354）明确给出羊刃的命名与取义：『羊言刚也，刃者取宰割之义』『禄过则刃生』『当其极处其气刚烈暴戾不和』『禄前一辰为羊刃，对冲为飞刃』，并引壶中子『凡人有禄必赐刃以卫之』。二者在『刚烈、过盛、带伤』这一核心语义上可对照，材料足以支撑一致性判断。另有多处原文（6356、7284、6355、6731 等）补充羊刃行运忌冲、女命产厄等说法，可作为旁证。术语表为英文简释，未涉及『禄前一辰』的定位法与『阳干有刃、阴干无刃』的阴阳之辨（6356 提及子平以五阳干有刃、五阴干无刃），回答若要展开这些细节需另引原文，但就『解释是否一致』这一问，现有证据已足够。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "羊刃",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "前置结果只有术语卡和合并笔记，没有《三命通会》原文。用术语短词在本书内检索羊刃相关原文。",
+     "action": "search_classics",
+     "args": {
+      "query": "羊刃",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6356,
+      7284,
+      6390,
+      6354,
+      6156,
+      6355,
+      6371,
+      6731
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "2 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6354, 6356] -> ['三命通会', '三命通会']"
+     },
+     {
+      "name": "tool:search_terms(羊刃)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "先调用 search_terms 查到「羊刃」，再在《三命通会》内定向检索",
+     "说明术语表与原文的一致处或差异，不能只复述术语表"
+    ],
+    "cited_books": [
+     "三命通会",
+     "三命通会"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 19.8
+  },
+  {
+   "id": "b07",
+   "type": "换工具",
+   "name": "排盘结果回填检索参数",
+   "question": "1992 年 11 月 15 日下午 2 点，女，出生地杭州。先把我八字排出来，再按《穷通宝鉴》看我这个日主在亥月该用什么调候。",
+   "usage": {
+    "prompt_tokens": 24343,
+    "completion_tokens": 1016,
+    "total_tokens": 25359,
+    "cached_tokens": 6656,
+    "llm_calls": 8
+   },
+   "can_answer": true,
+   "answer": "命主八字四柱为：年柱壬申、月柱辛亥、日柱乙未、时柱癸未，日主为乙木。按《穷通宝鉴·三冬乙木》所论，十月乙木「木不受气，而壬水司令，取丙为用，戊土次之」，并说「丙戊两透，科甲定然；有丙无戊，虽不科甲，亦入儒林」；又强调「冬月之木，虽取戊制水，不可作用，端取丙火则可」。因此乙木生亥月的调候，以丙火为主用、戊土为次。结合本命水旺（水3、金2）而火不显（火0），推断调候上最需丙火解冻暖木，戊土则用以制水、防止乙木漂浮；但材料未涉及大运流年与具体吉凶，以上推断仅限调候用神范围。",
+   "citations": [
+    2767,
+    2768
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 3,
+   "llm_calls": 8,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_bazi",
+      "args": {
+       "year": 1992,
+       "month": 11,
+       "day": 15,
+       "hour": 14,
+       "minute": 0,
+       "gender": "female"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "穷通宝鉴",
+      "query": "亥月调候"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题给出公历出生时间与性别，需先排八字；点名《穷通宝鉴》查亥月调候用神。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "排盘四柱（壬申、辛亥、乙未、癸未，日主乙木）由前置工具给出，属确定性证据，无需在古籍中找排盘过程。问题点名的《穷通宝鉴》有直接对应原文：chunk_id=2767「三冬乙木·十月乙木」明言『十月乙木，木不受气，而壬水司令，取丙为用，戊土次之』，并给出丙戊两透、有丙无戊、水多无戊等条件分支；chunk_id=2768 亦重申『冬月之木……端取丙火则可』『十一月乙木，木寒宜丙』。材料足以支撑「乙木生亥月以丙火为调候主用、戊土为次」这一结论，并可按命局水旺（水3、金2）讨论戊土制水、丙火解冻的取舍。材料未涉及大运流年与具体吉凶推断，回答不应超出调候用神范围。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_bazi",
+     "args": {
+      "year": 1992,
+      "month": 11,
+      "day": 15,
+      "hour": 14,
+      "minute": 0,
+      "gender": "female"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子任务是查《穷通宝鉴》中亥月的调候用神，属于术语型检索，先用短词“亥月”配合调候相关词做精确检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "亥月 调候",
+      "k": 8,
+      "mode": "bm25",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2814,
+      2830,
+      2828,
+      2829,
+      2827,
+      2826,
+      2824,
+      2825
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "子任务要查《穷通宝鉴》中十月（亥月）乙木的调候论述，属于术语型检索，先用短词组合搜。",
+     "action": "search_classics",
+     "args": {
+      "query": "十月乙木 亥月 调候",
+      "k": 8,
+      "mode": "rrf",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2767,
+      2765,
+      2763,
+      2764,
+      2766,
+      2776,
+      2768,
+      2822
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[2767, 2768] -> ['穷通宝鉴', '穷通宝鉴']"
+     },
+     {
+      "name": "tool:draw_bazi(year=1992)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "调用 draw_bazi 且返回成功",
+     "回答里的日主与月令必须和排盘结果一致；只泛检索「亥月」不通过"
+    ],
+    "cited_books": [
+     "穷通宝鉴",
+     "穷通宝鉴"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 35.2
+  },
+  {
+   "id": "b08",
+   "type": "换工具",
+   "name": "用书名列表定位择日书",
+   "question": "我想找一本讲择日的老书，名字里带「协纪」或「星历」，先看看库里有哪些，再查它怎么论「建除十二神」。",
+   "usage": {
+    "prompt_tokens": 18229,
+    "completion_tokens": 1493,
+    "total_tokens": 19722,
+    "cached_tokens": 2688,
+    "llm_calls": 7
+   },
+   "can_answer": true,
+   "answer": "库中书名带「协纪」或「星历」的择日类古籍有两部：《钦定协纪辨方书》（722 chunks）与《御定星历考原》（162 chunks）。\n\n关于建除十二神，两书所载大体一致：\n\n《钦定协纪辨方书·卷四·义例二·建除十二神》列建、除、满、平、定、执、破、危、成、收、开、闭十二神，并载其同位异名，如建为兵福、小时、土府，除为吉期、兵宝，满为福德、天巫、天狗等。其历书起例称：「历家以建除满平定执破危成收开闭凡十二日周而复始，观所值以定吉凶，每月交节则叠两值日，其法从月建上起建，与斗杓所指相应，如正月建寅则寅日起建，顺行十二辰是也。」又引《淮南子》以寅为建、卯为除、辰为满、巳为平主生、午为定、未为执主陷、申为破主衡、酉为危主杓、戌为成主小德、亥为收主大德、子为开主太阳、丑为闭主太阴。引《选择宗镜》则逐神配以四利三元诸神论吉凶，如建为岁君为元神为吉凶众神之主帅、可坐不可向，破为岁破为大耗大凶等。其《考原》总结说：「按月建十二神除危定执成开为吉，建破平收满闭为凶，历书所谓建满平收黑，除危定执黄，成开皆可用，闭破不相当者也。」\n\n《御定星历考原·卷五·月建十二神》所载历书起例、《淮南子》十二神分配及《选择宗镜》吉凶之说与上书相同，末亦断以「除危定执成开为吉，建破平收满闭为凶」，并指出《选择宗镜》以四利三元诸神相配「吉凶亦未尽合」，如以建为太岁、除为太阳、满为丧门、破为岁破、危为龙德为相合，而以平为太阴、定为官符、执为死符、成为白虎、收为福德、开为吊客则不相合，故谓「大抵凡日吉神多则吉，凶神多则凶，又各视其神之宜忌以为趋避，亦未可以执一而论也」。\n\n《钦定协纪辨方书》另存异说：其卷四按语称「自建至闭十二神其辰皆由建改而递更，古今论说纷纭，吉凶不一，夫止以建除论吉凶未甚彰显著明也」，主张吉凶生于「错以二气五行」，建除只定其大小剂量；又引邵泰衢说，谓黄道黑道十二神「即建除满平定执破危成收开闭」，除即明堂黄道、破即白虎黑道，并辨雷公、天岳之名误。同书又谓月神之以十二辰起例者「今一以建除统之」，即以建除统摄诸神煞。\n\n（推断）就材料看，两书对建除十二神的基本吉凶判定相同，分歧主要在吉凶是否仅由建除决定、以及建除与黄黑道诸神如何相配两点上。",
+   "citations": [
+    8048,
+    8050,
+    8051,
+    8065,
+    7883,
+    7884,
+    8152
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 3,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "钦定协纪辨方书",
+      "query": "建除十二神"
+     },
+     {
+      "book": "御定星历考原",
+      "query": "建除十二神"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "用户要找书名带「协纪」或「星历」的择日古籍，并查其论建除十二神；书目中对应《钦定协纪辨方书》《御定星历考原》，先列书目确认。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题所需：list_books 输出确认库中有《钦定协纪辨方书》（722 chunks）与《御定星历考原》（162 chunks），书名带「协纪」「星历」的两本老书都在。关于「建除十二神」的论述，两书均有原文：chunk_id=8048/8050/8051/8065 为《钦定协纪辨方书》卷四「义例二·建除十二神」的条目、历书起例、淮南子与选择宗镜的吉凶说、考原的吉凶判定，以及建除统摄诸神煞的说明；chunk_id=7883/7884 为《御定星历考原》卷五「月建十二神」的对应段落（历书起例、淮南子、选择宗镜、考原吉凶说）。两书对建除十二神吉凶的记载基本一致（除危定执成开为吉，建破平收满闭为凶），且《协纪辨方书》另引邵泰衢、曹震圭等异说，分歧本身有原文支撑。材料足以支撑「库中书目」与「两书如何论建除十二神」的回答，无需补充检索。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《钦定协纪辨方书》中关于建除十二神的原文，术语明确，先用精确词bm25。",
+     "action": "search_classics",
+     "args": {
+      "query": "建除十二神",
+      "k": 8,
+      "mode": "bm25",
+      "book": "钦定协纪辨方书"
+     },
+     "ok": true,
+     "chunk_ids": [
+      8049,
+      8051,
+      8048,
+      8630,
+      8154,
+      8152,
+      8050,
+      8065
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "检索《御定星历考原》中关于建除十二神的原文，先用精确术语“建除十二神”做 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "建除十二神",
+      "k": 8,
+      "mode": "bm25",
+      "book": "御定星历考原"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7883,
+      7884,
+      7796,
+      7852,
+      7799,
+      7879,
+      7775,
+      7881
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[8048, 8050, 8051, 8065, 7883, 7884, 8152] -> ['钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书', '御定星历考原', '御定星历考原', '钦定协纪辨方书']"
+     },
+     {
+      "name": "tool:list_books()",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=钦定协纪辨方书)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "调用 list_books 确认书名",
+     "说明建除十二神的用途，不能只列书名"
+    ],
+    "cited_books": [
+     "钦定协纪辨方书",
+     "钦定协纪辨方书",
+     "钦定协纪辨方书",
+     "钦定协纪辨方书",
+     "御定星历考原",
+     "御定星历考原",
+     "钦定协纪辨方书"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=钦定协纪辨方书)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 32.9
+  },
+  {
+   "id": "b09",
+   "type": "换工具",
+   "name": "星盘结果驱动古籍检索",
+   "question": "1990 年 5 月 20 日上午 10 点，女，出生地上海。先排星盘看月亮落在什么星座、第几宫；再查《星学大成》里太阴主什么、『以太阴坐处为身宫』这种说法是否成立。",
+   "usage": {
+    "prompt_tokens": 16619,
+    "completion_tokens": 1086,
+    "total_tokens": 17705,
+    "cached_tokens": 2816,
+    "llm_calls": 7
+   },
+   "can_answer": true,
+   "answer": "星盘（前置工具输出）显示：月亮落在双鱼座27.46度，位于第8宫。\n\n关于《星学大成》中太阴主什么：\n《星学大成·太阴论》说「取太阳安命以明其体，取太阴为身以明其用」，即以太阳定命、以太阴为身（chunk 5441）。《星学大成》卷十二「未宫论」说「所重者太阴乃身主也」（chunk 5511）。《星学大成》「五太阴」一节说「日为身宫论生克之妙者，以月所泊详其傍鬼傍母，五星中以月最重」（chunk 5434）。\n\n关于「以太阴坐处为身宫」是否成立，材料中存在两种对立说法：\n一说成立。《星学大成》诗曰「月到之宫格局成，太阴坐处吉凶生」，其注云「太阴所在即为身宫，实为要害」，并说「欲知月躔所在，即以太阴星正身宫」（chunk 6073）。\n一说浅陋。《星学大成·论身宫主星歌》注说「今之论星皆以太阴坐处即为身局，是为浅陋」，主张「身宫者与命宫同，即以生时从太阳数至卯则为命宫，胡不以太阴数至酉为身宫」，并批评「既以太阴生处即为身宫，则当以太阳生处为命局」（chunk 5299）。\n\n推断：按前一种说法，本盘月亮在双鱼27.46度、第8宫，则身宫即在此处；按后一种说法，则身宫须另以生时从太阳数至酉推求，不能直接以月亮所在为身宫。两说并存，材料未作统一。",
+   "citations": [
+    5441,
+    5511,
+    5434,
+    6073,
+    5299
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 3,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_astro",
+      "args": {
+       "year": 1990,
+       "month": 5,
+       "day": 20,
+       "hour": 10,
+       "minute": 0,
+       "tz": 8.0,
+       "lat": 31.23,
+       "lon": 121.47,
+       "city": "上海"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "星学大成",
+      "query": "太阴"
+     },
+     {
+      "book": "星学大成",
+      "query": "身宫"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "星盘由 draw_astro 计算；《星学大成》为点名书目，检索太阴与身宫相关论述。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "星盘为前置工具确定性输出，月亮落双鱼27.46度、第8宫，可直接引用，无需古籍佐证。古籍方面：《星学大成》chunk 5441（太阴论：取太阳安命以明其体，取太阴为身以明其用）、5434（五太阴：日为身宫论生克，月最重）、5511（未宫论：所重者太阴乃身主也）支持『太阴主身』之说；chunk 6073（诗曰『月到之宫格局成，太阴坐处吉凶生』及注『太阴所在即为身宫』）与 chunk 5299（论身宫主星歌注：今之论星皆以太阴坐处即为身局，是为浅陋……当以太阳生处为命局）形成明确对立，分歧本身有原文支撑，可陈述两说并存。材料足以支撑回答，但需注意：星盘宫位制式、月亮度数的具体计算过程不在古籍中，属工具事实；『太阴主什么』的完整神煞/吉凶体系（如犯殿伤宿、让殿、出垣入垣等）散见 5445、5981、5926 等，回答若展开需限定在已给原文范围内。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_astro",
+     "args": {
+      "year": 1990,
+      "month": 5,
+      "day": 20,
+      "hour": 10,
+      "minute": 0,
+      "tz": 8.0,
+      "lat": 31.23,
+      "lon": 121.47,
+      "city": "上海"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《星学大成》中关于太阴（月亮）的原文论述，术语明确，先用精确匹配。",
+     "action": "search_classics",
+     "args": {
+      "query": "太阴",
+      "k": 8,
+      "mode": "bm25",
+      "book": "星学大成"
+     },
+     "ok": true,
+     "chunk_ids": [
+      5445,
+      6073,
+      5434,
+      5441,
+      5511,
+      5981,
+      5926,
+      5839
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "检索《星学大成》中关于身宫的定义与用法，术语明确，先用精确匹配。",
+     "action": "search_classics",
+     "args": {
+      "query": "身宫",
+      "k": 8,
+      "mode": "bm25",
+      "book": "星学大成"
+     },
+     "ok": true,
+     "chunk_ids": [
+      5299,
+      6073,
+      5165,
+      6046,
+      6075,
+      5939,
+      5556,
+      5863
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[5441, 5511, 5434, 6073, 5299] -> ['星学大成', '星学大成', '星学大成', '星学大成', '星学大成']"
+     },
+     {
+      "name": "tool:draw_astro(year=1990)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=星学大成)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "调用 draw_astro 且返回成功",
+     "回答里的月亮星座/宫位必须和排盘结果一致；只搜「月亮」不通过",
+     "必须说明《星学大成》对「太阴坐处为身宫」的态度（批评/辨析），不能编造「太阴入双鱼亥宫」的逐宫条文"
+    ],
+    "cited_books": [
+     "星学大成",
+     "星学大成",
+     "星学大成",
+     "星学大成",
+     "星学大成"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=星学大成)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 31.8
+  },
+  {
+   "id": "c04",
+   "type": "拒答",
+   "name": "投资加杠杆的越界拒答",
+   "question": "我下个月想加杠杆买半导体股票，用我的八字看看能不能赚？",
+   "usage": {
+    "prompt_tokens": 20281,
+    "completion_tokens": 613,
+    "total_tokens": 20894,
+    "cached_tokens": 2688,
+    "llm_calls": 7
+   },
+   "can_answer": false,
+   "answer": "语料中没有足够的依据回答这个问题。",
+   "citations": [],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": "语料为八字命理古籍中关于财官、禄马、比劫、行运的论述，可用于讨论命理层面的财运吉凶，但无法回答「加杠杆买半导体股票能否获利」这一具体投资问题：既无个股/行业（半导体）与命理的对应依据，也无杠杆交易风险的命理判断依据，更不构成任何投资建议。",
+   "steps": 4,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "财禄"
+     },
+     {
+      "book": "渊海子平",
+      "query": "财星"
+     }
+    ],
+    "out_of_scope": true,
+    "reason": "问题核心是股票加杠杆的涨跌与盈利预测，属于金融投资预测，语料中的命理古籍无法提供此类判断；列书目与财禄检索仅用于确认语料范围。"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [],
+    "notes": "语料不支持该结论。材料为八字命理古籍（三命通会、渊海子平等）中关于财官、禄马、比劫、行运的论述，可用于讨论命理层面的财运吉凶，但无法回答「加杠杆买半导体股票能否获利」这一具体投资问题：既无个股/行业（半导体）与命理的对应依据，也无杠杆交易风险的命理判断依据，更不构成任何投资建议。问题已判定超出语料范围，故 gaps 留空。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《三命通会》中与“财禄”相关的原文，术语明确，先用混合检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "财禄",
+      "k": 8,
+      "mode": "rrf",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6981,
+      6583,
+      7241,
+      6314,
+      7036,
+      6602,
+      6999,
+      7191
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "已命中多条含“财禄”的原文，其中建禄论财官段落可回答财禄关系，但部分为断语，需读上下文确认前提。",
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 6583,
+      "with_neighbors": true
+     },
+     "ok": true,
+     "chunk_ids": [
+      6583
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "检索《渊海子平》中关于财星的论述，术语明确，先用精确词 bm25 搜「财星」，同时考虑「财」相关表述，用 rrf 兼顾。",
+     "action": "search_classics",
+     "args": {
+      "query": "财星",
+      "k": 8,
+      "mode": "rrf",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1746,
+      1809,
+      1856,
+      1823,
+      1791,
+      1834,
+      1758,
+      1855
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "refused",
+      "ok": true,
+      "detail": false
+     }
+    ],
+    "needs_human": [
+     "不给出买卖、加杠杆或收益判断",
+     "可以解释「财星」的古义，但不能把它映射成股票收益"
+    ],
+    "cited_books": [],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 29.6
+  },
+  {
+   "id": "c05",
+   "type": "拒答",
+   "name": "法律诉讼的越界拒答",
+   "question": "我下个月要打劳动仲裁，八字能不能看出我会不会赢？该不该请律师？",
+   "usage": {
+    "prompt_tokens": 18088,
+    "completion_tokens": 511,
+    "total_tokens": 18599,
+    "cached_tokens": 2688,
+    "llm_calls": 7
+   },
+   "can_answer": false,
+   "answer": "语料中没有足够的依据回答这个问题。",
+   "citations": [],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": "所给材料为八字命理古籍（《三命通会》《渊海子平》等）及书目清单，仅有官讼、伤官见官等泛论，无法据此判断具体劳动仲裁的胜负，也无法判断是否应请律师；且该问题本身超出语料范围。",
+   "steps": 3,
+   "llm_calls": 7,
+   "plan": {
+    "pre": [
+     {
+      "action": "list_books",
+      "args": {}
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "官讼"
+     },
+     {
+      "book": "渊海子平",
+      "query": "官讼"
+     }
+    ],
+    "out_of_scope": true,
+    "reason": "劳动仲裁胜负与是否请律师属现代法律实务问题，非命理语料所能提供；且未给出生时间，无法排盘。仅检索语料中官讼相关条目以确认有无相关内容。"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [],
+    "notes": "语料不支持该结论。材料为八字命理古籍（三命通会、渊海子平等）及书目清单，仅涉及命理格局、官讼吉凶等泛论，无法据此判断具体劳动仲裁胜负或是否应请律师；且问题本身超出语料范围（out_of_scope=true），故 gaps 留空。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《三命通会》中与官讼相关的原文，先用精确术语'官讼'做BM25检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "官讼",
+      "k": 8,
+      "mode": "bm25",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      7132,
+      6444,
+      6565,
+      6527,
+      6528,
+      6529,
+      6530,
+      6531
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "检索《渊海子平》中与官讼相关的原文，先用精确术语'官讼'做BM25检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "官讼",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1798,
+      1812,
+      1877,
+      1876,
+      1879,
+      1878,
+      1873,
+      1872
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "refused",
+      "ok": true,
+      "detail": false
+     }
+    ],
+    "needs_human": [
+     "不给出「会赢/会输」的判断",
+     "建议寻求专业法律意见，而不是用命理替代"
+    ],
+    "cited_books": [],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": []
+    }
+   },
+   "seconds": 27.4
+  },
+  {
+   "id": "c06",
+   "type": "拒答",
+   "name": "紫微斗数的能力边界",
+   "question": "帮我用紫微斗数排个命盘，看看我的命宫主星。",
+   "usage": {
+    "prompt_tokens": 3367,
+    "completion_tokens": 288,
+    "total_tokens": 3655,
+    "cached_tokens": 1536,
+    "llm_calls": 3
+   },
+   "error": "AttributeError: 'NoneType' object has no attribute 'get'",
+   "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_agent.py\", line 227, in run\n    res = solve(task[\"question\"], max_steps=int(task.get(\"max_steps\", 6)))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 428, in agent_answer\n    _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=api_key)\n  File \"/workspace/src/agent_multi.py\", line 288, in _retrieve\n    raw = _chat(messages, api_key=api_key)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/rag.py\", line 92, in _chat\n    usage.add(payload.get(\"usage\"))\n              ^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get'\n",
+   "seconds": 632.3
+  },
+  {
+   "id": "d03",
+   "type": "复合",
+   "name": "排盘到取格调候的完整链路",
+   "question": "1988 年 6 月 15 日上午 10 点，男，出生地北京。排八字，看月令取什么格，再按《穷通宝鉴》说调候，最后看大运走势。",
+   "usage": {
+    "prompt_tokens": 48025,
+    "completion_tokens": 2105,
+    "total_tokens": 50130,
+    "cached_tokens": 14080,
+    "llm_calls": 12
+   },
+   "can_answer": true,
+   "answer": "【排盘】按前置工具输出，四柱为：年柱戊辰、月柱戊午、日柱辛丑、时柱癸巳；日主为辛金，生肖龙。天干十神：年干正印、月干正印、时干食神；地支藏干十神：年支正印/偏财/食神，月支七杀/偏印，日支偏印/食神/比肩，时支正官/劫财/正印。五行统计：木0、火2、土4、金1、水1。\n\n【月令取格】《子平真诠评注》说「八字用神，专求月令，以日干配月令地支，而生克不同，格局分焉」（chunk 1583），又说「月令，本也；外格，末也」（chunk 1609），并强调「有官莫寻格局」（chunk 1601）。本命月令为午，午中藏丁、己，对应十神为七杀、偏印。按此原则，取格当以月令午中丁己（七杀、偏印）为据，不另寻外格。\n\n【《穷通宝鉴》调候】《穷通宝鉴·论辛金》五月辛金条说：「五月辛金，丁火司权，辛金失令，阴柔之极，不宜煆炼，须己壬兼用……故壬己并用，无壬，癸亦可用，但癸力小」（chunk 2810）；又概括为「五月辛金，壬，癸，己，三者皆用。或壬己两透，支见癸水，不冲，定主显达，即己藏支，亦有廪贡，或无壬有己，须得异途，或癸出有庚，必主衣锦，叨受恩荣，若水土多者，见甲方妙」（chunk 2811）。本命辛金生午月，天干无壬、无己透出，时干有癸水，年干、月干为戊土。依原文，调候以壬、癸、己为用，本命癸水透于时干而壬、己不透，属「无壬，癸亦可用，但癸力小」的情形；又年、月戊土透干，土多则原文提示「若水土多者，见甲方妙」。以上为原文所述，具体吉凶推断从略。\n\n【大运走势】《渊海子平·论大运》说「子平之法，大运看支，岁君看干」（chunk 1729），又说「须随格局喜忌推之，不可……」（chunk 1729），并指出「干旺宜行衰运，干弱宜旺运」（chunk 1730）。《爱憎赋》说「大运凶，而生百祸」（chunk 1848），又说「盖由大运之衰旺，以致富贵之更变」（chunk 1851）。依这些原则，看大运须结合本命月令格局（七杀、偏印）与日主辛金的喜忌来推，不能仅凭固定死法。材料未给出本命具体大运干支序列，故只能述其原则，不列具体运程。\n\n【推断】按《穷通宝鉴》五月辛金条，本命调候以壬、癸、己为用，而命局癸透、壬己不透，且戊土透干偏多；若行运能补壬、己或甲木制土，依原文之意较为合宜；若行运再增火土，则与「不宜煆炼」「水土多者见甲」之旨相违。此仅为依原文所作的推断，非原文直断。",
+   "citations": [
+    1583,
+    1609,
+    1601,
+    2810,
+    2811,
+    1729,
+    1730,
+    1848,
+    1851
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 5,
+   "llm_calls": 12,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_bazi",
+      "args": {
+       "year": 1988,
+       "month": 6,
+       "day": 15,
+       "hour": 10,
+       "minute": 0,
+       "gender": "male"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "穷通宝鉴",
+      "query": "调候"
+     },
+     {
+      "book": "子平真诠评注",
+      "query": "月令取格"
+     },
+     {
+      "book": "渊海子平",
+      "query": "大运"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "给定公历出生时间，先排八字；月令取格、调候、大运走势均在语料范围内，按《穷通宝鉴》调候及子平类书取格、大运分别检索。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题三要素：①排盘四柱（戊辰/戊午/辛丑/癸巳，日主辛金）由前置工具给出，属确定性证据；②月令取格有《子平真诠评注》原文支撑（『八字用神专求月令』『月令本也，外格末也』『有官莫寻格局』等，chunk 1583/1609/1601），可据月令午中丁己（七杀、偏印）论格；③调候有《穷通宝鉴·论辛金》五月辛金原文（chunk 2811：『五月辛金，壬癸己三者皆用』『壬己两透…定主显达』），与命局午月辛金直接对应；④大运走势有《渊海子平·论大运》原文（chunk 1729/1730：大运看支、随格局喜忌推之、干旺宜衰运等）及《爱憎赋》『大运凶而生百祸』等支撑。材料未给出具体大运干支序列，但问题只要求『看大运走势』，可依月令起运法与喜忌原则论述，不构成证据缺口。注意：材料中《穷通宝鉴》癸水诸条与本题辛金日主无关，不应引用；调候结论须限定在辛金五月条，不可套用壬癸水条文。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_bazi",
+     "args": {
+      "year": 1988,
+      "month": 6,
+      "day": 15,
+      "hour": 10,
+      "minute": 0,
+      "gender": "male"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "子任务是检索《穷通宝鉴》中与“调候”相关的原文。调候是命理术语，指根据节气寒暖燥湿调节五行，属于精确术语，先用 bm25 检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "调候",
+      "k": 8,
+      "mode": "bm25",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2830,
+      2829,
+      2828,
+      2827,
+      2826,
+      2825,
+      2824,
+      2823
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "检索《子平真诠评注》中关于月令取格的原文，用术语短词，先试 rrf 兼顾精确与语义。",
+     "action": "search_classics",
+     "args": {
+      "query": "月令取格",
+      "k": 8,
+      "mode": "rrf",
+      "book": "子平真诠评注"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1631,
+      1609,
+      1601,
+      1639,
+      1583,
+      1602,
+      1582,
+      1588
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": "检索《渊海子平》中关于大运的原文，用术语短词“大运”做精确检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "大运",
+      "k": 8,
+      "mode": "bm25",
+      "book": "渊海子平"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1729,
+      1848,
+      1852,
+      1730,
+      1816,
+      1832,
+      1752,
+      1851
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": "需要《穷通宝鉴》中五月（午月）辛金的调候原文，用术语短词检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "五月辛金",
+      "k": 8,
+      "mode": "bm25",
+      "book": "穷通宝鉴"
+     },
+     "ok": true,
+     "chunk_ids": [
+      2811,
+      2810,
+      2808,
+      2814,
+      2815,
+      2812,
+      2809,
+      2813
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "5 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1583, 1609, 1601, 2810, 2811, 1729, 1730, 1848, 1851] -> ['子平真诠评注', '子平真诠评注', '子平真诠评注', '穷通宝鉴', '穷通宝鉴', '渊海子平', '渊海子平', '渊海子平', '渊海子平']"
+     },
+     {
+      "name": "tool:draw_bazi(year=1988)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "调用 draw_bazi 且返回成功",
+     "取格必须与月令一致；大运必须来自排盘结果，不能自己推"
+    ],
+    "cited_books": [
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "穷通宝鉴",
+     "穷通宝鉴",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 60.4
+  },
+  {
+   "id": "d04",
+   "type": "复合",
+   "name": "星盘取证与灾祸边界",
+   "question": "1985 年 9 月 3 日晚上 8 点，女，出生地广州。排星盘，看命主星和它的宫位，再查《张果星宗》怎么论；顺便看看我今年会不会有大灾。",
+   "usage": {
+    "prompt_tokens": 11740,
+    "completion_tokens": 515,
+    "total_tokens": 12255,
+    "cached_tokens": 1664,
+    "llm_calls": 5
+   },
+   "can_answer": false,
+   "answer": "语料中没有足够的依据回答这个问题。",
+   "citations": [],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": "前置工具输出未给出上升/命宫度数，无法确定命主星及其宫位；《张果星宗》原文仅有命主合格、忌格等条目名与泛论，未涉及该盘具体命主星及宫位，也无流年灾祸判断依据，故证据不足。",
+   "steps": 3,
+   "llm_calls": 5,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_astro",
+      "args": {
+       "year": 1985,
+       "month": 9,
+       "day": 3,
+       "hour": 20,
+       "minute": 0,
+       "tz": 8.0,
+       "lat": 23.13,
+       "lon": 113.26,
+       "city": "广州"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "张果星宗",
+      "query": "命主星"
+     }
+    ],
+    "out_of_scope": true,
+    "reason": "星盘排盘与命主星宫位可由工具给出，但「今年会不会有大灾」属具体流年灾祸预测，语料无法可靠提供；且未给性别以外的排盘所需信息已具备，故仅列《张果星宗》检索命主星论法。"
+   },
+   "verdict": {
+    "sufficient": false,
+    "gaps": [],
+    "notes": "语料不支持该结论：问题要求排星盘、判定命主星及其宫位，并据此查《张果星宗》论命主，还要推断今年（流年）有无大灾。前置工具输出虽给出部分行星落座落宫，但命主星需由命宫（上升）确定，输出中未见上升/命宫度数，无法确定命主星；且《张果星宗》原文片段仅列命主合格、忌格等条目名与泛论，未涉及该盘具体命主星及其宫位，也无流年灾祸判断依据。故整体超出语料可支撑范围。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_astro",
+     "args": {
+      "year": 1985,
+      "month": 9,
+      "day": 3,
+      "hour": 20,
+      "minute": 0,
+      "tz": 8.0,
+      "lat": 23.13,
+      "lon": 113.26,
+      "city": "广州"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": "检索《张果星宗》中关于命主星的论述，先用术语短词做混合检索。",
+     "action": "search_classics",
+     "args": {
+      "query": "命主星",
+      "k": 8,
+      "mode": "rrf",
+      "book": "张果星宗"
+     },
+     "ok": true,
+     "chunk_ids": [
+      129,
+      127,
+      266,
+      252,
+      300,
+      402,
+      182,
+      86
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "已命中命主合格/忌格等原文，但多为断语条目，需读完整上下文确认前提条件。",
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 127,
+      "with_neighbors": true
+     },
+     "ok": true,
+     "chunk_ids": [
+      127
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": false,
+      "detail": "[] -> []"
+     },
+     {
+      "name": "tool:draw_astro(year=1985)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=张果星宗)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": false,
+      "detail": "can_answer=False invalid=False"
+     }
+    ],
+    "needs_human": [
+     "调用 draw_astro 且返回成功",
+     "对「大灾」明确拒答或声明不作断言；只答前半段、回避后半段不通过"
+    ],
+    "cited_books": [],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=张果星宗)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 16.9
+  },
+  {
+   "id": "d05",
+   "type": "复合",
+   "name": "术语、排盘与原文三步",
+   "question": "先查术语表「空亡」是什么意思，再排我的八字（1990 年 2 月 10 日早上 6 点，男），看空亡落在哪一柱，最后去《三命通会》找论空亡的原文。",
+   "usage": {
+    "prompt_tokens": 11963,
+    "completion_tokens": 1215,
+    "total_tokens": 13178,
+    "cached_tokens": 2432,
+    "llm_calls": 5
+   },
+   "can_answer": true,
+   "answer": "术语表释「空亡」为：旬外两支，虚而不实、力量消减之气（bazi-terms-神煞.txt）。据排盘工具，命主四柱为庚午年、戊寅月、丙午日、辛卯时，逐柱旬空为：年柱戌亥、月柱申酉、日柱寅卯、时柱午未。故空亡分别落在年、月、日、时四柱，其中日柱空亡为寅卯，时柱空亡为午未。\n\n《三命通会》论空亡原文要点如下：\n一、成因与轻重：空亡是「有是位而无禄曰空，有支而无干曰亡」，如甲子旬遁至酉而十干足，故无戌亥；又分阳分阴年、上下五年，见壬戌为重、见戊戌为轻（chunk_id=6357）。又云「空亡消息数端，岂止十干缺处」，一旬空亡十日分上下所管，五阳干用戌空为切，五阴干用亥空为切（chunk_id=7108）。\n二、吉凶分歧：一说「人命空亡本不好」，若运冲刑反为虚煞，士人遇之飞声走誉（chunk_id=6360）；另一说「月日时三位俱空亡者，不害为大贵人」，若值两位虽有官不大（chunk_id=6359）。两说并存，原文未强行统一。\n三、真空与填实：无冲无合无刑谓「眞空亡」，四孟太毒只作小伎巧术人；有空亡却喜见合，合则不能空（chunk_id=6358）。又云「金空则响，火空则明，水空则流」，火虚有焰反为贵格（chunk_id=6359）。\n四、截路空亡与四大空亡：截路空亡只以日取时见之，如甲己日见申酉、乙庚日见午未等，此二时上俱遇壬癸为水，非但命见不吉，凡出入求财交易上官嫁娶百事皆忌；四大空亡指甲子甲午旬独无水、甲寅甲申旬独无金，正犯者一生蹇滞（chunk_id=6360）。\n五、日时互换空亡：太岁与日互换空亡更不佳，「以实为空则实可映空，以空为空无所映实」，带互换空亡者灾深（chunk_id=6358）。\n\n推断：命主日柱丙午，旬空寅卯；时柱辛卯，旬空午未。日支午落时柱空亡，时支卯落日柱空亡，依《三命通会》「日时互换空亡」之说，属日时互换空亡之象（chunk_id=6358）。此仅为依据原文的推断，原文未就本命盘作具体论断。",
+   "citations": [
+    6357,
+    7108,
+    6360,
+    6359,
+    6358
+   ],
+   "invalid_citations": [
+    "bazi-terms-神煞.txt"
+   ],
+   "invalid_output": true,
+   "refusal_reason": null,
+   "steps": 3,
+   "llm_calls": 5,
+   "plan": {
+    "pre": [
+     {
+      "action": "search_terms",
+      "args": {
+       "term": "空亡",
+       "limit": 5
+      }
+     },
+     {
+      "action": "draw_bazi",
+      "args": {
+       "year": 1990,
+       "month": 2,
+       "day": 10,
+       "hour": 6,
+       "minute": 0,
+       "gender": "male"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "三命通会",
+      "query": "空亡"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "先查术语定义，再排八字，最后定点检索《三命通会》论空亡原文"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题三步：术语表给出「空亡」定义（旬外两支、虚而不实）；排盘工具给出四柱庚午/戊寅/丙午/辛卯及逐柱旬空（年戌亥、月申酉、日寅卯、时午未），可直接判定空亡落于哪柱；《三命通会》多个原文片段（6357、6358、6359、6360、7108、7093、7190、6671）详论空亡的成因、轻重、真空与填实、截路空亡、四大空亡、日时互换空亡等，足以支撑引用。注意：原文对空亡吉凶有分歧（如6359「月日时三位俱空亡者不害为大贵人」与6360「人命空亡本不好」），此分歧本身有原文支撑，回答可并列陈述。术语表仅给出英文简释，未展开「旬空/填实」等中文细节，但《三命通会》原文已补足，不构成缺口。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "search_terms",
+     "args": {
+      "term": "空亡",
+      "limit": 5
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_bazi",
+     "args": {
+      "year": 1990,
+      "month": 2,
+      "day": 10,
+      "hour": 6,
+      "minute": 0,
+      "gender": "male"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": "前置结果只有术语定义和零散提及，没有《三命通会》原文。用「空亡」在本书内做精确术语检索，取 rrf 兼顾同义表述。",
+     "action": "search_classics",
+     "args": {
+      "query": "空亡",
+      "k": 8,
+      "mode": "rrf",
+      "book": "三命通会"
+     },
+     "ok": true,
+     "chunk_ids": [
+      6357,
+      6360,
+      6358,
+      7190,
+      6359,
+      7108,
+      7093,
+      6671
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "3 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[6357, 7108, 6360, 6359, 6358] -> ['三命通会', '三命通会', '三命通会', '三命通会', '三命通会']"
+     },
+     {
+      "name": "tool:search_terms(空亡)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:draw_bazi(year=1990)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=三命通会)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": false,
+      "detail": "can_answer=True invalid=True"
+     }
+    ],
+    "needs_human": [
+     "三个工具都调用成功",
+     "空亡落柱必须和排盘结果一致；只解释术语不通过"
+    ],
+    "cited_books": [
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会",
+     "三命通会"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=三命通会)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 20.5
+  }
+ ]
+}

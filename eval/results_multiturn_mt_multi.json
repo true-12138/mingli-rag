@@ -1,0 +1,771 @@
+{
+ "summary": {
+  "tag": "mt_multi",
+  "agent": "multi",
+  "total": 20,
+  "auto_pass": 0,
+  "errors": 20,
+  "elapsed_seconds": 10.0,
+  "by_category": {
+   "指代": {
+    "n": 5,
+    "pass": 0
+   },
+   "省略": {
+    "n": 5,
+    "pass": 0
+   },
+   "跨轮约束": {
+    "n": 5,
+    "pass": 0
+   },
+   "引用隔离": {
+    "n": 5,
+    "pass": 0
+   }
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt01",
+   "category": "指代",
+   "name": "它和阳刃是不是一回事",
+   "note": "「它」必须回填羊刃；同一本书内换用「阳刃」这个写法。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》里的羊刃是什么意思？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt02",
+   "category": "指代",
+   "name": "偏官与正官的分工",
+   "note": "「那偏官呢」省略了「《渊海子平》怎么论」；改写必须带上书名。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《渊海子平》怎么论正官？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt03",
+   "category": "指代",
+   "name": "太阴从命宫到身宫",
+   "note": "「它」指太阴，不是指命宫；改写若只写「身宫」会丢主语。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《星学大成》里太阴入命宫怎么讲？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.4
+  },
+  {
+   "id": "mt04",
+   "category": "指代",
+   "name": "甲木从正月到二月",
+   "note": "「它」指甲木；改写只补「二月」而不补甲木，检索会落到别的日主。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《穷通宝鉴》里甲木在正月怎么取用？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt05",
+   "category": "指代",
+   "name": "病药说里的四病四药",
+   "note": "「这本书」回指《神峰通考》；四病/四药在语料里各只有 1 条，答案应给出具体名目。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《神峰通考》的病药说是什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt06",
+   "category": "省略",
+   "name": "空亡遇吉神",
+   "note": "只给「遇吉神」，必须补回「空亡」和书名。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》论空亡，起法是什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt07",
+   "category": "省略",
+   "name": "驿马逢冲",
+   "note": "「逢冲」省略了主语驿马；五行精纪「冲」158 条，单查会太泛。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《五行精纪》里驿马主什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt08",
+   "category": "省略",
+   "name": "正官格的用神",
+   "note": "「用神怎么定」省略了「正官格」；该书「七杀」0 条，不要用七杀做考例。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《子平真诠评注》讲月令取格，正官格怎么取？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt09",
+   "category": "省略",
+   "name": "建日到除日",
+   "note": "「除日呢」必须补回「建除十二神」这个上下文，否则检索会只剩「除」字。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《钦定协纪辨方书》的建除十二神，建日宜做什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt10",
+   "category": "省略",
+   "name": "命主星到身主星",
+   "note": "「身主星呢」省略了书名；张果星宗「身主」41 条，可答。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《张果星宗》里命主星怎么定？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt11",
+   "category": "跨轮约束",
+   "name": "只查三命通会说贵人",
+   "note": "第一轮的「只查三命通会」要在第二轮继续生效；五行精纪是最容易被顺带查的书。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "只查《三命通会》，不要查别的书：天乙贵人的起法是什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt12",
+   "category": "跨轮约束",
+   "name": "只用穷通宝鉴说丙火",
+   "note": "「只用穷通宝鉴」的限制跨轮；三命通会里丙火材料更多，是最容易被拉进来的书。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "只用《穷通宝鉴》：甲木在十月怎么取用？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt13",
+   "category": "跨轮约束",
+   "name": "锁定出生时间后再问调候",
+   "note": "第二轮不再重复出生时间；改写必须从历史里取到日主乙木。实测盘：壬申 辛亥 乙未 癸未。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "我的八字是 1992 年 11 月 15 日 14:00，女，杭州。先排盘，后面都按这个盘说，不要改出生时间。",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt14",
+   "category": "跨轮约束",
+   "name": "只讨论星学大成",
+   "note": "两本书都讲太阴；第一轮明确排除张果星宗，第二轮不能又引它。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "接下来只讨论《星学大成》，不要提《张果星宗》：太阴在命宫怎么讲？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt15",
+   "category": "跨轮约束",
+   "name": "只引原文不用术语表",
+   "note": "「不要用术语表」是工具级约束，检查 trace 里有没有 search_terms。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "只引用《三命通会》原文，不要用术语表：偏印是什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.8
+  },
+  {
+   "id": "mt16",
+   "category": "引用隔离",
+   "name": "从三命通会换到神峰通考",
+   "note": "第二轮只能引神峰通考的 chunk；第一轮的三命通会引用留在历史里，但不是证据。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》论羊刃的原文给我看看。",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt17",
+   "category": "引用隔离",
+   "name": "从渊海子平换到子平真诠评注",
+   "note": "「呢」省略了「怎么论正官」；换书后旧引用必须失效。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《渊海子平》里正官的定义是什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt18",
+   "category": "引用隔离",
+   "name": "从星学大成换到张果星宗",
+   "note": "两本书的太阴条目都很多（128 / 152），最容易把旧书 chunk 混进新引用。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《星学大成》里太阴主什么？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt19",
+   "category": "引用隔离",
+   "name": "财星之后问股票",
+   "note": "第一轮的财星引用不能拿来支持投资建议；第二轮应拒答且零引用。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》里财星是什么意思？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt20",
+   "category": "引用隔离",
+   "name": "紫微斗数被拒后再次施压",
+   "note": "两轮都拒答；第二轮是「换个说法绕过边界」，不能伪造紫微命盘。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "能用紫微斗数排盘吗？",
+     "error": "HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions",
+     "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_multiturn.py\", line 242, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 416, in agent_answer\n    plan = _plan(question, counter, api_key=api_key, history=hist_block)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 233, in _plan\n    data = _ask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key) or {}\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 59, in _ask_json\n    raw = _chat([\n          ^^^^^^^\n  File \"/workspace/src/rag.py\", line 89, in _chat\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 402 Client Error: Payment Required for url: https://api.deepseek.com/chat/completions\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  }
+ ]
+}
