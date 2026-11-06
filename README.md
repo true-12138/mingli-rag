@@ -303,6 +303,7 @@ pass_rate = 0.0
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 加 Nginx 限流 + 接 Langfuse 做持久化 trace |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
 | 12 | 多 Agent 只在 15 条任务上测，且未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 扩到 30 条 + 逐轮 token/耗时/成本 |
+| 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
 
 > 关于"没做完"的部分：reranker、RAGAS 忠实度、微调、换 LangChain/LlamaIndex 重写，v1.3 仍然**不做**；多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
@@ -432,6 +433,42 @@ python eval/run_feedback.py --mode rag --baseline <id>   # 回归门，掉超过
 python scripts/demo_closed_loop.py
 ```
 
+### 6.3 MCP server（v1.6）
+
+`src/mcp_server.py` 把 Agent 的 7 个工具按 MCP 暴露出去，Claude Desktop、Cursor 或自建 MCP client 可以发现并调用：
+
+| 工具 | 作用 |
+|---|---|
+| `search_classics` | 全库/指定书检索，`mode` 枚举 `rrf` / `dense` / `bm25` |
+| `fetch_chunk` | 按 `chunk_id` 取完整原文，可带前后邻居 |
+| `list_books` | 45 本书及各自 chunk 数 |
+| `search_terms` | 术语表查询 |
+| `draw_bazi` / `draw_astro` / `draw_tarot` | 排八字 / 星盘 / 抽塔罗，纯计算、可复现 |
+
+```bash
+python src/mcp_server.py                    # stdio（宿主用）
+MCP_TRANSPORT=streamable-http MCP_PORT=8765 python src/mcp_server.py
+                                            # http://127.0.0.1:8765/mcp
+```
+
+Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
+
+```json
+{
+  "mcpServers": {
+    "mingli-rag": {
+      "command": "D:\\anaconda\\python.exe",
+      "args": ["D:\\demo\\src\\mcp_server.py"],
+      "env": { "MINGLI_DATA_DIR": "D:\\demo\\data" }
+    }
+  }
+}
+```
+
+设计上只做协议适配，不复制业务逻辑：每个 tool 都转调 `tools.call`，所以 CLI、Agent、MCP 三个入口的参数校验和错误格式完全一致。schema 由类型注解生成，`mode` / `gender` 是枚举而不是自由字符串。启动信息必须写 stderr——stdio 通道把 stdout 当 JSON-RPC 帧，`retrieval.py` 曾把 `chunks:8681|...` 打到 stdout，客户端会报 `Failed to parse JSONRPC message`。
+
+**边界**：只做了 server，没做 client，Agent 不能动态挂载第三方 server；HTTP transport 没有鉴权，默认只绑 `127.0.0.1`。另外，MCP 和 function calling 不是同一层：MCP 管工具怎么被发现、怎么被调用，function calling / JSON action 管模型怎么表达"我要调哪个工具"。
+
 ---
 
 ## 7. 目录结构
@@ -446,6 +483,7 @@ python scripts/demo_closed_loop.py
 │   ├── app.py                 # 界面：问古籍 + 排盘；维护页（?admin=1）放中台与后端开关
 │   ├── api.py                 # FastAPI：/chat /retrieve /trace /health /metrics
 │   ├── api_conversations.py   # /v1：会话记忆、运行回放、差评
+│   ├── mcp_server.py          # MCP：把 7 个工具暴露给 Claude Desktop / Cursor
 │   ├── guards.py              # Bearer 鉴权 + 并发信号量
 │   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
 │   ├── db/                    # 业务库：base(连接) / models(7 张表) / repo(读写)
@@ -474,6 +512,7 @@ python scripts/demo_closed_loop.py
 │   ├── test_agent_guardrails.py # 引用白名单 / 拒答 / 预算（mock LLM）
 │   ├── test_conversation.py   # 历史裁剪 / 改写回退 / 引用隔离
 │   ├── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
+│   ├── test_mcp_server.py     # MCP 工具注册 / schema / 可复现 / 错误返回
 │   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
@@ -524,6 +563,7 @@ python scripts/demo_closed_loop.py
 - **v1.3（已完成，11/03）**：多轮对话（追问改写 + 历史裁剪 + 引用隔离）、数据中台 MVP（版本/血缘/质量门）、评测中台 MVP（16 个 run、逐题明细、回归门）
 - **v1.4（已完成，11/03）**：FastAPI `/chat` `/retrieve` `/trace` `/health`、并发信号量、可选 Bearer token、token 用量旁路采集、Dockerfile + compose、10 条 API 测试、CI 跑全量 42 条测试
 - **v1.5（已完成，11/04）**：界面按「面向访客」重做——只留问古籍 / 排盘两页，引用改成可展开的原文出处，加可点追问与拒答说明；检索后端、轨迹和中台收进 `?admin=1` 维护页
+- **v1.6（已完成，11/06）**：MCP server——7 个工具按 MCP 暴露（stdio + streamable-http），schema 由类型注解生成；修掉启动信息污染 stdout 导致客户端解析失败的问题
 - **下一步（11/15 前）**：ECS + Nginx + systemd 部署、Langfuse 全链路 trace、P50/P95 延迟统计、30 条 Agent 评测、20 条多轮评测
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）

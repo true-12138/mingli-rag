@@ -33,7 +33,9 @@ def tokenize(text):
 chunks=corpus.load_chunks(DATA_DIR)
 tokenized_corpus=[tokenize(c["chunk_text"]) for c in chunks]
 embeds=np.load(data_emb).astype(np.float32)
-print(f"chunks:{len(chunks)}|embeds shape:{embeds.shape}")
+# 必须写 stderr：MCP 的 stdio 通道把 stdout 当作 JSON-RPC 帧，任何调试输出
+# 混进 stdout 都会让客户端报 "Failed to parse JSONRPC message"。
+print(f"chunks:{len(chunks)}|embeds shape:{embeds.shape}", file=sys.stderr)
 # embeddings 是一段**前缀**时（索引还没覆盖新增语料）只检索已编码的部分，
 # 否则直接报错。corpus.load_chunks 的顺序是标点组在前，所以前缀正好是 v1 的 16 部。
 # 要让全部语料可检索：python src/embed.py
@@ -45,7 +47,8 @@ if embeds.shape[0] > len(chunks):
 if embeds.shape[0] < len(chunks):
     print(
         f"[warn] 索引只覆盖前 {embeds.shape[0]} 条语料（共 {len(chunks)} 条），"
-        "本次只检索这部分；重跑 python src/embed.py 可覆盖全部。"
+        "本次只检索这部分；重跑 python src/embed.py 可覆盖全部。",
+        file=sys.stderr,
     )
     chunks = chunks[: embeds.shape[0]]
     tokenized_corpus = tokenized_corpus[: embeds.shape[0]]

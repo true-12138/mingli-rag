@@ -17,6 +17,10 @@ ephem>=4.1
 fastapi>=0.110,<1
 uvicorn>=0.29,<1
 
+# MCP server（v1.6）：把检索/排盘工具暴露给 Claude Desktop、Cursor 等宿主
+# 2.x 把 FastMCP 改名为 MCPServer（mcp.server.mcpserver）；1.x 的 FastMCP 路径已不存在
+mcp>=2.3,<3
+
 # 业务数据库（v1.6）：用户 / 会话 / 消息 / 运行 / 工具审计 / 反馈 / 额度
 SQLAlchemy>=2.0,<3
 alembic>=1.13,<2
