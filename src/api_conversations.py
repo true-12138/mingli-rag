@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent
 import agent_multi
+import memory
 import rag
 import usage
 from db import repo
@@ -70,6 +71,15 @@ class MessageOut(BaseModel):
 
 class ConversationDetailOut(ConversationOut):
     messages: list[MessageOut] = Field(default_factory=list)
+
+
+class MemoryOut(BaseModel):
+    id: int
+    kind: str
+    key: str
+    value: str
+    confidence: float
+    updated_at: datetime
 
 
 class FeedbackCreate(BaseModel):
@@ -127,6 +137,8 @@ class ConversationChatResponse(BaseModel):
     history_turns: int = 0
     llm_calls: int = 0
     usage: dict[str, Any] | None = None
+    memories_used: int = 0
+    memories_written: int = 0
     user_message_id: int
     assistant_message_id: int
 
@@ -281,6 +293,39 @@ def list_conversations(
     return [_conversation_out(conv, count) for conv, count in rows]
 
 
+@router.get("/memories", response_model=list[MemoryOut])
+def list_memories(
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> list[dict[str, Any]]:
+    """列出当前匿名用户明确说过的长期偏好/事实。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    return [
+        {
+            "id": m.id,
+            "kind": m.kind,
+            "key": m.key,
+            "value": m.value,
+            "confidence": m.confidence,
+            "updated_at": m.updated_at,
+        }
+        for m in repo.list_memories(session, user.id)
+    ]
+
+
+@router.delete("/memories/{memory_id}", status_code=204)
+def delete_memory(
+    memory_id: int,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> Response:
+    """删除一条记忆；只能删自己的。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    if not repo.delete_memory(session, user.id, memory_id):
+        raise HTTPException(status_code=404, detail="记忆不存在")
+    return Response(status_code=204)
+
+
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetailOut)
 def get_conversation(
     conversation_id: str,
@@ -383,7 +428,17 @@ def chat_in_conversation(
     conv = _get_owned(session, conversation_id, user.id)
 
     # 先读历史，再把本轮问题写进去；否则本轮问题会重复出现在 history 里。
-    history = repo.recent_history(session, conv.id)
+    # 有摘要时少带两条原文，给摘要腾出预算（normalize_history 只留最近 6 条）。
+    history = repo.recent_history(
+        session, conv.id, limit=4 if conv.summary else repo.DEFAULT_HISTORY_MESSAGES
+    )
+    if conv.summary:
+        history = [
+            {"role": "user",
+             "content": "【早期会话摘要（只用于理解上下文，不作为回答证据）】\n" + conv.summary}
+        ] + history
+    # 长期记忆跨会话；只用于个性化，不作为回答证据。
+    memories = repo.list_memories(session, user.id)
     key = (x_deepseek_key or "").strip() or None
     started = time.perf_counter()
     trace_id = uuid.uuid4().hex
@@ -394,15 +449,18 @@ def chat_in_conversation(
     try:
         if req.mode == "rag":
             result = rag.answer(
-                req.question, top_k=req.top_k, api_key=key, history=history
+                req.question, top_k=req.top_k, api_key=key, history=history,
+                memories=memories,
             )
         elif req.mode == "agent":
             result = agent.agent_answer(
-                req.question, max_steps=req.max_steps, api_key=key, history=history
+                req.question, max_steps=req.max_steps, api_key=key, history=history,
+                memories=memories,
             )
         else:
             result = agent_multi.agent_answer(
-                req.question, max_steps=req.max_steps, api_key=key, history=history
+                req.question, max_steps=req.max_steps, api_key=key, history=history,
+                memories=memories,
             )
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 502
@@ -442,6 +500,18 @@ def chat_in_conversation(
     repo.add_tool_calls(session, run, result.get("trace"), commit=False)
     session.commit()
 
+    # 记忆与摘要都是增强：失败只记日志，不能影响已经生成的回答。
+    # 这两步可能各多一次模型调用，所以放在回答落库之后；它们的 token 不计入本次 run。
+    written = []
+    try:
+        written = memory.remember_from_turn(
+            session, user.id, conv.id, req.question, answer_text, api_key=key
+        )
+        memory.maybe_summarize(session, conv, api_key=key)
+    except Exception:
+        logger.warning("memory update failed conv=%s", conv.id, exc_info=True)
+        session.rollback()
+
     out = dict(result)
     # 模型偶尔把 answer / citations 返回成 null，统一成响应模型能接受的类型。
     out["answer"] = answer_text
@@ -456,6 +526,8 @@ def chat_in_conversation(
         "question": req.question,
         "elapsed_ms": round(elapsed_ms, 1),
         "usage": tokens,
+        "memories_used": len(memories),
+        "memories_written": len(written),
         "user_message_id": user_msg.id,
         "assistant_message_id": assistant_msg.id,
     })

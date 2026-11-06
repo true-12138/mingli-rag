@@ -8,7 +8,7 @@ import sys
 import requests
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from retrieval import retrieve_one
-from conversation import history_block, normalize_history, rewrite_question
+from conversation import history_block, memory_block, normalize_history, rewrite_question
 import usage
 DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 MODEL = "deepseek-chat"
@@ -22,7 +22,7 @@ SYSTEM_PROMPT = """你是一个只依据给定古籍片段回答问题的助手�
    官星/官贵 ≠ 考公务员，财星 ≠ 工资或买房。
 3. 每个结论后面用方括号标注依据的片段编号，例如 [1]、[3]。
 4. 不确定时拒答，不要勉强回答。
-5. 对话历史只用于理解追问里的指代，不能作为回答证据；引用只能来自本轮【片段】。
+5. 对话历史和长期记忆只用于理解追问/个性化，不能作为回答证据；引用只能来自本轮【片段】。
 6. 只输出 JSON，不要输出 JSON 以外的任何文字。
 JSON 格式：
 {
@@ -91,19 +91,21 @@ def _chat(messages, temperature=0.0, api_key=None):
     # 旁路累计 token；没有 reset() 的调用方（脚本 / 测试）不记录，不影响行为
     usage.add(payload.get("usage"))
     return payload["choices"][0]["message"]["content"]
-def answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。
     api_key 用于公网访客自带 key 的场景，不传就读环境变量。
-    history 是多轮对话历史；只用于改写追问，不作为回答证据。
+    history 是多轮对话历史；memories 是长期偏好/事实。两者都只用于理解问题，
+    不作为回答证据。
     """
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
     hits = retrieve_one(standalone, top_k=top_k, mode=mode)
     hist = history_block(history)
-    user = (hist + "\n\n" if hist else "") + "【片段】\n{}\n\n【问题】\n{}".format(
-        build_context(hits), standalone)
+    mem = memory_block(memories)
+    user = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
+        "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), standalone)
     data = None
     last_raw = ""
     for _ in range(2):  # JSON 解析失败重试一次

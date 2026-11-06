@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import tools
 from agent import MAX_STEPS, _finalize
 from rag import _chat, _parse_json
-from conversation import history_block, normalize_history, rewrite_question
+from conversation import history_block, memory_block, normalize_history, rewrite_question
 
 EVIDENCE_CHAR = 420          # 喂给 Verifier / 汇总的每条证据截断长度
 RETRIEVER_MAX_CALLS = 2      # 单个检索子任务最多几次工具调用（先搜，必要时再翻原文）
@@ -394,17 +394,18 @@ def _fetch_gap(chunk_id, budget, trace, evidence, seen):
 
 # ---------- 入口 ----------
 
-def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None):
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
     """返回结构与 agent.agent_answer() 完全一致，另带 llm_calls / plan。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
-    history 是多轮对话历史；先改写成独立问题，再交给各角色。
+    history 是多轮对话历史；memories 是长期偏好/事实。先改写成独立问题，
+    再把两者作为「只用于理解、不作为证据」的上下文交给各角色。
     """
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
     question = standalone
-    hist_block = history_block(history)
+    hist_block = "\n\n".join(b for b in (history_block(history), memory_block(memories)) if b)
     budget = Budget(max_steps)
     trace = []
     evidence = {}

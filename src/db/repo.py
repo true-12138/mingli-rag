@@ -17,7 +17,16 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .models import Conversation, Feedback, Message, Run, ToolCall, User, utcnow
+from .models import (
+    Conversation,
+    Feedback,
+    Message,
+    Run,
+    ToolCall,
+    User,
+    UserMemory,
+    utcnow,
+)
 
 # 一次最多带最近 3 轮（6 条）进 prompt；和 conversation.normalize_history 的预算一致。
 DEFAULT_HISTORY_MESSAGES = 6
@@ -340,3 +349,120 @@ def pending_negative_feedback(
         .limit(limit)
     )
     return list(session.execute(stmt).all())
+
+
+# ---------- 长期记忆 ----------
+
+MEMORY_KINDS = ("preference", "fact")
+
+
+def list_memories(session: Session, user_id: int, limit: int = 12) -> list[UserMemory]:
+    """按最近更新时间取用户的长期记忆。"""
+    return list(
+        session.scalars(
+            select(UserMemory)
+            .where(UserMemory.user_id == user_id)
+            .order_by(UserMemory.updated_at.desc())
+            .limit(limit)
+        ).all()
+    )
+
+
+def upsert_memory(
+    session: Session,
+    user_id: int,
+    kind: str,
+    key: str,
+    value: str,
+    *,
+    source_conversation_id: str | None = None,
+    confidence: float = 0.5,
+    commit: bool = True,
+) -> UserMemory | None:
+    """同一 (user, kind, key) 只留一条；新值覆盖旧值。
+
+    输入在写库前再校验一次：模型抽出来的字段不能直接信。
+    返回 None 表示这条记忆不合法，被丢弃。
+    """
+    kind = (kind or "").strip()
+    key = (key or "").strip()[:50]
+    value = (value or "").strip()[:500]
+    if kind not in MEMORY_KINDS or not key or not value:
+        return None
+
+    memory = session.scalar(
+        select(UserMemory).where(
+            UserMemory.user_id == user_id,
+            UserMemory.kind == kind,
+            UserMemory.key == key,
+        )
+    )
+    if memory is None:
+        memory = UserMemory(
+            user_id=user_id,
+            kind=kind,
+            key=key,
+            value=value,
+            source_conversation_id=source_conversation_id,
+            confidence=max(0.0, min(1.0, float(confidence))),
+        )
+        session.add(memory)
+    else:
+        memory.value = value
+        memory.source_conversation_id = source_conversation_id
+        memory.confidence = max(0.0, min(1.0, float(confidence)))
+        memory.updated_at = utcnow()
+    session.flush()
+    if commit:
+        session.commit()
+        session.refresh(memory)
+    return memory
+
+
+def delete_memory(session: Session, user_id: int, memory_id: int) -> bool:
+    """删除一条属于该用户的记忆；不存在或不属于他就返回 False。"""
+    memory = session.scalar(
+        select(UserMemory).where(
+            UserMemory.id == memory_id,
+            UserMemory.user_id == user_id,
+        )
+    )
+    if memory is None:
+        return False
+    session.delete(memory)
+    session.commit()
+    return True
+
+
+def list_messages(
+    session: Session, conversation_id: str, after_id: int = 0, limit: int = 40
+) -> list[Message]:
+    """按 id 正序取消息；after_id 用于增量生成摘要。"""
+    return list(
+        session.scalars(
+            select(Message)
+            .where(
+                Message.conversation_id == conversation_id,
+                Message.id > after_id,
+                Message.role.in_(("user", "assistant")),
+            )
+            .order_by(Message.id)
+            .limit(limit)
+        ).all()
+    )
+
+
+def mark_summary(
+    session: Session,
+    conversation: Conversation,
+    summary: str,
+    upto_id: int,
+    *,
+    commit: bool = True,
+) -> None:
+    """记录摘要和它覆盖到的最后一条消息 id。"""
+    conversation.summary = summary
+    conversation.summary_upto_id = upto_id
+    session.flush()
+    if commit:
+        session.commit()

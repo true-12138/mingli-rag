@@ -57,6 +57,12 @@ class User(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    memories = relationship(
+        "UserMemory",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class Conversation(Base):
@@ -69,6 +75,8 @@ class Conversation(Base):
     title = Column(String(200), nullable=False, default="新会话")
     # 会话摘要：历史太长时，用它代替早期原始消息
     summary = Column(Text, nullable=True)
+    # 摘要已经覆盖到哪条消息；没变就不重复调用模型
+    summary_upto_id = Column(Integer, nullable=True)
     status = Column(String(20), nullable=False, default="active")  # active / archived
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(
@@ -218,6 +226,42 @@ class Feedback(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, index=True)
 
     run = relationship("Run", back_populates="feedback")
+
+
+class UserMemory(Base):
+    """用户长期记忆：只存用户明确说过的稳定偏好/事实。
+
+    它不是聊天记录，也不是证据库：
+    - 只用于个性化（比如「以后优先查《三命通会》」）；
+    - 回答里的 citations 仍然只能来自本轮工具返回的 chunk；
+    - 同一 (user_id, kind, key) 只保留一条，新值覆盖旧值。
+    """
+
+    __tablename__ = "user_memories"
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "key", name="uq_user_memory_key"),
+        CheckConstraint("kind in ('preference', 'fact')", name="ck_user_memory_kind"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    kind = Column(String(20), nullable=False)  # preference / fact
+    key = Column(String(50), nullable=False)
+    value = Column(Text, nullable=False)
+    source_conversation_id = Column(
+        String(32),
+        ForeignKey("conversations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    confidence = Column(Float, nullable=False, default=0.5)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = Column(
+        DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+    user = relationship("User", back_populates="memories")
 
 
 class QuotaLedger(Base):

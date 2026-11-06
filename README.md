@@ -211,7 +211,7 @@ Key 与额度：服务端配了 `DEEPSEEK_API_KEY` 就走服务端 Key，否则�
 | 多轮引用隔离 | 每轮引用只来自本轮工具返回的 chunk；历史里出现过的旧结论不能当引用 | `src/rag.py`、`src/agent.py` |
 | 多轮失败回退 | 改写超时 / 额度 / 非法 JSON 时退回原问题，单轮链路不受影响 | `src/conversation.py` 的 `rewrite_question` |
 
-还没做的：长期记忆与会话摘要、按 token 精确截断（目前按字符）、reranker、RAGAS 忠实度。
+还没做的：按 token 精确截断（目前按字符）、reranker、RAGAS 忠实度。长期记忆与会话摘要已做最小闭环，见 §6.4。
 
 ### 3.5 多轮评测集：20 条对话，先建集再谈分数
 
@@ -348,7 +348,7 @@ pass_rate = 0.0
 | 5 | BM25 用字二元组，**没有接 jieba 和 324 条术语词典**（词典已备好未接入） | 古汉语单字词多，二元组引入噪声；口语 query 字面零交集 | 接入 jieba + 术语词典 |
 | 6 | RRF 参数已在 8,681 条上重扫（k=10 / 候选 40），但**没有 reranker** | q01 说明融合仍会伤害单路强命中；reranker 未做前后对比 | 上 bge-reranker-v2-m3，补一组同题对比 |
 | 7 | 生成侧只校验**引用编号是否合法**，不校验"这段原文是否支持这句话" | 4/19 题回答没有任何 gold 引用；没有忠实度指标 | 加 RAGAS faithfulness / 人工抽检 |
-| 8 | 多轮只做最近 3 轮 / 1200 字的追问改写，没有长期记忆与会话摘要；20 条多轮集已建但未跑出分数 | 长会话会丢早期约束；改写本身也消耗一次 LLM 调用 | 带 key 跑 20 条，统计改写准确率 / 引用隔离违规 |
+| 8 | 多轮只做最近 3 轮 / 1200 字的追问改写；长期记忆只做关键词触发的最小闭环，不做向量记忆/自动遗忘；20 条多轮集已建但未跑出分数 | 长会话仍可能丢约束；改写和多一次记忆抽取都消耗 LLM 调用 | 带 key 跑 20 条，统计改写准确率 / 引用隔离违规 |
 | 9 | 已有 P50/P95 + token/成本报表（`eval/report_cost.py`），但 `runs.cost_usd` 仍写 0、没有按用户维度聚合 | 能回答"这条用例花了多少 token、延迟多少"，金额要靠你填单价估算 | 对账单回填 cost_usd + 按用户聚合 |
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 加 Nginx 限流 + 接 Langfuse 做持久化 trace |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
@@ -368,7 +368,7 @@ cd mingli-rag
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-alembic upgrade head               # 首次运行：创建业务库 7 张表，可重复执行
+alembic upgrade head               # 首次运行：创建业务库 8 张表，可重复执行
 
 export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
@@ -519,6 +519,30 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 
 **边界**：只做了 server，没做 client，Agent 不能动态挂载第三方 server；HTTP transport 没有鉴权，默认只绑 `127.0.0.1`。另外，MCP 和 function calling 不是同一层：MCP 管工具怎么被发现、怎么被调用，function calling / JSON action 管模型怎么表达"我要调哪个工具"。
 
+### 6.4 长期记忆与会话摘要（v1.7 最小闭环）
+
+两件事分开存：
+
+| | 存哪 | 生命周期 | 作用 |
+|---|---|---|---|
+| 会话摘要 | `conversations.summary` + `summary_upto_id` | 跟着一次对话 | 历史太长时，替代早期原始消息 |
+| 用户记忆 | `user_memories` | 跨会话，按 `(user_id, kind, key)` 唯一 | 记住用户明确说过的偏好/事实 |
+
+触发条件都做了闸门，避免每轮多烧一次模型调用：
+
+- **记忆抽取**：只有问题里出现「记住 / 以后 / 偏好 / 我的出生 / 只用 / 只查 / 不要用」等词才跑（`memory.should_extract`），一次最多 3 条；
+- **会话摘要**：某个会话新增消息 ≥ 8 条才生成/更新，且只摘要最近 4 条之前的消息，最近几轮仍以原文进 prompt。
+
+注入时 `memory_block` 会显式写「只用于个性化，不作为回答证据」；引用白名单不变，记忆里的书名不能变成 citation。敏感信息（身份证、手机号、银行卡、密码、病史）在写库前用正则丢弃。
+
+```bash
+alembic upgrade head          # 新增 user_memories 和 conversations.summary_upto_id
+GET    /v1/memories           # 列出当前匿名用户的记忆
+DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 404）
+```
+
+**边界**：不做向量记忆、自动遗忘、跨用户共享；抽取/摘要失败静默跳过，不影响回答；这两步的 token 不计入当次 `runs` 记录。
+
 ---
 
 ## 7. 目录结构
@@ -536,7 +560,8 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 │   ├── mcp_server.py          # MCP：把 7 个工具暴露给 Claude Desktop / Cursor
 │   ├── guards.py              # Bearer 鉴权 + 并发信号量
 │   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
-│   ├── db/                    # 业务库：base(连接) / models(7 张表) / repo(读写)
+│   ├── db/                    # 业务库：base(连接) / models(8 张表) / repo(读写)
+│   ├── memory.py              # 长期记忆：抽取/敏感信息过滤/会话摘要
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂；版式、对话、排盘卡片）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
@@ -564,6 +589,7 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 │   ├── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
 │   ├── test_mcp_server.py     # MCP 工具注册 / schema / 可复现 / 错误返回
 │   ├── test_multiturn_eval.py # 多轮集书名 / 判分器通过-失败形态
+│   ├── test_memory.py         # 记忆抽取过滤 / 摘要触发 / 注入不越权
 │   ├── test_cost_report.py    # P50/P95 / 缓存价拆分 / 缺 usage 处理
 │   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/

@@ -64,6 +64,30 @@ def history_block(history):
     return "\n".join(lines)
 
 
+MAX_MEMORIES = 8
+
+
+def memory_block(memories):
+    """把长期记忆拼成 prompt 里的一段。
+
+    显式标注「不作为回答证据」：记忆只影响检索偏好/称呼，不能变成引用。
+    支持 ORM 对象和 dict，调用方不用先转换。
+    """
+    if not memories:
+        return ""
+    lines = ["【长期记忆（用户此前明确说过的偏好/事实；只用于个性化，不作为回答证据）】"]
+    for m in list(memories)[:MAX_MEMORIES]:
+        if isinstance(m, dict):
+            kind, key, value = m.get("kind"), m.get("key"), m.get("value")
+        else:
+            kind = getattr(m, "kind", "")
+            key = getattr(m, "key", "")
+            value = getattr(m, "value", "")
+        kind_label = "偏好" if kind == "preference" else "事实"
+        lines.append("- [{}] {}: {}".format(kind_label, key, str(value)[:200]))
+    return "\n".join(lines)
+
+
 def rewrite_question(question, history, api_key=None, counter=None):
     """把追问改写成独立检索问题。失败或不需要改写时返回原问题。"""
     history = normalize_history(history)

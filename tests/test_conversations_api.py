@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import api
 import api_conversations
+from db import repo
 from db.base import Base, get_session, make_engine
 
 
@@ -91,7 +92,7 @@ def test_create_list_get_delete(client):
 def test_chat_stores_messages_and_reuses_history(client, monkeypatch):
     seen_history = []
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
         seen_history.append(history)
         return _rag_result()
 
@@ -165,7 +166,7 @@ def test_v1_requires_token_when_configured(client, monkeypatch):
 
 
 def test_chat_persists_run_and_tool_calls(client, monkeypatch):
-    def fake_agent(question, max_steps=6, api_key=None, history=None):
+    def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None):
         out = _rag_result()
         out["llm_calls"] = 3
         out["trace"] = [{
@@ -209,7 +210,7 @@ def test_chat_persists_run_and_tool_calls(client, monkeypatch):
 
 
 def test_refusal_run_is_marked_refused(client, monkeypatch):
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
         out = _rag_result()
         out.update({"can_answer": False, "answer": "拒答", "citations": []})
         return out
@@ -252,7 +253,7 @@ def test_failed_run_is_recorded(client, monkeypatch):
 
 
 def test_run_is_isolated_by_anonymous_id(client, monkeypatch):
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
         return _rag_result()
 
     monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
@@ -266,3 +267,56 @@ def test_run_is_isolated_by_anonymous_id(client, monkeypatch):
     assert client.get(
         f"/v1/runs/{body['run_id']}", headers={"X-Anonymous-Id": "bob"}
     ).status_code == 404
+
+
+def test_memory_endpoints_and_chat_injection(client, monkeypatch):
+    seen = []
+
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+        seen.append(memories)
+        return _rag_result()
+
+    def fake_remember(session, user_id, conversation_id, question, answer,
+                      api_key=None, counter=None):
+        return [repo.upsert_memory(
+            session, user_id, "preference", "preferred_book", "《三命通会》",
+            source_conversation_id=conversation_id,
+        )]
+
+    monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
+    monkeypatch.setattr(api_conversations.memory, "remember_from_turn", fake_remember)
+
+    headers = {"X-Anonymous-Id": "anon-1"}
+    conv = _create(client)
+    first = client.post(
+        f"/v1/conversations/{conv['id']}/chat",
+        json={"question": "记住：以后优先查三命通会"},
+        headers=headers,
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["memories_written"] == 1
+    assert first.json()["memories_used"] == 0
+    assert seen[0] == []
+
+    listed = client.get("/v1/memories", headers=headers).json()
+    assert len(listed) == 1 and listed[0]["key"] == "preferred_book"
+
+    second = client.post(
+        f"/v1/conversations/{conv['id']}/chat",
+        json={"question": "那它和阳刃一样吗？"},
+        headers=headers,
+    )
+    assert second.status_code == 200, second.text
+    assert len(seen[1]) == 1 and seen[1][0].key == "preferred_book"
+    assert second.json()["memories_used"] == 1
+
+    # 另一个匿名用户看不到、也删不掉
+    assert client.get("/v1/memories", headers={"X-Anonymous-Id": "anon-2"}).json() == []
+    assert client.delete(
+        "/v1/memories/%d" % listed[0]["id"], headers={"X-Anonymous-Id": "anon-2"}
+    ).status_code == 404
+
+    assert client.delete(
+        "/v1/memories/%d" % listed[0]["id"], headers=headers
+    ).status_code == 204
+    assert client.get("/v1/memories", headers=headers).json() == []
