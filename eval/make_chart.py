@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""从 results_v2.csv 重新生成 README 用的对比图。
+"""从 results_8681_tuned.csv 重新生成 README 用的对比图。
 
-旧 metric_compare.png 是评测口径修复前的数字（dense 25% / bm25 5% / rrf 20%），
-中文还是方块；这里统一改成 results_v2.csv 的真实结果。
+这张 CSV 是 8,681 条语料、rrf_k=10 / candidate_k=40 的当前口径，
+和 README §3.1 的表格同源。历史上的 results_v2.csv（2,830 条）只作对照，
+不要再拿它画图——旧 PNG 曾经因此和正文数字对不上。
 
 用法：python eval/make_chart.py
 """
@@ -17,7 +18,7 @@ from matplotlib import font_manager
 from matplotlib.patches import FancyBboxPatch
 
 HERE = Path(__file__).resolve().parent
-CSV_PATH = HERE / "results_v2.csv"
+CSV_PATH = HERE / "results_8681_tuned.csv"
 OUT_PATH = HERE.parent / "metric_compare.png"
 
 SURFACE = "#fcfcfb"

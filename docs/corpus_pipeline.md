@@ -7,17 +7,18 @@
 
 ---
 
-## 当前状态（2026-10-20）
+## 当前状态（2026-11-06 更新）
 
 | 产物 | 规模 | 状态 |
 |---|---|---|
-| `data/chunks/punct.jsonl` | **2,830 chunk / 16 部 / 1,168,327 字** | ✅ v1 唯一输入 |
-| `data/chunks/unpunct.jsonl` | 5,851 chunk / 29 部 / 2,231,003 字 | ✅ 已切好，v2 才索引 |
+| `data/chunks/punct.jsonl` | 2,830 chunk / 16 部 / 1,168,327 字 | ✅ 标点组（v1 口径） |
+| `data/chunks/unpunct.jsonl` | 5,851 chunk / 29 部 / 2,231,003 字 | ✅ 无标点组（v1.1 起已索引） |
+| 两组合计 | **8,681 chunk / 45 部** | ✅ 当前索引与 `embeddings.npy` 覆盖全量 |
 | `data/terminology/*.jsonl` | 324 条术语（bazi 168 + iztro 60 + lunar 96） | ✅ BM25 词典 / 术语辅助 |
 | `data/terminology/sudo-biao/` | 1,698 条结构化讲义 + 23 个 txt | ✅ 最贴合问答 |
 | `data/clean_text/` | 152 部清洗后全文 | ✅ chunk 的只读输入 |
 
-**v1 只使用标点组 16 部书。** 29 部无标点古籍（含《三命通会》《星学大成》）已经在 `unpunct.jsonl` 里切好，但按 `PLAN.md` 冻结到 v2，不进入 11 月 1 日前的 Demo。
+**v1 只使用标点组 16 部书；v1.1 起已把 29 部无标点古籍接入**，当前索引覆盖 45 部 / 8,681 块。下面关于“2,830 条”的描述是 v1 阶段的历史口径，引用时注意区分。
 
 ---
 
@@ -26,7 +27,7 @@
 ```text
 .
 ├── README.md
-├── PLAN.md                    # 11 月投递冲刺计划
+├── PLAN.md                    # 2026-10-20 冲刺计划（已过时，历史存档）
 ├── ATTRIBUTION.md             # 语料来源与许可证
 ├── data/
 │   ├── clean_text/            # 清洗后全文（chunk 的只读输入，不要改）

@@ -1,4 +1,4 @@
-# 命理古籍 RAG Agent · v1.5
+# 命理古籍 RAG Agent · v1.6
 
 一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
@@ -156,7 +156,7 @@ Key 与额度：服务端配了 `DEEPSEEK_API_KEY` 就走服务端 Key，否则�
 | 跨书对比 | 3 | 67% | 83% | 83% |
 | 多跳综合 | 1 | 50% | 0% | 50% |
 
-**这张表解释了为什么下一步要做 agent。** 单跳释义题上 dense 碾压 BM25（88% vs 38%），
+**这张表是我把检索改成 agent 的直接依据。** 单跳释义题上 dense 碾压 BM25（88% vs 38%），
 应用推理题上反过来（50% vs 75%）——一个全局融合权重注定只能取平均。
 要让两类题都不掉分，只能让模型按题目类型自己选检索方式，而不是写死一个权重。
 
@@ -305,7 +305,7 @@ pass_rate = 0.0
 | 12 | 多 Agent 只在 15 条任务上测，且未统计 token/金额 | 12.7 vs 8.0 的区间不重叠，但样本小；8.3 次调用/题的成本优势未量化 | 扩到 30 条 + 逐轮 token/耗时/成本 |
 | 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
 
-> 关于"没做完"的部分：reranker、RAGAS 忠实度、微调、换 LangChain/LlamaIndex 重写，v1.3 仍然**不做**；多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
+> 关于"没做完"的部分：微调、换 LangChain/LlamaIndex 重写、向量库仍然**不做**；reranker 与 RAGAS 忠实度已排进 v2 路线图，不属于 v1.6。多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
 ---
 
@@ -538,7 +538,7 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 │   ├── daily_dev_journal.md   # 开发日志与踩坑
 │   └── eval_questions_seed.md
 ├── ATTRIBUTION.md             # 语料来源与许可证
-└── PLAN.md                    # 冲刺计划与范围冻结
+└── PLAN.md                    # 2026-10-20 冲刺计划（已过时，历史存档）
 ```
 
 ---
@@ -564,7 +564,7 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 - **v1.4（已完成，11/03）**：FastAPI `/chat` `/retrieve` `/trace` `/health`、并发信号量、可选 Bearer token、token 用量旁路采集、Dockerfile + compose、10 条 API 测试、CI 跑全量 42 条测试
 - **v1.5（已完成，11/04）**：界面按「面向访客」重做——只留问古籍 / 排盘两页，引用改成可展开的原文出处，加可点追问与拒答说明；检索后端、轨迹和中台收进 `?admin=1` 维护页
 - **v1.6（已完成，11/06）**：MCP server——7 个工具按 MCP 暴露（stdio + streamable-http），schema 由类型注解生成；修掉启动信息污染 stdout 导致客户端解析失败的问题
-- **下一步（11/15 前）**：ECS + Nginx + systemd 部署、Langfuse 全链路 trace、P50/P95 延迟统计、30 条 Agent 评测、20 条多轮评测
+- **下一步（11/15 前）**：ECS + Nginx + systemd 部署、P50/P95 延迟统计、30 条 Agent 评测、20 条多轮评测；Langfuse 视 ECS 进度决定是否降级为现有的 JSON 日志 + `/metrics`
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
