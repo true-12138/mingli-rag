@@ -15,7 +15,7 @@
 
 用法::
 
-    export DEEPSEEK_API_KEY=sk-xxxx        # 只在自己的终端里 export
+    在项目根目录 .env（已 gitignore）里配 DEEPSEEK_API_KEY，或 export 后再跑
     python eval/run_multiturn.py            # 全部 20 条，单 Agent
     python eval/run_multiturn.py --agent multi
     python eval/run_multiturn.py --only mt01,mt16 -v
@@ -35,6 +35,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
+
+# 本脚本在 import rag（它内部才 load_dotenv）之前就要检查 key，
+# 所以这里显式加载项目根目录的 .env；已 export 的环境变量优先，不会被覆盖。
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:  # pragma: no cover - requirements.txt 里有 python-dotenv
+    pass
 
 TASKS_PATH = ROOT / "eval" / "multiturn.jsonl"
 
@@ -207,9 +216,10 @@ def _scrub(obj, secret: str):
 def run(tasks: list[dict], args) -> dict:
     secret = os.environ.get("DEEPSEEK_API_KEY", "").strip()
     if not secret:
-        die("没有 DEEPSEEK_API_KEY。请在自己的终端里 export 后再跑：\n"
-            "  export DEEPSEEK_API_KEY=sk-xxxx\n"
-            "不要把 key 写进 .env、命令行参数或聊天窗口。")
+        die("没有 DEEPSEEK_API_KEY。在项目根目录的 .env（已 gitignore）里配：\n"
+            "  DEEPSEEK_API_KEY=sk-xxxx\n"
+            "或在终端 export DEEPSEEK_API_KEY=sk-xxxx。\n"
+            "不要把 key 写进命令行参数、提交到仓库或贴进聊天窗口。")
 
     id2book = build_id2book()
     solve = get_agent(args.agent)
