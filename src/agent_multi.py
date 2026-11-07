@@ -27,10 +27,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import asyncio
+
+import llm
 import tool_loop
 import tool_schema
 import tools
-from agent import MAX_STEPS, _finalize
+from agent import MAX_STEPS, _finalize, step_event
+from answer_stream import AnswerExtractor
 from rag import _chat, _parse_json
 from conversation import history_block, memory_block, normalize_history, rewrite_question
 
@@ -423,6 +427,258 @@ def _fetch_gap(chunk_id, budget, trace, evidence, seen):
     })
 
 
+# ---------- 异步流式：和上面同步版逐条对齐 ----------
+#
+# 多 Agent 的正文只有「汇总员」产出，所以逐 token 流只挂在 _asynthesize 上；
+# 规划/检索/校验通过 on_stage 下发阶段事件，前端照样能看到进度。
+
+
+async def _astream_json(system, prompt, counter=None, api_key=None, on_delta=None, client=None):
+    """流式调一次模型并解析 JSON；和 `_ask_json` 一样解析失败重试一次。
+
+    已向调用方下发过正文后不再重试，否则前端会看到重复文本。
+    """
+    client = client or llm.default_client()
+    streamed = False
+    last_raw = ""
+    for _ in range(2):
+        use_delta = on_delta if (on_delta is not None and not streamed) else None
+        extractor = AnswerExtractor()
+        parts = []
+        async for event in client.stream(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            api_key=api_key,
+            response_format={"type": "json_object"},
+        ):
+            if event["type"] == "delta":
+                parts.append(event["text"])
+                if use_delta is not None:
+                    text = extractor.feed(event["text"])
+                    if text:
+                        use_delta(text)
+                        streamed = True
+            elif counter is not None:
+                usage = event.get("usage")
+                if usage:
+                    counter.setdefault("usage", []).append(usage)
+        if counter is not None:
+            counter["llm_calls"] = counter.get("llm_calls", 0) + 1
+        last_raw = "".join(parts)
+        try:
+            data = _parse_json(last_raw)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+async def _aask_json(system, prompt, counter=None, api_key=None, client=None):
+    """`_ask_json` 的异步版，用于规划和校验（不需要流式正文）。"""
+    client = client or llm.default_client()
+    for _ in range(2):
+        message, usage = await client.complete(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            api_key=api_key,
+            response_format={"type": "json_object"},
+        )
+        if counter is not None:
+            counter["llm_calls"] = counter.get("llm_calls", 0) + 1
+            if usage:
+                counter.setdefault("usage", []).append(usage)
+        try:
+            data = _parse_json(message.get("content") or "")
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+async def _aplan(question, counter, feedback="", api_key=None, history="", client=None):
+    prompt = ((history + chr(10) + chr(10)) if history else "") + \
+        "【语料书目】\n{}\n\n【问题】\n{}".format(_book_catalog(), question)
+    if feedback:
+        prompt += "\n\n【上一次前置工具调用失败，请按准确签名重写】\n" + feedback
+    data = await _aask_json(PLANNER_PROMPT, prompt, counter, api_key=api_key,
+                            client=client) or {}
+    pre = [p for p in (data.get("pre") or [])
+           if isinstance(p, dict) and p.get("action") in tools.TOOLS]
+    searches = []
+    for s in (data.get("searches") or [])[:3]:
+        if isinstance(s, dict) and s.get("book") and s.get("query"):
+            searches.append({"book": str(s["book"]), "query": str(s["query"])})
+    return {
+        "pre": pre[:4],
+        "searches": searches,
+        "out_of_scope": bool(data.get("out_of_scope")),
+        "reason": data.get("reason") or "",
+    }
+
+
+async def _arun_pre(plan, budget, trace, evidence, seen, on_step=None):
+    """`_run_pre` 的异步版。工具调用本身是 CPU/网络混合，丢线程池执行。"""
+    notes, ok_all = [], True
+    for p in plan["pre"]:
+        if not budget.take():
+            break
+        result = await asyncio.to_thread(tools.call, p["action"], **(p.get("args") or {}))
+        got = [h["chunk_id"] for h in _harvest(result)]
+        seen.update(got)
+        for h in _harvest(result):
+            evidence.setdefault(h["chunk_id"], {
+                "chunk_id": h["chunk_id"], "book": h.get("book") or "",
+                "chapter": h.get("chapter") or "", "text": h.get("text") or "",
+            })
+        trace.append({
+            "step": len(trace) + 1, "agent": "supervisor(pre)",
+            "thought": "前置工具", "action": p["action"], "args": p.get("args"),
+            "ok": result.get("ok"), "chunk_ids": got, "error": result.get("error"),
+        })
+        if on_step is not None:
+            on_step(step_event("supervisor(pre)", p["action"], p.get("args"), result))
+        if result.get("ok"):
+            notes.append("{} -> {}".format(p["action"], _short(result.get("result"), 700)))
+        else:
+            ok_all = False
+            notes.append("{} 调用失败：{}".format(p["action"], result.get("error")))
+    return "\n".join(notes), ok_all
+
+
+async def _aretrieve(task, context, budget, trace, evidence, seen, counter, api_key=None,
+                     on_step=None, client=None):
+    """`_retrieve` 的异步版：走 `tool_loop.arun`，带 book 锁定的 prepare。"""
+    messages = [
+        {"role": "system", "content": RETRIEVER_PROMPT},
+        {"role": "user", "content": "【子任务】在《{}》里检索：{}\n【前置结果】\n{}".format(
+            task["book"], task["query"], context or "（无）")},
+    ]
+
+    def prepare(name, args):
+        if name == "search_classics":
+            args["book"] = task["book"]
+        return args
+
+    def on_call(name, args, result):
+        got = [h["chunk_id"] for h in _harvest(result)]
+        seen.update(got)
+        for h in _harvest(result):
+            evidence.setdefault(h["chunk_id"], {
+                "chunk_id": h["chunk_id"], "book": h.get("book") or "",
+                "chapter": h.get("chapter") or "", "text": h.get("text") or "",
+            })
+        trace.append({
+            "step": len(trace) + 1, "agent": "retriever",
+            "thought": None, "action": name, "args": args,
+            "ok": result.get("ok"), "chunk_ids": got, "error": result.get("error"),
+        })
+        if on_step is not None:
+            on_step(step_event("retriever", name, args, result))
+
+    allowed = min(RETRIEVER_MAX_CALLS, max(0, budget.left))
+    content, _messages, used = await tool_loop.arun(
+        messages,
+        api_key=api_key,
+        max_calls=allowed,
+        schemas=RETRIEVER_SCHEMAS,
+        prepare=prepare,
+        on_call=on_call,
+        counter=counter,
+        client=client,
+    )
+    budget.consume(used)
+    if budget.left <= 0 and used >= allowed:
+        return "预算用尽" if used == 0 else "检索预算用尽"
+    try:
+        data = _parse_json(content)
+    except (json.JSONDecodeError, TypeError):
+        data = None
+    if isinstance(data, dict):
+        return data.get("thought") or ""
+    return "检索未收口"
+
+
+async def _averify(question, evidence, pre_notes, out_of_scope, counter, api_key=None,
+                   history="", client=None):
+    block = _evidence_block(evidence) or "（无原文证据）"
+    data = await _aask_json(
+        VERIFIER_PROMPT,
+        ((history + chr(10) + chr(10)) if history else "") +
+        "【问题】\n{}\n\n【是否已判定超出语料范围】{}\n\n"
+        "【前置工具输出（算作证据）】\n{}\n\n【古籍原文证据】\n{}".format(
+            question, "是" if out_of_scope else "否", pre_notes or "（无）", block),
+        counter,
+        api_key=api_key,
+        client=client,
+    ) or {"sufficient": False, "gaps": [], "notes": "校验员未返回合法 JSON"}
+    gaps = []
+    for g in (data.get("gaps") or [])[:2]:
+        if not isinstance(g, dict):
+            continue
+        if g.get("action") == "fetch_chunk" and g.get("chunk_id") is not None:
+            gaps.append({"action": "fetch_chunk", "chunk_id": g["chunk_id"]})
+        elif g.get("book") and g.get("query"):
+            gaps.append({"action": "search_classics",
+                         "book": str(g["book"]), "query": str(g["query"])})
+    return {"sufficient": bool(data.get("sufficient")), "gaps": gaps,
+            "notes": data.get("notes") or ""}
+
+
+async def _asynthesize(question, evidence, pre_notes, verdict, out_of_scope, counter,
+                       api_key=None, history="", on_delta=None, client=None):
+    """汇总员：多 Agent 唯一产出正文的角色，逐 token 从这里下发。"""
+    block = _evidence_block(evidence) or "（无原文证据）"
+    data = await _astream_json(
+        SYNTHESIZER_PROMPT,
+        ((history + chr(10) + chr(10)) if history else "") +
+        "【问题】\n{}\n\n【是否超出语料范围】{}\n\n【前置工具输出】\n{}\n\n"
+        "【校验意见】\n{}{}\n\n【古籍原文证据】\n{}".format(
+            question,
+            "是（必须拒答）" if out_of_scope else "否",
+            pre_notes or "（无）",
+            verdict.get("notes") or "",
+            "\n校验员指出证据不足，缺口：" + json.dumps(verdict.get("gaps"), ensure_ascii=False)
+            if not verdict.get("sufficient") else "",
+            block,
+        ),
+        counter,
+        api_key=api_key,
+        on_delta=on_delta,
+        client=client,
+    ) or {"can_answer": False, "answer": "", "citations": [],
+          "refusal_reason": "汇总阶段未返回合法 JSON"}
+    return data
+
+
+async def _afetch_gap(chunk_id, budget, trace, evidence, seen, on_step=None):
+    if not budget.take():
+        return
+    result = await asyncio.to_thread(tools.call, "fetch_chunk", chunk_id=chunk_id,
+                                     with_neighbors=True)
+    got = [h["chunk_id"] for h in _harvest(result)]
+    seen.update(got)
+    for h in _harvest(result):
+        evidence.setdefault(h["chunk_id"], {
+            "chunk_id": h["chunk_id"], "book": h.get("book") or "",
+            "chapter": h.get("chapter") or "", "text": h.get("text") or "",
+        })
+    trace.append({
+        "step": len(trace) + 1, "agent": "supervisor(gap)",
+        "thought": "校验员要求读上下文", "action": "fetch_chunk",
+        "args": {"chunk_id": chunk_id, "with_neighbors": True},
+        "ok": result.get("ok"), "chunk_ids": got, "error": result.get("error"),
+    })
+    if on_step is not None:
+        on_step(step_event("supervisor(gap)", "fetch_chunk",
+                           {"chunk_id": chunk_id, "with_neighbors": True}, result))
+
+
 # ---------- 入口 ----------
 
 def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
@@ -482,6 +738,97 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
     # 和单 Agent 对齐：结果文件必须能证明这一轮跑的是原生 tool_calls，
     # 否则 D2 的 function calling / JSON ReAct A/B 无法从落盘结果复核。
     res["tool_mode"] = "function"
+    return res
+
+
+async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, history=None,
+                              memories=None, on_delta=None, on_step=None, on_stage=None,
+                              client=None):
+    """多 Agent 的流式版。返回结构与 `agent_answer` 完全一致。
+
+    `on_delta` 只收汇总员的正文增量；`on_step` 是工具级事件（和单 Agent 同构）；
+    `on_stage` 是阶段事件：planner / retriever / verifier / synthesizer。
+    正文可能被 `_finalize` 归一化，调用方以返回值里的 answer 为准。
+    """
+    counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    from conversation import arewrite_question
+
+    standalone = await arewrite_question(question, history, api_key=api_key,
+                                         counter=counter, client=client)
+    question = standalone
+    hist_block = "\n\n".join(b for b in (history_block(history), memory_block(memories)) if b)
+    budget = Budget(max_steps)
+    trace = []
+    evidence = {}
+    seen = set()
+
+    def stage(name, **detail):
+        if on_stage is not None:
+            on_stage({"agent": name, "detail": detail})
+
+    stage("planner", status="start")
+    plan = await _aplan(question, counter, api_key=api_key, history=hist_block, client=client)
+    stage("planner", status="done", pre=len(plan["pre"]), searches=plan["searches"],
+          out_of_scope=plan["out_of_scope"])
+
+    context, ok_all = await _arun_pre(plan, budget, trace, evidence, seen, on_step=on_step)
+
+    if not ok_all and plan["pre"]:
+        stage("planner", status="retry", reason="前置工具参数有误")
+        retry = await _aplan(question, counter, feedback=context, api_key=api_key,
+                             history=hist_block, client=client)
+        context += "\n" + (await _arun_pre({"pre": retry["pre"]}, budget, trace,
+                                           evidence, seen, on_step=on_step))[0]
+
+    for task in plan["searches"]:
+        if budget.left <= 0:
+            break
+        stage("retriever", status="start", book=task["book"], query=task["query"])
+        thought = await _aretrieve(task, context, budget, trace, evidence, seen, counter,
+                                   api_key=api_key, on_step=on_step, client=client)
+        stage("retriever", status="done", book=task["book"], query=task["query"],
+              thought=thought, evidence=len(evidence))
+
+    stage("verifier", status="start")
+    verdict = await _averify(question, list(evidence.values()), context,
+                             plan["out_of_scope"], counter, api_key=api_key,
+                             history=hist_block, client=client)
+    stage("verifier", status="done", sufficient=verdict["sufficient"],
+          gaps=verdict["gaps"], notes=verdict["notes"])
+
+    for gap in verdict["gaps"]:
+        if budget.left <= 0:
+            break
+        if gap.get("action") == "fetch_chunk":
+            await _afetch_gap(gap["chunk_id"], budget, trace, evidence, seen, on_step=on_step)
+        else:
+            stage("retriever", status="start", book=gap["book"], query=gap["query"])
+            thought = await _aretrieve(gap, context, budget, trace, evidence, seen, counter,
+                                       api_key=api_key, on_step=on_step, client=client)
+            stage("retriever", status="done", book=gap["book"], query=gap["query"],
+                  thought=thought, evidence=len(evidence))
+    if verdict["gaps"] and budget.used < max_steps:
+        verdict = await _averify(question, list(evidence.values()), context,
+                                 plan["out_of_scope"], counter, api_key=api_key,
+                                 history=hist_block, client=client)
+        stage("verifier", status="done", sufficient=verdict["sufficient"],
+              gaps=verdict["gaps"], notes=verdict["notes"])
+
+    stage("synthesizer", status="start")
+    data = await _asynthesize(question, list(evidence.values()), context, verdict,
+                              plan["out_of_scope"], counter, api_key=api_key,
+                              history=hist_block, on_delta=on_delta, client=client)
+    stage("synthesizer", status="done")
+
+    res = _finalize(data, seen, trace)
+    res["llm_calls"] = counter["llm_calls"]
+    res["rewritten_question"] = standalone
+    res["history_turns"] = len(history)
+    res["plan"] = plan
+    res["verdict"] = verdict
+    res["tool_mode"] = "function"
+    res["usage"] = llm.merge_usage(counter.get("usage"))
     return res
 
 

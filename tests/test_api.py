@@ -201,3 +201,76 @@ def test_concurrency_limit_returns_429(client):
     finally:
         for _ in range(api.MAX_CONCURRENCY):
             api._SLOTS.release()
+
+
+def _parse_sse(text):
+    """把 SSE 文本拆成 [(event, data)]，忽略心跳注释行。"""
+    import json as _json
+
+    frames = []
+    for block in text.split("\n\n"):
+        event, data = None, None
+        for line in block.splitlines():
+            if line.startswith("event: "):
+                event = line[7:].strip()
+            elif line.startswith("data: "):
+                data = _json.loads(line[6:])
+        if event:
+            frames.append((event, data))
+    return frames
+
+
+def test_chat_stream_emits_step_delta_done(client, monkeypatch):
+    async def fake_stream(question, top_k=5, api_key=None, history=None,
+                          on_delta=None, on_step=None, client=None):
+        on_step({"agent": "retrieval", "tool": "retrieve", "args": {"query": question},
+                 "ok": True, "chunk_ids": [1], "error": None})
+        on_delta("测试")
+        on_delta("回答")
+        return dict(_rag_result(), usage={"total_tokens": 12})
+
+    monkeypatch.setattr(api.rag, "answer_stream", fake_stream)
+    with client.stream("POST", "/chat/stream", json={"question": "羊刃分几种？"}) as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        frames = _parse_sse("".join(r.iter_text()))
+
+    events = [f[0] for f in frames]
+    assert events == ["step", "delta", "delta", "done"]
+    assert "".join(d["text"] for e, d in frames if e == "delta") == "测试回答"
+    done = [d for e, d in frames if e == "done"][0]
+    assert done["answer"] == "测试回答 [1]"
+    assert done["mode"] == "rag"
+    assert done["usage"]["total_tokens"] == 12
+    assert done["trace_id"]
+
+
+def test_chat_stream_error_event(client, monkeypatch):
+    class Boom(Exception):
+        pass
+
+    async def fake_stream(**kwargs):
+        raise Boom("internal detail")
+
+    monkeypatch.setattr(api.rag, "answer_stream", fake_stream)
+    with client.stream("POST", "/chat/stream", json={"question": "q"}) as r:
+        frames = _parse_sse("".join(r.iter_text()))
+
+    assert [f[0] for f in frames] == ["error"]
+    assert frames[0][1]["message"] == "服务内部错误"
+    assert "internal detail" not in frames[0][1]["message"]
+
+
+def test_chat_stream_rejects_when_stream_slots_full(client):
+    """流式回答槽位满了要立刻 429，而不是把连接挂在那里排队。"""
+    import asyncio
+
+    g = api._stream_slot.__globals__
+    original = g.get("_stream_slots")
+    g["_stream_slots"] = asyncio.Semaphore(0)  # locked() 为 True
+    try:
+        r = client.post("/chat/stream", json={"question": "q"})
+        assert r.status_code == 429
+        assert r.headers["retry-after"] == "3"
+    finally:
+        g["_stream_slots"] = original

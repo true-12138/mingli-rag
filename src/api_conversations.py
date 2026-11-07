@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import sys
@@ -21,6 +22,7 @@ from typing import Any, Literal
 
 import requests
 from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -34,8 +36,9 @@ import usage
 from db import repo
 from db.base import get_session
 from db.models import Conversation
-from guards import _require_token, _slot
+from guards import _require_token, _slot, _stream_slot
 from observability import METRICS
+from sse import SSE_HEADERS, sse_frame, sse_source
 
 logger = logging.getLogger("mingli.api.conversations")
 
@@ -484,24 +487,29 @@ def chat_in_conversation(
         raise HTTPException(status_code=500, detail="生成失败") from exc
 
     elapsed_ms = (time.perf_counter() - started) * 1000
-    answer_text = str(result.get("answer") or "")
     tokens = usage.snapshot()
     METRICS.observe_llm(tokens)
+    return _persist_turn(session, conv, user, req, result, tokens, elapsed_ms,
+                         run, trace_id, key, memories)
 
-    # 消息、运行结果、工具调用在同一个事务里提交，避免只存了半轮。
+
+def _persist_turn(session: Session, conv: Conversation, user, req, result: dict,
+                  tokens: dict[str, Any] | None, elapsed_ms: float, run, trace_id: str,
+                  key: str | None, memories: list) -> dict[str, Any]:
+    """把一轮问答落库并组装响应。同步 / 流式两个入口共用，字段不会漂移。
+
+    消息、运行结果、工具调用在同一个事务里提交；记忆与摘要是增强，
+    失败只记日志，不影响已经生成的回答（这两步的 token 不计入本次 run）。
+    """
+    answer_text = str(result.get("answer") or "")
+
     repo.rename_if_untitled(session, conv, req.question)
-    user_msg = repo.add_message(
-        session, conv, "user", req.question, commit=False
-    )
-    assistant_msg = repo.add_message(
-        session, conv, "assistant", answer_text, commit=False
-    )
+    user_msg = repo.add_message(session, conv, "user", req.question, commit=False)
+    assistant_msg = repo.add_message(session, conv, "assistant", answer_text, commit=False)
     repo.finish_run(session, run, result, elapsed_ms, tokens, commit=False)
     repo.add_tool_calls(session, run, result.get("trace"), commit=False)
     session.commit()
 
-    # 记忆与摘要都是增强：失败只记日志，不能影响已经生成的回答。
-    # 这两步可能各多一次模型调用，所以放在回答落库之后；它们的 token 不计入本次 run。
     written = []
     try:
         written = memory.remember_from_turn(
@@ -536,3 +544,100 @@ def chat_in_conversation(
         conv.id, req.mode, elapsed_ms, out.get("llm_calls"), trace_id,
     )
     return out
+
+
+@router.post("/conversations/{conversation_id}/chat/stream")
+async def chat_in_conversation_stream(
+    conversation_id: str,
+    req: ConversationChatRequest,
+    x_deepseek_key: str | None = Header(default=None),
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+    __: None = Depends(_stream_slot),
+) -> StreamingResponse:
+    """会话内的流式回答：SSE 事件契约与 `/chat/stream` 完全一致。
+
+    `done` 事件里额外带 conversation_id / run_id / 消息 ID，前端可以直接刷新列表。
+    数据库是同步 ORM，所有读写都丢到线程池；生成过程留在事件循环里。
+    """
+    import asyncio
+
+    import llm
+
+    user = await asyncio.to_thread(repo.get_or_create_user, session, anonymous_id)
+    conv = await asyncio.to_thread(_get_owned, session, conversation_id, user.id)
+
+    history = await asyncio.to_thread(
+        repo.recent_history, session, conv.id,
+        4 if conv.summary else repo.DEFAULT_HISTORY_MESSAGES,
+    )
+    if conv.summary:
+        history = [
+            {"role": "user",
+             "content": "【早期会话摘要（只用于理解上下文，不作为回答证据）】\n" + conv.summary}
+        ] + history
+    memories = await asyncio.to_thread(repo.list_memories, session, user.id)
+
+    key = (x_deepseek_key or "").strip() or None
+    started = time.perf_counter()
+    trace_id = uuid.uuid4().hex
+    run = await asyncio.to_thread(
+        repo.create_run, session, conv, trace_id, req.mode, req.question
+    )
+    client = llm.default_client()
+    queue: "asyncio.Queue[str | None]" = asyncio.Queue()
+
+    def push(event: str, data: dict[str, Any]) -> None:
+        queue.put_nowait(sse_frame(event, data))
+
+    def on_delta(text: str) -> None:
+        push("delta", {"text": text})
+
+    def on_step(payload: dict[str, Any]) -> None:
+        push("step", payload)
+
+    def on_stage(payload: dict[str, Any]) -> None:
+        push("stage", payload)
+
+    async def produce() -> None:
+        try:
+            if req.mode == "rag":
+                result = await rag.answer_stream(
+                    req.question, top_k=req.top_k, api_key=key, history=history,
+                    memories=memories, on_delta=on_delta, on_step=on_step, client=client,
+                )
+            elif req.mode == "agent":
+                result = await agent.agent_answer_stream(
+                    req.question, max_steps=req.max_steps, api_key=key, history=history,
+                    memories=memories, on_delta=on_delta, on_step=on_step, client=client,
+                )
+            else:
+                result = await agent_multi.agent_answer_stream(
+                    req.question, max_steps=req.max_steps, api_key=key, history=history,
+                    memories=memories, on_delta=on_delta, on_step=on_step,
+                    on_stage=on_stage, client=client,
+                )
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            tokens = result.get("usage")
+            if tokens:
+                METRICS.observe_llm(tokens)
+            out = await asyncio.to_thread(
+                _persist_turn, session, conv, user, req, result, tokens, elapsed_ms,
+                run, trace_id, key, memories,
+            )
+            push("done", out)
+        except Exception:
+            logger.exception("conversation stream failed conv=%s trace_id=%s",
+                             conv.id, trace_id)
+            with contextlib.suppress(Exception):
+                await asyncio.to_thread(
+                    repo.fail_run, session, run, "生成失败",
+                    (time.perf_counter() - started) * 1000,
+                )
+            push("error", {"message": "生成失败", "request_id": trace_id,
+                           "conversation_id": conv.id})
+        finally:
+            queue.put_nowait(None)
+
+    return StreamingResponse(sse_source(produce, queue), media_type="text/event-stream",
+                             headers=SSE_HEADERS)

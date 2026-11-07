@@ -12,14 +12,17 @@
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import llm
 import rag
 import tools
+from answer_stream import AnswerExtractor
 
 MAX_ROUNDS = 12
 
@@ -111,4 +114,80 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
             if err != "budget":
                 used += 1
         # 一次返回多个调用时可能超过预算：下一轮 with_tools=False，模型必须收口。
+    return "", messages, used
+
+
+async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
+               on_call=None, on_delta=None, counter=None, max_rounds=MAX_ROUNDS,
+               client=None):
+    """`run()` 的异步版：用 llm.stream() 逐 token 下发，工具层协议不变。
+
+    `on_delta(text)` 只收最终正文的增量；工具轮如果模型同时吐了正文，
+    也会先下发（实测极少见），调用方按「不是最终答案」处理即可。
+    """
+    client = client or llm.default_client()
+    used = 0
+    for _ in range(max_rounds):
+        with_tools = used < max_calls
+        extractor = AnswerExtractor()
+        final = None
+        async for event in client.stream(
+            messages,
+            api_key=api_key,
+            tools=schemas if with_tools else None,
+            tool_choice="auto" if with_tools else None,
+            response_format=None if with_tools else {"type": "json_object"},
+        ):
+            if event["type"] == "delta":
+                if on_delta is not None:
+                    text = extractor.feed(event["text"])
+                    if text:
+                        on_delta(text)
+            else:
+                final = event
+        if final is None:
+            return "", messages, used
+        if counter is not None:
+            counter["llm_calls"] = counter.get("llm_calls", 0) + 1
+            usage = final.get("usage")
+            if usage:
+                counter.setdefault("usage", []).append(usage)
+
+        msg = final["message"]
+        calls = msg.get("tool_calls") or []
+        if not calls:
+            return msg.get("content") or "", messages, used
+
+        calls = [_clean_call(c, i) for i, c in enumerate(calls)]
+        messages.append({
+            "role": "assistant",
+            "content": msg.get("content") or "",
+            "tool_calls": calls,
+        })
+
+        for call in calls:
+            name = call["function"]["name"]
+            if used >= max_calls:
+                result = {"ok": False, "tool": name, "args": None,
+                          "error": "步数预算已用完，请直接输出终稿"}
+                err = "budget"
+            else:
+                args, err = _parse_args(call["function"]["arguments"])
+                if err is None and prepare is not None:
+                    try:
+                        args = prepare(name, args) or args
+                    except Exception as exc:
+                        err = "参数预处理失败：{}".format(exc)
+                result = (await asyncio.to_thread(tools.call, name, **(args or {}))
+                          if err is None else
+                          {"ok": False, "tool": name, "args": None, "error": err})
+            messages.append({
+                "role": "tool",
+                "tool_call_id": call["id"],
+                "content": json.dumps(result, ensure_ascii=False),
+            })
+            if on_call is not None and err != "budget":
+                on_call(name, args if err is None else None, result)
+            if err != "budget":
+                used += 1
     return "", messages, used

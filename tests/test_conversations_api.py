@@ -320,3 +320,76 @@ def test_memory_endpoints_and_chat_injection(client, monkeypatch):
         "/v1/memories/%d" % listed[0]["id"], headers=headers
     ).status_code == 204
     assert client.get("/v1/memories", headers=headers).json() == []
+
+
+def _parse_sse(text):
+    """把 SSE 文本拆成 [(event, data)]，忽略心跳注释行。"""
+    import json as _json
+
+    frames = []
+    for block in text.split("\n\n"):
+        event, data = None, None
+        for line in block.splitlines():
+            if line.startswith("event: "):
+                event = line[7:].strip()
+            elif line.startswith("data: "):
+                data = _json.loads(line[6:])
+        if event:
+            frames.append((event, data))
+    return frames
+
+
+def test_chat_stream_persists_turn_and_returns_ids(client, monkeypatch):
+    async def fake_stream(question, top_k=5, api_key=None, history=None, memories=None,
+                          on_delta=None, on_step=None, client=None):
+        on_delta("测试")
+        on_delta("回答")
+        return dict(_rag_result(), usage={"total_tokens": 7})
+
+    monkeypatch.setattr(api_conversations.rag, "answer_stream", fake_stream)
+    conv = _create(client)
+    headers = {"X-Anonymous-Id": "anon-1"}
+
+    with client.stream(
+        "POST", f"/v1/conversations/{conv['id']}/chat/stream",
+        json={"question": "羊刃分几种？"}, headers=headers,
+    ) as r:
+        assert r.status_code == 200
+        frames = _parse_sse("".join(r.iter_text()))
+
+    assert [f[0] for f in frames] == ["delta", "delta", "done"]
+    done = frames[-1][1]
+    assert done["conversation_id"] == conv["id"]
+    assert done["answer"] == "测试回答 [1]"
+    assert done["user_message_id"] > 0
+    assert done["run_id"]
+
+    detail = client.get(f"/v1/conversations/{conv['id']}", headers=headers).json()
+    assert detail["message_count"] == 2
+    assert detail["messages"][1]["content"] == "测试回答 [1]"
+
+
+def test_chat_stream_marks_run_failed_on_error(client, monkeypatch):
+    async def boom(**kwargs):
+        raise RuntimeError("上游炸了")
+
+    monkeypatch.setattr(api_conversations.rag, "answer_stream", boom)
+    conv = _create(client)
+    headers = {"X-Anonymous-Id": "anon-1"}
+
+    with client.stream(
+        "POST", f"/v1/conversations/{conv['id']}/chat/stream",
+        json={"question": "q"}, headers=headers,
+    ) as r:
+        frames = _parse_sse("".join(r.iter_text()))
+
+    assert [f[0] for f in frames] == ["error"]
+    assert frames[0][1]["conversation_id"] == conv["id"]
+
+    runs = client.get(
+        f"/v1/conversations/{conv['id']}/runs", headers=headers
+    ).json()
+    assert runs[0]["status"] == "failed"
+
+    detail = client.get(f"/v1/conversations/{conv['id']}", headers=headers).json()
+    assert detail["messages"] == []

@@ -4,6 +4,7 @@
 用 stub 替换 sys.modules 里的 rag / tools，再加载真正的 tool_loop.py，
 只验证「tool_calls → 执行 → role=tool 回灌 → 收口」这条链路。
 """
+import asyncio
 import importlib.util
 import json
 import sys
@@ -129,6 +130,105 @@ def test_budget_caps_multi_calls_and_forces_final_without_tools(mods):
     # 预算用完后，下一轮必须不再传 tools，模型只能直接收口
     assert api.calls[1]["tools"] is None
     assert content == '{"thought": "ok"}'
+
+
+class FakeStreamAPI:
+    """异步版的 FakeAPI：每轮一组事件，和 llm.stream() 的事件协议一致。"""
+
+    def __init__(self, rounds):
+        self.rounds = list(rounds)
+        self.calls = []
+
+    async def stream(self, messages, **kwargs):
+        self.calls.append({
+            "messages": [dict(m) for m in messages],
+            "tools": kwargs.get("tools"),
+            "tool_choice": kwargs.get("tool_choice"),
+            "response_format": kwargs.get("response_format"),
+        })
+        for event in self.rounds.pop(0):
+            yield event
+
+
+def _delta(text):
+    return {"type": "delta", "text": text}
+
+
+def _message(content=None, tool_calls=None, usage=None):
+    msg = {"role": "assistant", "content": content}
+    if tool_calls:
+        msg["tool_calls"] = tool_calls
+    return {"type": "message", "message": msg, "usage": usage or {"total_tokens": 3}}
+
+
+def test_arun_streams_answer_and_executes_tools(mods):
+    mod, _fake_rag, fake_tools = mods
+    api = FakeStreamAPI([
+        [_message(tool_calls=[_tool_call("c1", "search_classics", {"query": "正官"})])],
+        [_delta('{"can_answer": true, "ans'), _delta('wer": "正官为官星'),
+         _delta('之首"}'),
+         _message('{"can_answer": true, "answer": "正官为官星之首"}')],
+    ])
+    fake_tools.call = lambda name, **kw: {"ok": True, "result": {"hits": [{"chunk_id": 7}]}}
+    deltas = []
+
+    content, messages, used = asyncio.run(mod.arun(
+        [{"role": "user", "content": "问"}],
+        max_calls=2,
+        schemas=[{"type": "function"}],
+        on_delta=deltas.append,
+        client=api,
+    ))
+
+    assert "".join(deltas) == "正官为官星之首"
+    assert used == 1
+    assert json.loads(content)["answer"] == "正官为官星之首"
+    assert messages[-2]["role"] == "assistant"
+    assert messages[-1]["role"] == "tool"
+    # 第一轮带 tools，第二轮仍然开放工具
+    assert api.calls[0]["tools"] is not None
+    assert api.calls[1]["tools"] is not None
+
+
+def test_arun_budget_forces_final_without_tools(mods):
+    mod, _fake_rag, fake_tools = mods
+    api = FakeStreamAPI([
+        [_message(tool_calls=[
+            _tool_call("c1", "search_classics", {"query": "甲"}),
+            _tool_call("c2", "search_classics", {"query": "乙"}),
+        ])],
+        [_delta('{"thought": "ok"}'), _message('{"thought": "ok"}')],
+    ])
+    executed = []
+    fake_tools.call = lambda name, **kw: (
+        executed.append(kw["query"]) or {"ok": True, "result": {"hits": []}})
+
+    _content, messages, used = asyncio.run(mod.arun(
+        [{"role": "user", "content": "问"}], max_calls=1,
+        schemas=[{"type": "function"}], client=api,
+    ))
+
+    assert executed == ["甲"]
+    assert used == 1
+    assert json.loads(messages[-1]["content"])["error"].startswith("步数预算已用完")
+    assert api.calls[1]["tools"] is None
+    assert api.calls[1]["response_format"] == {"type": "json_object"}
+
+
+def test_arun_counts_usage(mods):
+    mod, _fake_rag, fake_tools = mods
+    api = FakeStreamAPI([
+        [_message('{"can_answer": false}', usage={"total_tokens": 11})],
+    ])
+    counter = {"llm_calls": 0}
+
+    asyncio.run(mod.arun(
+        [{"role": "user", "content": "问"}], max_calls=1,
+        schemas=[{"type": "function"}], counter=counter, client=api,
+    ))
+
+    assert counter["llm_calls"] == 1
+    assert counter["usage"] == [{"total_tokens": 11}]
 
 
 def test_invalid_arguments_are_reported_not_raised(mods):

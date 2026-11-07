@@ -418,6 +418,7 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `GET` | `/health` | 语料条数、embedding 形状、模型是否已加载、并发上限 |
 | `POST` | `/retrieve` | 只检索，`mode` 可选 `dense` / `bm25` / `rrf` |
 | `POST` | `/chat` | 问答，`mode` 可选 `rag` / `agent` / `multi`，支持 `history` |
+| `POST` | `/chat/stream` | 同上，SSE 逐 token 返回：`step` / `stage` / `delta` / `done` / `error` |
 | `GET` | `/trace/{trace_id}` | 取回最近一次请求的完整结果（内存里保留最近 200 条） |
 | `GET` | `/metrics` | Prometheus 文本格式：请求数、耗时直方图、在途数、LLM token |
 | `POST` | `/v1/conversations` | 新建会话，返回 `conversation_id` |
@@ -425,6 +426,7 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `GET` | `/v1/conversations/{id}` | 会话详情与全部消息 |
 | `DELETE` | `/v1/conversations/{id}` | 删除会话（级联删消息、运行、反馈） |
 | `POST` | `/v1/conversations/{id}/chat` | 带服务端记忆的问答，返回 `run_id` |
+| `POST` | `/v1/conversations/{id}/chat/stream` | 同上，SSE 逐 token；`done` 额外带会话/消息/运行 ID |
 | `GET` | `/v1/conversations/{id}/runs` | 该会话的运行记录 |
 | `GET` | `/v1/runs/{run_id}` | 回放：答案、耗时、token、工具调用、反馈 |
 | `POST` | `/v1/runs/{run_id}/feedback` | 好评/差评，差评可带 `expected_answer` |
@@ -441,6 +443,7 @@ curl -s localhost:8000/chat \
         {"role":"assistant","content":"羊刃有……"}]}'
 ```
 
+- **流式**：`/chat/stream` 用 SSE。`delta` 只带正文增量，是**预览**；`done` 带完整结果（citations / trace / usage），前端应以 `done.answer` 为准——拒答归一化等终稿处理会改正文。服务端从流式 `json_object` 里增量解析 `answer` 字段（`src/answer_stream.py`），前端不会收到半个 JSON。`stage` 事件仅多 Agent 有。
 - **鉴权**：设置 `MINGLI_API_TOKEN` 后，所有接口要求 `Authorization: Bearer <token>`；不设置则开放。
 - **访客自带 key**：请求头 `X-DeepSeek-Key`，只作用于本次请求，不落日志、不进 trace。不要放在浏览器前端。
 - **并发**：默认同时最多 4 个生成请求（`MINGLI_MAX_CONCURRENCY`），超了立刻 429，不排队。
@@ -572,10 +575,13 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 ├── deploy/                    # ECS：Nginx 限流反代 + systemd 开机自启
 ├── src/
 │   ├── app.py                 # 界面：问古籍 + 排盘；维护页（?admin=1）放中台与后端开关
-│   ├── api.py                 # FastAPI：/chat /retrieve /trace /health /metrics
-│   ├── api_conversations.py   # /v1：会话记忆、运行回放、差评
+│   ├── api.py                 # FastAPI：/chat /chat/stream /retrieve /trace /health /metrics
+│   ├── api_conversations.py   # /v1：会话记忆、运行回放、差评、会话内流式
+│   ├── llm.py                 # 异步 LLM 客户端：多 key 轮询、per-key 并发池、流式 tool_calls
+│   ├── answer_stream.py       # 从流式 json_object 里增量解出 answer 字段
+│   ├── sse.py                 # SSE 帧 / 心跳 / 断连取消
 │   ├── mcp_server.py          # MCP：把 7 个工具暴露给 Claude Desktop / Cursor
-│   ├── guards.py              # Bearer 鉴权 + 并发信号量
+│   ├── guards.py              # Bearer 鉴权 + 并发信号量（线程版 + SSE 异步版）
 │   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
 │   ├── db/                    # 业务库：base(连接) / models(8 张表) / repo(读写)
 │   ├── memory.py              # 长期记忆：抽取/敏感信息过滤/会话摘要
@@ -664,7 +670,8 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **v1.6（已完成，11/06）**：MCP server——7 个工具按 MCP 暴露（stdio + streamable-http），schema 由类型注解生成；修掉启动信息污染 stdout 导致客户端解析失败的问题
 - **v1.8（已完成，11/07）**：30 条 Agent 与 20 条多轮评测真跑（旧 JSON ReAct：单 21/30、多 27/30；多轮 19/20、18/20），P50/P95 + token 报表，结果写入 `code_commit` / `tasks_sha256`；补 `_chat` 空响应、引用契约、拒答判定三组回归测试
 - **D2（已完成，11/07）**：工具协议换成原生 function calling，单/多 Agent 共用 `src/tool_loop.py`；30 题零报错（单 23/30、多 26/30）；修复 JSON 模式提示词缺 `json` 关键字导致的多 Agent 400；429/5xx 有限重试
-- **下一步（D3，11/09）**：前端·对话——React 单页，流式回答、引用展开、会话列表；随后 D4 排盘与记忆、D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
+- **D3 后端（已完成，11/08）**：逐 token 流。`src/llm.py`（异步、多 key、per-key 并发池、流式 tool_calls 拼装）、`src/answer_stream.py`（从流式 `json_object` 增量解出 `answer`）、`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream` 与 `/v1/conversations/{id}/chat/stream`；SSE 契约 `step/stage/delta/done/error`，15s 心跳，断连取消后台任务
+- **下一步（D3 前端，11/09）**：React 单页——流式回答、引用展开、会话列表；随后 D4 排盘与记忆、D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 

@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import llm
 import tool_loop
 import tool_schema
 import tools
@@ -208,6 +209,19 @@ def _record_call(trace, seen, name, args, result):
     })
 
 
+def step_event(agent_name, name, args, result):
+    """SSE `step` 事件的标准载荷。同步/异步两条路径共用，前端字段不会漂移。"""
+    payload = result if isinstance(result, dict) else {}
+    return {
+        "agent": agent_name,
+        "tool": name,
+        "args": args,
+        "ok": payload.get("ok"),
+        "chunk_ids": _collect_ids(result),
+        "error": payload.get("error"),
+    }
+
+
 def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
     """原生 function calling 版：模型直接返回 tool_calls，不再自己拼 JSON 动作。"""
     counter = {"llm_calls": 0}
@@ -283,6 +297,113 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
     out["history_turns"] = len(history)
     out["llm_calls"] = counter["llm_calls"]
     out["tool_mode"] = "function"
+    return out
+
+
+async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, history=None,
+                              memories=None, on_delta=None, on_step=None, client=None):
+    """单 Agent 的流式版：正文逐 token 通过 `on_delta` 下发，返回结构与 `agent_answer` 一致。
+
+    和同步版的差异只有三处：
+    1. 追问改写与模型调用走 `llm` 异步客户端，不阻塞事件循环；
+    2. `tool_loop.arun` 边收边把 `answer` 字段解出来下发（`AnswerExtractor`）；
+    3. 每次工具调用后额外回调 `on_step`，供 SSE `step` 事件使用。
+
+    注意：`on_delta` 下发的是**预览**。终稿可能被 `_finalize` 归一化
+    （如 can_answer=false 时替换成固定拒答），调用方应以返回值的 answer 为准。
+    """
+    from conversation import arewrite_question
+
+    counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    standalone = await arewrite_question(question, history, api_key=api_key,
+                                         counter=counter, client=client)
+    trace, seen = [], set()
+    hist = history_block(history)
+    mem = memory_block(memories)
+    user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
+        "【问题】\n{}".format(standalone)
+    messages = [
+        {"role": "system", "content": FUNCTION_SYSTEM_PROMPT},
+        {"role": "user", "content": user_text},
+    ]
+
+    streamed = {"any": False}
+
+    def emit(text):
+        streamed["any"] = True
+        on_delta(text)
+
+    def record(name, args, result):
+        _record_call(trace, seen, name, args, result)
+        if on_step is not None:
+            on_step(step_event("agent", name, args, result))
+
+    data = None
+    raw = ""
+    for _attempt in range(2):  # 终稿 JSON 解析失败时给一次纠正机会
+        raw, messages, _used = await tool_loop.arun(
+            messages,
+            api_key=api_key,
+            max_calls=max(0, max_steps - len(trace)),
+            schemas=tool_schema.SCHEMAS,
+            on_call=record,
+            # 已经下发过正文就不再重放，避免前端看到重复文本
+            on_delta=emit if (on_delta is not None and not streamed["any"]) else None,
+            counter=counter,
+            client=client,
+        )
+        try:
+            data = _parse_json(raw)
+        except (json.JSONDecodeError, TypeError):
+            data = None
+        if isinstance(data, dict):
+            break
+        messages.append({"role": "assistant", "content": raw or ""})
+        messages.append({
+            "role": "user",
+            "content": (
+                "observation: 输出不是合法 JSON。不要再调用工具，只输出一个 JSON："
+                '{"can_answer": true/false, "answer": "...", "citations": [chunk_id], '
+                '"refusal_reason": null}'
+            ),
+        })
+
+    if isinstance(data, dict):
+        out = _finalize(data, seen, trace)
+    elif len(trace) >= max_steps:
+        out = {
+            "can_answer": False,
+            "answer": REFUSAL_TEXT,
+            "citations": [],
+            "citations_chunk_ids": [],
+            "invalid_citations": [],
+            "invalid_output": False,
+            "refusal_reason": "步数用尽（%d 步）仍未得出有依据的结论" % max_steps,
+            "retrieved_chunk_ids": sorted(seen),
+            "trace": trace,
+            "steps": len(trace),
+        }
+    else:
+        out = {
+            "can_answer": None,
+            "answer": "",
+            "citations": [],
+            "citations_chunk_ids": [],
+            "invalid_citations": [],
+            "invalid_output": True,
+            "error": "JSON 解析失败",
+            "raw": raw,
+            "retrieved_chunk_ids": sorted(seen),
+            "trace": trace,
+            "steps": len(trace),
+        }
+    out["rewritten_question"] = standalone
+    out["history_turns"] = len(history)
+    out["llm_calls"] = counter["llm_calls"]
+    out["tool_mode"] = "function"
+    # 流式路径不用全局 usage 累加器：并发请求会互相污染，每请求自己记账
+    out["usage"] = llm.merge_usage(counter.get("usage"))
     return out
 
 

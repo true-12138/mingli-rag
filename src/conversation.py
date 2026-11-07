@@ -118,3 +118,40 @@ def rewrite_question(question, history, api_key=None, counter=None):
         # 改写只是增强：网络、额度、解析任何一步失败都退回原问题，不能拖垮单轮能力。
         pass
     return question
+
+
+async def arewrite_question(question, history, api_key=None, counter=None, client=None):
+    """`rewrite_question` 的异步版，语义完全一致。
+
+    流式接口里不能调同步 `requests`：一条改写会占住事件循环线程几十毫秒到几秒，
+    200 个 SSE 连接时直接变成串行。逻辑保持和同步版逐条对齐，方便对照测试。
+    """
+    history = normalize_history(history)
+    if not history:
+        return question
+
+    import llm
+    from rag import _parse_json
+
+    client = client or llm.default_client()
+    prompt = history_block(history) + "\n\n【最后一句追问】\n" + question
+    if counter is not None:
+        counter["llm_calls"] = counter.get("llm_calls", 0) + 1
+    try:
+        message, usage = await client.complete(
+            [
+                {"role": "system", "content": REWRITE_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            api_key=api_key,
+            response_format={"type": "json_object"},
+        )
+        if counter is not None and usage:
+            counter.setdefault("usage", []).append(usage)
+        data = _parse_json(message.get("content") or "")
+        standalone = str((data or {}).get("standalone") or "").strip()
+        if standalone and len(standalone) <= 200 and "\n" not in standalone:
+            return standalone
+    except Exception:
+        pass
+    return question

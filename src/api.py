@@ -20,6 +20,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import sys
@@ -32,7 +33,7 @@ from typing import Any, Literal
 
 import requests
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -40,10 +41,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent
 import agent_multi
 import api_conversations
+import llm
 import rag
 import retrieval
+import sse
 import usage
-from guards import MAX_CONCURRENCY, _SLOTS, _require_token, _slot
+from guards import (
+    MAX_CONCURRENCY,
+    STREAM_CONCURRENCY,
+    _SLOTS,
+    _require_token,
+    _slot,
+    _stream_slot,
+)
 from observability import (
     METRICS,
     configure_logging,
@@ -196,6 +206,7 @@ def root() -> dict[str, Any]:
             "/health",
             "/metrics",
             "/chat",
+            "/chat/stream",
             "/retrieve",
             "/trace/{trace_id}",
             "/v1/conversations",
@@ -221,6 +232,8 @@ def health() -> dict[str, Any]:
         "modes": ["rag", "agent", "multi"],
         "retrieval_modes": ["dense", "bm25", "rrf"],
         "max_concurrency": MAX_CONCURRENCY,
+        "stream_concurrency": STREAM_CONCURRENCY,
+        "streaming": True,
         "trace_cache": len(_TRACES),
     }
 
@@ -330,6 +343,99 @@ def chat(
         (tokens or {}).get("total_tokens"), out.get("can_answer"), trace_id,
     )
     return out
+
+
+# ---------- 流式接口 ----------
+#
+# 事件契约（docs/ROADMAP-v2.md §3）：
+#   step  {"agent","tool","args","ok","chunk_ids","error"}   一次工具调用完成
+#   stage {"agent","detail"}                                 多 Agent 阶段推进
+#   delta {"text"}                                           正文增量
+#   done  {完整 ChatResponse}                                终稿（以此为准）
+#   error {"message","request_id"}                            失败
+#
+# `delta` 是预览：拒答归一化等终稿处理可能改正文，前端收到 `done` 后
+# 用 done.answer 覆盖消息正文即可，不需要重连。
+
+SSE_HEARTBEAT = sse.SSE_HEARTBEAT
+_sse_frame = sse.sse_frame
+
+
+@app.post("/chat/stream")
+async def chat_stream(
+    req: ChatRequest,
+    x_deepseek_key: str | None = Header(default=None),
+    _: None = Depends(_require_token),
+    __: None = Depends(_stream_slot),
+) -> StreamingResponse:
+    """和 `/chat` 同样的入参，按 SSE 逐 token 返回。"""
+    started = time.perf_counter()
+    trace_id = uuid.uuid4().hex
+    history = _history_payload(req.history)
+    key = _api_key(x_deepseek_key)
+    queue: "asyncio.Queue[str | None]" = asyncio.Queue()
+    client = llm.default_client()
+
+    def push(event: str, data: dict[str, Any]) -> None:
+        queue.put_nowait(_sse_frame(event, data))
+
+    def on_delta(text: str) -> None:
+        push("delta", {"text": text})
+
+    def on_step(payload: dict[str, Any]) -> None:
+        push("step", payload)
+
+    def on_stage(payload: dict[str, Any]) -> None:
+        push("stage", payload)
+
+    async def produce() -> None:
+        try:
+            if req.mode == "rag":
+                result = await rag.answer_stream(
+                    req.question, top_k=req.top_k, api_key=key, history=history,
+                    on_delta=on_delta, on_step=on_step, client=client,
+                )
+            elif req.mode == "agent":
+                result = await agent.agent_answer_stream(
+                    req.question, max_steps=req.max_steps, api_key=key,
+                    history=history, on_delta=on_delta, on_step=on_step, client=client,
+                )
+            else:
+                result = await agent_multi.agent_answer_stream(
+                    req.question, max_steps=req.max_steps, api_key=key, history=history,
+                    on_delta=on_delta, on_step=on_step, on_stage=on_stage, client=client,
+                )
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            out = dict(result)
+            out.update({
+                "trace_id": trace_id,
+                "mode": req.mode,
+                "question": req.question,
+                "elapsed_ms": round(elapsed_ms, 1),
+            })
+            tokens = out.get("usage")
+            if tokens:
+                METRICS.observe_llm(tokens)
+            _remember(trace_id, req.mode, req.question, elapsed_ms, out)
+            logger.info(
+                "chat_stream mode=%s elapsed_ms=%.0f llm_calls=%s can_answer=%s trace_id=%s",
+                req.mode, elapsed_ms, out.get("llm_calls"), out.get("can_answer"), trace_id,
+            )
+            push("done", out)
+        except llm.LLMError as exc:
+            logger.warning("stream upstream failed trace_id=%s status=%s", trace_id, exc.status)
+            push("error", {"message": "上游模型调用失败", "request_id": current_request_id()})
+        except Exception:
+            logger.exception("stream failed trace_id=%s mode=%s", trace_id, req.mode)
+            push("error", {"message": "服务内部错误", "request_id": current_request_id()})
+        finally:
+            queue.put_nowait(None)
+
+    return StreamingResponse(
+        sse.sse_source(produce, queue),
+        media_type="text/event-stream",
+        headers=sse.SSE_HEADERS,
+    )
 
 
 @app.exception_handler(Exception)

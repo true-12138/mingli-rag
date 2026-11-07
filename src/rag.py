@@ -184,6 +184,12 @@ def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=N
             "history_turns": len(history),
             "llm_calls": counter["llm_calls"],
         }
+    return _finalize_rag(data, hits, standalone, history, counter)
+
+
+def _finalize_rag(data, hits, standalone, history, counter):
+    """把模型输出整理成对外结构。同步 `answer` 和异步 `answer_stream` 共用，
+    保证两条路径的引用校验、拒答归一化完全一致。"""
     cited = data.get("citations") or []
     valid_nums, invalid_nums = [], []
     for n in cited:
@@ -203,6 +209,94 @@ def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=N
         data["answer"] = REFUSAL_TEXT
         data["citations"] = []
     return data
+
+
+async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=None,
+                        memories=None, on_delta=None, on_step=None, client=None):
+    """RAG 模式的流式版：检索照旧，生成逐 token 下发。
+
+    检索是同步 numpy 计算，丢线程池；生成走 `llm` 异步客户端 +
+    `AnswerExtractor` 从流式 json_object 里增量解出 answer 字段。
+    `on_delta` 是预览，调用方以返回值的 answer 为准（拒答归一化会改正文）。
+    """
+    import asyncio
+
+    import llm
+    from answer_stream import AnswerExtractor
+    from conversation import arewrite_question
+
+    client = client or llm.default_client()
+    counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    standalone = await arewrite_question(question, history, api_key=api_key,
+                                         counter=counter, client=client)
+    hits = await asyncio.to_thread(retrieve_one, standalone, top_k=top_k, mode=mode)
+    if on_step is not None:
+        on_step({
+            "agent": "retrieval",
+            "tool": "retrieve",
+            "args": {"query": standalone, "top_k": top_k, "mode": mode},
+            "ok": True,
+            "chunk_ids": [h["chunk_id"] for h in hits],
+            "error": None,
+        })
+
+    hist = history_block(history)
+    mem = memory_block(memories)
+    user = ((hist + "\n\n") if hist else "") + ((mem + "\n\n") if mem else "") + \
+        "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), standalone)
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user},
+    ]
+
+    streamed = False
+    last_raw = ""
+    data = None
+    for _ in range(2):  # JSON 解析失败重试一次；已下发过正文则不再重放
+        use_delta = on_delta if (on_delta is not None and not streamed) else None
+        extractor = AnswerExtractor()
+        parts = []
+        async for event in client.stream(messages, api_key=api_key,
+                                         response_format={"type": "json_object"}):
+            if event["type"] == "delta":
+                parts.append(event["text"])
+                if use_delta is not None:
+                    text = extractor.feed(event["text"])
+                    if text:
+                        use_delta(text)
+                        streamed = True
+            else:
+                usage = event.get("usage")
+                if usage:
+                    counter.setdefault("usage", []).append(usage)
+        counter["llm_calls"] += 1
+        last_raw = "".join(parts)
+        try:
+            data = _parse_json(last_raw)
+            break
+        except json.JSONDecodeError:
+            data = None
+    if data is None:
+        return {
+            "can_answer": None,
+            "answer": "",
+            "citations": [],
+            "citations_chunk_ids": [],
+            "invalid_citations": [],
+            "invalid_output": True,
+            "error": "JSON 解析失败",
+            "raw": last_raw,
+            "retrieved_chunk_ids": [h["chunk_id"] for h in hits],
+            "rewritten_question": standalone,
+            "history_turns": len(history),
+            "llm_calls": counter["llm_calls"],
+        }
+    out = _finalize_rag(data, hits, standalone, history, counter)
+    out["usage"] = llm.merge_usage(counter.get("usage"))
+    return out
+
+
 if __name__ == "__main__":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     q = " ".join(sys.argv[1:]) or "算命的说我命里带羊刃，这东西还分好几种？"
