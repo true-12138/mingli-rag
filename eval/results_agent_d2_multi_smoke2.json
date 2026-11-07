@@ -1,0 +1,569 @@
+{
+ "summary": {
+  "tag": "d2_multi_smoke2",
+  "agent": "multi",
+  "code_commit": "ed65008",
+  "tasks_sha256": "a160a6c5b118",
+  "total": 2,
+  "auto_pass": 2,
+  "dual_book_explicit": 2,
+  "dual_book_applicable": 2,
+  "errors": 0,
+  "elapsed_seconds": 160.2,
+  "by_type": {
+   "多跳": {
+    "n": 1,
+    "pass": 1
+   },
+   "复合": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "llm_calls": {
+   "total": 18,
+   "mean": 9.0
+  }
+ },
+ "tasks": [
+  {
+   "id": "a04",
+   "type": "多跳",
+   "name": "月令在取格中的地位",
+   "question": "取格的时候到底以月令为主，还是以透出的天干为主？我看的书说法不一样。",
+   "usage": {
+    "prompt_tokens": 52788,
+    "completion_tokens": 1826,
+    "total_tokens": 54614,
+    "cached_tokens": 4608,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "这个问题在古籍中确有不同侧重，但主流意见是以月令为主，透干是月令用神的变化与辅助。\n\n《子平真诠评注》说得最直接：「八字用神，专求月令，以日干配月令地支，而生克不同，格局分焉。」（chunk_id=1583）又说「用神既主月令矣，然月令所藏不一，而用神遂有变化」，并举寅月为例：甲为本主，丙为长生，「假使寅月为提，不透甲而透丙，则如知府不临郡，而同知得以作主」，这就是透干作主的道理（chunk_id=1587）。同书还强调「八字用神专凭月令，月无用神，徐寻格局。月令，本也；外格，末也」（chunk_id=1609），并批评「今人不知专主提纲」而妄论格局（chunk_id=1584）。\n\n《渊海子平·宝法》也说：「子平之法，以日为主；先看提纲为重，次用年日时支，合成格局，方可断之；皆以月令为用，不可以年取格。」（chunk_id=1807）《玄机赋》称「日干为主，专论财官。月支取格，乃分贵贱」（chunk_id=1823）。《杂论口诀》则说「看子平之法，专论财官；以月上财官为紧要；发觉在于日时」（chunk_id=1798）。\n\n《三命通会》卷九口诀同样主张：「大凡看命，先看月支有无财官，方看其他，月令为命也」，并引古歌「除非只得用提纲是也」（chunk_id=7053）；另一处也说「凡看命专以日干为主，取提纲所用之物为命……皆以月令为用」（chunk_id=7055）。\n\n至于你看到的「以透出天干为主」的说法，在给定材料中没有找到明确主张透干为主、月令为辅的对立原文，因此这一侧无法据现有语料展开。就材料所及，诸书一致以月令为本，透干是在月令所藏不透时「变化作主」之用，并非另立一个与月令并列的主。",
+   "citations": [
+    1583,
+    1587,
+    1609,
+    1584,
+    1807,
+    1823,
+    1798,
+    7053,
+    7055
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 6,
+   "llm_calls": 9,
+   "tool_mode": null,
+   "plan": {
+    "pre": [],
+    "searches": [
+     {
+      "book": "子平真诠评注",
+      "query": "论用神"
+     },
+     {
+      "book": "渊海子平",
+      "query": "取格"
+     },
+     {
+      "book": "三命通会",
+      "query": "月令取格"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "问题为八字取格方法论（月令与透干孰主），属子平格局范畴，语料内可答；未给具体命盘，无需排盘。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料已覆盖问题核心：《子平真诠评注》多处明确主张「八字用神，专求月令」「用神既主月令矣」，并解释月令所藏不透时以透出者变化取用（如寅月不透甲而透丙，同知作主），即月令为本、透干为变化；《渊海子平·宝法》称「先看提纲为重……皆以月令为用」，《玄机赋》称「月支取格乃分贵贱」，《论八字撮要法》《杂论口诀》亦以月令财官为要；《三命通会》卷九口诀称「先看月支有无财官」「月令为命」「皆以月令为用」，与《子平真诠》一致。材料中未见明确主张「以透出天干为主、月令为辅」的对立原文，故两书分歧的「另一侧」缺乏直接原文支撑；但问题所问的「月令为主」一侧及「透干为月令变化之用」的调和说法均有原文依据，足以支撑回答。若需呈现反对意见的原文，可补充检索，但非本问题必需。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "用神",
+      "book": "子平真诠评注",
+      "mode": "bm25",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      1583,
+      1589,
+      1570,
+      1602,
+      1584,
+      1601,
+      1587,
+      1593
+     ],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "论用神",
+      "book": "子平真诠评注",
+      "mode": "rrf",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      1583,
+      1602,
+      1589,
+      1601,
+      1570,
+      1609,
+      1593,
+      1584
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "取格",
+      "book": "渊海子平",
+      "mode": "bm25",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      1807,
+      1823,
+      1877,
+      1876,
+      1879,
+      1878,
+      1873,
+      1872
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "格局",
+      "book": "渊海子平",
+      "mode": "rrf",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      1831,
+      1878,
+      1729,
+      1823,
+      1798,
+      1740,
+      1741,
+      1730
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "月令取格",
+      "book": "三命通会",
+      "mode": "bm25",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      7319,
+      6638,
+      6558,
+      7336,
+      6424,
+      6427,
+      7055,
+      7239
+     ],
+     "error": null
+    },
+    {
+     "step": 6,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "月令",
+      "book": "三命通会",
+      "mode": "rrf",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      6638,
+      6424,
+      7238,
+      6558,
+      7239,
+      6431,
+      7055,
+      7053
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "6 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1583, 1587, 1609, 1584, 1807, 1823, 1798, 7053, 7055] -> ['子平真诠评注', '子平真诠评注', '子平真诠评注', '子平真诠评注', '渊海子平', '渊海子平', '渊海子平', '三命通会', '三命通会']"
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=渊海子平)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "指出两书分歧的具体前提（何时取月令、何时看透出与会局）",
+     "只复述一本书的说法即判不通过"
+    ],
+    "cited_books": [
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "渊海子平",
+     "渊海子平",
+     "渊海子平",
+     "三命通会",
+     "三命通会"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=渊海子平)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 90.3
+  },
+  {
+   "id": "d01",
+   "type": "复合",
+   "name": "排盘到取用的完整链路",
+   "question": "1995 年 8 月 20 日下午 3 点，女，出生地广州。排八字，看月令取什么格，再按《穷通宝鉴》说该用什么调候，最后给我一个取用建议。",
+   "usage": {
+    "prompt_tokens": 49529,
+    "completion_tokens": 2054,
+    "total_tokens": 51583,
+    "cached_tokens": 8832,
+    "llm_calls": 9
+   },
+   "can_answer": true,
+   "answer": "一、排盘（直接引用前置工具输出）：年柱乙亥，月柱甲申，日柱癸未，时柱庚申；日主为癸，女命。月令为申，申中藏庚、壬、戊，对应十神为正印、劫财、正官。\n\n二、月令取格：按《子平真诠评注》「八字用神，专求月令，以日干配月令地支，而生克不同，格局分焉」（chunk 1583），以及「八字用神专凭月令，月无用神，徐寻格局」（chunk 1609），月令申中庚金为正印、戊土为正官、壬水为劫财。本命日主癸水，月令申中庚金正印当令，故推断以正印格为主格；申中戊土正官、壬水劫财为月令所藏兼神。需说明：语料中没有「癸日主生申月」的专门取格条文，此系依据工具输出的十神与子平月令取格原则推演，属推断而非原文直断。\n\n三、《穷通宝鉴》调候：语料中《穷通宝鉴·三秋乙木》论七月乙木：「七月乙木，庚金乘令……柱见庚多，乙难受载。或丙透干，又加巳出埋金，此格可云科甲……或癸透、丙藏、庚少，此不用己，可许贡拔。无丙、有癸透者，不失刀笔门户。有支下庚多，癸又藏者，无丙己二神，平常人物」（chunk 2765）。该条针对乙木日主，本命日主为癸水，故只能借其「申月金旺、先丙后癸」的调候思路作参照，不能视为癸水专条。本命月支申、时支申，庚金透时干，金旺；天干有癸（日主）、无丙透，符合原文「无丙、有癸透者，不失刀笔门户」的近似情形，但原文以乙木立论，此处仅为借论。\n\n四、取用建议（推断）：综合《子平真诠评注》所列取用五法，其中「调候」一法为「金水生于冬令，木火生于夏令，气候太寒太燥，以调和气候为急」（chunk 1583）；本命生于申月，金旺水相，非冬令严寒，调候非急务。按正印格顺用原则，「印喜官煞以相生，劫财以护印」（chunk 1584），月令申中庚金正印当令，戊土正官藏于申中，可作官印相生之辅；庚金透时干，印星有力。推断取用以正印为主，喜官星生印、比劫护印，忌财星坏印。以上取用建议属推断，非原文对癸水申月的直接论断。",
+   "citations": [
+    1583,
+    1609,
+    2765,
+    1584
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 6,
+   "llm_calls": 9,
+   "tool_mode": null,
+   "plan": {
+    "pre": [
+     {
+      "action": "draw_bazi",
+      "args": {
+       "year": 1995,
+       "month": 8,
+       "day": 20,
+       "hour": 15,
+       "minute": 0,
+       "gender": "female"
+      }
+     }
+    ],
+    "searches": [
+     {
+      "book": "穷通宝鉴",
+      "query": "乙木七月"
+     },
+     {
+      "book": "子平真诠评注",
+      "query": "论月令"
+     },
+     {
+      "book": "三命通会",
+      "query": "月令取格"
+     }
+    ],
+    "out_of_scope": false,
+    "reason": "公历出生时间已给，先排八字；月令取格与调候用神均在语料范围内。"
+   },
+   "verdict": {
+    "sufficient": true,
+    "gaps": [],
+    "notes": "材料足以支撑回答：前置排盘给出四柱乙亥/甲申/癸未/庚申、日主癸、月令申（藏庚壬戊，正印/劫财/正官），可直接判定月令取格；《穷通宝鉴·三秋乙木》(chunk 2765) 明确七月乙木「先丙后癸」「庚金乘令」「柱见庚多，乙难受载」「癸透、丙藏、庚少……可许贡拔」等调候与用神条件，与命局（乙日、申月、庚透时干、癸日主）可对照；《子平真诠评注》(chunk 1583、1585、1609) 提供「用神专求月令」「调候为用神」之一法及格局成败判据，可支撑取用建议。注意：材料未直接给出「癸日主生申月」的专门条文，月令取格需由工具输出的十神（申中庚为正印、壬为劫财、戊为正官）结合子平月令取格原则推出，属合理推演而非原文直断；《穷通宝鉴》原文针对乙木日主，而本命日主为癸，故调候引用需说明是借乙木月令（申月金旺）之论，非癸水专条，回答中应标明这一层限制。"
+   },
+   "trace": [
+    {
+     "step": 1,
+     "agent": "supervisor(pre)",
+     "thought": "前置工具",
+     "action": "draw_bazi",
+     "args": {
+      "year": 1995,
+      "month": 8,
+      "day": 20,
+      "hour": 15,
+      "minute": 0,
+      "gender": "female"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "乙木七月",
+      "book": "穷通宝鉴",
+      "mode": "bm25",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      2765,
+      2756,
+      2760,
+      2763,
+      2764,
+      2762,
+      2768,
+      2820
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "七月乙木",
+      "book": "穷通宝鉴",
+      "mode": "rrf",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      2765,
+      2763,
+      2764,
+      2760,
+      2762,
+      2767,
+      2804,
+      2779
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "月令",
+      "book": "子平真诠评注",
+      "mode": "bm25",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      1601,
+      1583,
+      1584,
+      1609,
+      1582,
+      1602,
+      1585,
+      1588
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "论用神",
+      "book": "子平真诠评注",
+      "mode": "bm25",
+      "k": 6
+     },
+     "ok": true,
+     "chunk_ids": [
+      1570,
+      1583,
+      1589,
+      1602,
+      1584,
+      1601
+     ],
+     "error": null
+    },
+    {
+     "step": 6,
+     "agent": "retriever",
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "月令取格",
+      "book": "三命通会",
+      "mode": "bm25",
+      "k": 8
+     },
+     "ok": true,
+     "chunk_ids": [
+      7319,
+      6638,
+      6558,
+      7336,
+      6424,
+      6427,
+      7055,
+      7239
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "6 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1583, 1609, 2765, 1584] -> ['子平真诠评注', '子平真诠评注', '穷通宝鉴', '子平真诠评注']"
+     },
+     {
+      "name": "tool:draw_bazi",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 4,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 2,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "排盘四柱与出生时间一致（该时间农历七月廿五、申月）",
+     "最终建议中必须区分「原文所述」与「自己的推断」"
+    ],
+    "cited_books": [
+     "子平真诠评注",
+     "子平真诠评注",
+     "穷通宝鉴",
+     "子平真诠评注"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 70.0
+  }
+ ]
+}
