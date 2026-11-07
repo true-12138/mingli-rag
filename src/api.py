@@ -41,6 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent
 import agent_multi
 import api_conversations
+import api_fortune
 import llm
 import rag
 import retrieval
@@ -75,6 +76,7 @@ app = FastAPI(
     description="45 部古籍 / 8,681 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
 )
 app.include_router(api_conversations.router)
+app.include_router(api_fortune.router)
 # request id、结构化日志、/metrics 共用这一个中间件
 install_observability(app)
 
@@ -230,6 +232,11 @@ def root() -> dict[str, Any]:
             "/v1/conversations/{conversation_id}/runs",
             "/v1/runs/{run_id}",
             "/v1/runs/{run_id}/feedback",
+            "/v1/memories",
+            "/v1/fortune/bazi",
+            "/v1/fortune/astro",
+            "/v1/fortune/tarot",
+            "/v1/fortune/read",
         ],
     }
 

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import requests
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
@@ -335,6 +335,7 @@ def list_conversations(
 
 @router.get("/memories", response_model=list[MemoryOut])
 def list_memories(
+    limit: int = Query(default=50, ge=1, le=200),
     anonymous_id: str = Depends(current_anonymous_id),
     session: Session = Depends(get_session),
 ) -> list[dict[str, Any]]:
@@ -349,7 +350,7 @@ def list_memories(
             "confidence": m.confidence,
             "updated_at": m.updated_at,
         }
-        for m in repo.list_memories(session, user.id)
+        for m in repo.list_memories(session, user.id, limit=limit)
     ]
 
 
