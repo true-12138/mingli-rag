@@ -10,8 +10,8 @@
 
 ### 功能验收
 
-- [ ] React 对话页：逐 token 流式输出；引用 chip 可展开原文与书名；会话列表可新建/切换/删除
-- [ ] 三种模式（RAG / 单 Agent / 多 Agent）都可流式，工具步骤实时显示
+- [x] React 对话页：逐 token 流式输出；引用 chip 可展开原文与书名；会话列表可新建/切换/删除
+- [x] 三种模式（RAG / 单 Agent / 多 Agent）都可流式，工具步骤实时显示
 - [ ] 排盘页：八字、星盘、塔罗三块可用（复用现有 `src/fortune`）
 - [ ] 记忆面板：长期记忆可查看、删除
 - [ ] 鉴权：公网接口支持 Bearer token；未授权请求 401
@@ -102,7 +102,7 @@ event: error     data: {"message":"...","request_id":"..."}
 |---|---|---|
 | 11/07 夜 | 异步 LLM 客户端 + 增量 JSON 解析器 + 单测 | `src/llm.py`、`src/answer_stream.py`，10 tests |
 | 11/08 | tool_loop / agent / rag 接入流式；SSE 端点 | 后端逐 token 流可用：`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream`、`/v1/.../chat/stream`、`src/sse.py` |
-| 11/09 | React 对话页：流式、引用展开、会话列表 | D3 验收 |
+| 11/09 | React 对话页：流式、引用展开、会话列表 | **已完成**：`frontend/`（React 18 + Vite + TS），`npm run build` 通过；三种模式、刷新回放、移动端抽屉均实跑截图验收 |
 | 11/10 | D4 排盘 / 记忆页 | 功能完整 |
 | 11/11 | Postgres/pgvector/Redis；arq 队列；分布式限流；embedding 服务 | 基础设施 |
 | 11/12 | 多 key 网关 + 语义缓存 + k6 首轮 | 200/20 拐点数据 |

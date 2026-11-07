@@ -393,3 +393,21 @@ def test_chat_stream_marks_run_failed_on_error(client, monkeypatch):
 
     detail = client.get(f"/v1/conversations/{conv['id']}", headers=headers).json()
     assert detail["messages"] == []
+
+
+def test_conversation_detail_keeps_citations_after_reload(client, monkeypatch):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+        return _rag_result()
+
+    monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
+    conv = _create(client)
+    headers = {"X-Anonymous-Id": "anon-1"}
+    client.post(f"/v1/conversations/{conv['id']}/chat",
+                json={"question": "什么是羊刃？"}, headers=headers)
+
+    detail = client.get(f"/v1/conversations/{conv['id']}", headers=headers).json()
+    assert len(detail["runs"]) == 1
+    run = detail["runs"][0]
+    assert run["citations_chunk_ids"] == [1]
+    assert run["question"] == "什么是羊刃？"
+    assert run["mode"] == "rag"

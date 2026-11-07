@@ -198,6 +198,11 @@ def _finalize_rag(data, hits, standalone, history, counter):
         else:
             invalid_nums.append(n)
     data["citations_chunk_ids"] = [hits[n - 1]["chunk_id"] for n in valid_nums]
+    # RAG 正文里的 [n] 指第 n 条召回片段，不是 chunk_id。
+    # 把「标记 → chunk」显式记下来，前端点 [n] 才能落到正确的原文。
+    data["citation_map"] = [
+        {"marker": n, "chunk_id": hits[n - 1]["chunk_id"]} for n in valid_nums
+    ]
     data["invalid_citations"] = invalid_nums
     data["retrieved_chunk_ids"] = [h["chunk_id"] for h in hits]
     # 声称能答却没有一条有效引用：不算拒答，但要标成不合规输出

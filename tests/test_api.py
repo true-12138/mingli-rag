@@ -274,3 +274,19 @@ def test_chat_stream_rejects_when_stream_slots_full(client):
         assert r.headers["retry-after"] == "3"
     finally:
         g["_stream_slots"] = original
+
+
+def test_chunks_lookup_returns_titles_and_text(client):
+    # 语料第一条：书名、正文都要能取到，供前端引用 chip 展开
+    r = client.post("/chunks", json={"ids": [1, 1, 999999]})
+    assert r.status_code == 200
+    items = r.json()
+    assert [it["chunk_id"] for it in items] == [1]  # 去重 + 未知 id 略过
+    item = items[0]
+    assert item["title"].startswith("《")
+    assert item["text"]
+    assert item["book"]
+
+
+def test_chunks_lookup_rejects_empty_ids(client):
+    assert client.post("/chunks", json={"ids": []}).status_code == 422

@@ -74,6 +74,8 @@ class MessageOut(BaseModel):
 
 class ConversationDetailOut(ConversationOut):
     messages: list[MessageOut] = Field(default_factory=list)
+    # 前端按 runs 重建对话：消息只有正文，引用、模式、耗时都在 run 上
+    runs: list["RunOut"] = Field(default_factory=list)
 
 
 class MemoryOut(BaseModel):
@@ -158,6 +160,14 @@ class ToolCallOut(BaseModel):
     created_at: datetime
 
 
+class CitationRef(BaseModel):
+    """正文里的引用标记 → 语料 chunk。marker 为 None 表示按 chip 顺序对齐
+    （Agent 模式的正文没有 [n] 标记，citations 直接就是 chunk_id）。"""
+
+    marker: int | None = None
+    chunk_id: int
+
+
 class RunOut(BaseModel):
     id: str
     conversation_id: str
@@ -169,6 +179,8 @@ class RunOut(BaseModel):
     answer: str | None = None
     refusal_reason: str | None = None
     invalid_output: bool = False
+    citations_chunk_ids: list[int] = Field(default_factory=list)
+    citation_map: list[CitationRef] = Field(default_factory=list)
     elapsed_ms: float | None = None
     llm_calls: int = 0
     prompt_tokens: int = 0
@@ -182,6 +194,11 @@ class RunOut(BaseModel):
 class RunDetailOut(RunOut):
     tool_calls: list[ToolCallOut] = Field(default_factory=list)
     feedback: list[FeedbackOut] = Field(default_factory=list)
+
+
+# ConversationDetailOut 引用了后定义的 RunOut，这里显式解析一次，
+# 否则 Pydantic 首次校验时才去猜前向引用。
+ConversationDetailOut.model_rebuild()
 
 
 # ---------- 依赖 ----------
@@ -233,7 +250,25 @@ def _feedback_out(fb) -> dict[str, Any]:
     }
 
 
+def _load_citations(raw: str | None) -> tuple[list[int], list[dict[str, Any]]]:
+    """citations_json 有两种形态：旧的纯 id 列表，和新的 [{marker, chunk_id}]。
+    统一成 (ids, map)，ids 保持正文引用顺序。"""
+    stored = _loads(raw, [])
+    if not isinstance(stored, list):
+        return [], []
+    id_list = [c for c in stored if isinstance(c, int) and not isinstance(c, bool)]
+    cmap = [
+        {"marker": c.get("marker"), "chunk_id": c["chunk_id"]}
+        for c in stored
+        if isinstance(c, dict) and isinstance(c.get("chunk_id"), int)
+    ]
+    if cmap:
+        return [c["chunk_id"] for c in cmap], cmap
+    return id_list, []
+
+
 def _run_out(run, with_tool_calls: bool = False) -> dict[str, Any]:
+    citations_chunk_ids, citation_map = _load_citations(run.citations_json)
     out: dict[str, Any] = {
         "id": run.id,
         "conversation_id": run.conversation_id,
@@ -245,6 +280,8 @@ def _run_out(run, with_tool_calls: bool = False) -> dict[str, Any]:
         "answer": run.answer,
         "refusal_reason": run.refusal_reason,
         "invalid_output": run.invalid_output,
+        "citations_chunk_ids": citations_chunk_ids,
+        "citation_map": citation_map,
         "elapsed_ms": run.elapsed_ms,
         "llm_calls": run.llm_calls,
         "prompt_tokens": run.prompt_tokens,
@@ -347,6 +384,8 @@ def get_conversation(
         }
         for m in conv.messages
     ]
+    # 历史顺序即 runs 的创建顺序；失败的那次 run 也保留，前端能显示「这次没答成」
+    out["runs"] = [_run_out(r) for r in conv.runs]
     return out
 
 

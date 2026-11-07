@@ -96,6 +96,7 @@ class Conversation(Base):
         back_populates="conversation",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        order_by="Run.created_at",
     )
 
 
@@ -146,6 +147,9 @@ class Run(Base):
     refusal_reason = Column(Text, nullable=True)
     invalid_output = Column(Boolean, nullable=False, default=False)
     elapsed_ms = Column(Float, nullable=True)
+    # 这条回答引用了哪些 chunk：[12, 34]。消息表只存正文，不落这里的话
+    # 刷新页面后引用 chip 就丢了。用 Text 存 JSON，和 args_json 的做法一致。
+    citations_json = Column(Text, nullable=True)
 
     llm_calls = Column(Integer, nullable=False, default=0)
     prompt_tokens = Column(Integer, nullable=False, default=0)

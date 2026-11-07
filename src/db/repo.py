@@ -217,6 +217,12 @@ def finish_run(
     run.invalid_output = bool(result.get("invalid_output"))
     run.elapsed_ms = elapsed_ms
     run.llm_calls = int(result.get("llm_calls") or 0)
+    # 引用正文在语料里，这里只存 id；会话回放时前端按 id 批量取原文。
+    # RAG 有 citation_map（正文 [n] → chunk），连同标记一起存，回放时点 [n] 才不会串。
+    run.citations_json = json.dumps(
+        result.get("citation_map") or result.get("citations_chunk_ids") or [],
+        ensure_ascii=False,
+    )
 
     usage_data = usage_data or {}
     run.prompt_tokens = int(usage_data.get("prompt_tokens") or 0)

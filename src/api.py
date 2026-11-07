@@ -157,6 +157,21 @@ class RetrieveResponse(BaseModel):
     elapsed_ms: float
 
 
+class ChunkLookupRequest(BaseModel):
+    """按 chunk_id 批量取原文，给前端的引用 chip 展开用。"""
+
+    ids: list[int] = Field(min_length=1, max_length=20)
+
+
+class ChunkOut(BaseModel):
+    chunk_id: int
+    book: str = ""
+    volume: str = ""
+    chapter: str = ""
+    title: str = ""
+    text: str = ""
+
+
 class TraceResponse(BaseModel):
     trace_id: str
     created_at: str
@@ -208,6 +223,7 @@ def root() -> dict[str, Any]:
             "/chat",
             "/chat/stream",
             "/retrieve",
+            "/chunks",
             "/trace/{trace_id}",
             "/v1/conversations",
             "/v1/conversations/{conversation_id}/chat",
@@ -236,6 +252,49 @@ def health() -> dict[str, Any]:
         "streaming": True,
         "trace_cache": len(_TRACES),
     }
+
+
+_CHUNK_INDEX: dict[int, dict[str, Any]] | None = None
+_CHUNK_INDEX_LOCK = threading.Lock()
+
+
+def _chunk_index() -> dict[int, dict[str, Any]]:
+    """chunk_id → 语料行。只建一次；语料在进程启动后不变。"""
+    global _CHUNK_INDEX
+    if _CHUNK_INDEX is None:
+        with _CHUNK_INDEX_LOCK:
+            if _CHUNK_INDEX is None:
+                _CHUNK_INDEX = {int(c["chunk_id"]): c for c in retrieval.chunks}
+    return _CHUNK_INDEX
+
+
+@app.post("/chunks", response_model=list[ChunkOut])
+def lookup_chunks(
+    req: ChunkLookupRequest,
+    _: None = Depends(_require_token),
+) -> list[dict[str, Any]]:
+    """引用展开：前端拿到 citations_chunk_ids 后按 id 取书名与原文。
+
+    只读、不调模型，所以不走生成并发信号量；查不到的 id 直接略过。
+    """
+    index = _chunk_index()
+    out = []
+    for cid in dict.fromkeys(req.ids):  # 保序去重
+        chunk = index.get(int(cid))
+        if not chunk:
+            continue
+        meta = chunk.get("meta") or {}
+        parts = [str(meta.get(k) or "").strip() for k in ("book", "volume", "chapter")]
+        out.append({
+            "chunk_id": int(cid),
+            "book": str(meta.get("book") or ""),
+            "volume": str(meta.get("volume") or ""),
+            "chapter": str(meta.get("chapter") or ""),
+            "title": "《{}》".format("·".join(p for p in parts if p)) if any(parts)
+            else "《未标书名》",
+            "text": str(chunk.get("chunk_text") or "").strip(),
+        })
+    return out
 
 
 @app.get("/metrics", response_class=PlainTextResponse, tags=["ops"])

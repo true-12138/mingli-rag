@@ -430,6 +430,7 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `GET` | `/v1/conversations/{id}/runs` | 该会话的运行记录 |
 | `GET` | `/v1/runs/{run_id}` | 回放：答案、耗时、token、工具调用、反馈 |
 | `POST` | `/v1/runs/{run_id}/feedback` | 好评/差评，差评可带 `expected_answer` |
+| `POST` | `/chunks` | 按 chunk_id 批量取书名与原文（引用展开用，最多 20 条） |
 
 ```bash
 curl -s localhost:8000/chat \
@@ -446,6 +447,22 @@ curl -s localhost:8000/chat \
 - **流式**：`/chat/stream` 用 SSE。`delta` 只带正文增量，是**预览**；`done` 带完整结果（citations / trace / usage），前端应以 `done.answer` 为准——拒答归一化等终稿处理会改正文。服务端从流式 `json_object` 里增量解析 `answer` 字段（`src/answer_stream.py`），前端不会收到半个 JSON。`stage` 事件仅多 Agent 有。
 - **鉴权**：设置 `MINGLI_API_TOKEN` 后，所有接口要求 `Authorization: Bearer <token>`；不设置则开放。
 - **访客自带 key**：请求头 `X-DeepSeek-Key`，只作用于本次请求，不落日志、不进 trace。不要放在浏览器前端。
+- **会话回放**：`runs` 表存 `citations_json`（含 RAG 的 `[n] → chunk_id` 映射），`GET /v1/conversations/{id}` 的 `runs[].citation_map` 可直接用来还原引用编号。
+
+### 6.2 React 对话页（`frontend/`）
+
+独立的 Vite + React 18 + TypeScript 单页，对接上面的 `/v1` 接口：回答逐 token 出现；RAG 正文里的 `[n]` 可点，展开对应原文；多 Agent 的 `stage` 显示当前阶段与工具轨迹；会话列表支持新建 / 切换 / 删除，刷新后按 `runs` + `citation_map` 原样恢复。
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://127.0.0.1:5173，/api 由 Vite 代理到 127.0.0.1:8000
+npm run build      # tsc --noEmit + vite build，产物在 dist/
+```
+
+- 代理目标用 `MINGLI_API_ORIGIN` 覆盖（默认 `http://127.0.0.1:8000`）；构建时用 `VITE_API_BASE` 指向后端完整地址（默认 `/api`）。
+- 身份是 localStorage 里的 `X-Anonymous-Id`：一个浏览器一个 id，换浏览器就是另一个人——演示够用，不是登录。
+- 样式是手写的纸 / 墨 / 朱砂设计令牌（`src/theme.css`），没有组件库；正文用宋体，UI 用无衬线。
 - **并发**：默认同时最多 4 个生成请求（`MINGLI_MAX_CONCURRENCY`），超了立刻 429，不排队。
 - **trace**：内存缓存，进程重启即清空；持久化 trace 留给 Langfuse（下一步）。
 - **token 用量**：`/chat` 响应里的 `usage` 汇总本次请求内所有 LLM 调用的 token（含追问改写、Agent 每一步、JSON 重试），字段为 `prompt_tokens / completion_tokens / total_tokens / cached_tokens / llm_calls`；采集是线程内旁路累加（`src/usage.py`），不改变 `_chat` 的签名，脚本直接调 `rag.answer` 时自动静默。日志行同时输出 `tokens=`，可直接接成本看板。
@@ -671,7 +688,8 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **v1.8（已完成，11/07）**：30 条 Agent 与 20 条多轮评测真跑（旧 JSON ReAct：单 21/30、多 27/30；多轮 19/20、18/20），P50/P95 + token 报表，结果写入 `code_commit` / `tasks_sha256`；补 `_chat` 空响应、引用契约、拒答判定三组回归测试
 - **D2（已完成，11/07）**：工具协议换成原生 function calling，单/多 Agent 共用 `src/tool_loop.py`；30 题零报错（单 23/30、多 26/30）；修复 JSON 模式提示词缺 `json` 关键字导致的多 Agent 400；429/5xx 有限重试
 - **D3 后端（已完成，11/08）**：逐 token 流。`src/llm.py`（异步、多 key、per-key 并发池、流式 tool_calls 拼装）、`src/answer_stream.py`（从流式 `json_object` 增量解出 `answer`）、`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream` 与 `/v1/conversations/{id}/chat/stream`；SSE 契约 `step/stage/delta/done/error`，15s 心跳，断连取消后台任务
-- **下一步（D3 前端，11/09）**：React 单页——流式回答、引用展开、会话列表；随后 D4 排盘与记忆、D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
+- **D3 前端（已完成，11/09）**：`frontend/` React 18 + Vite + TypeScript 对话页。逐 token 流式、`stage`/`step` 进度与工具轨迹、引用 chip 展开原文、RAG `[n]` 跳转（`citation_map` 落库）、会话新建/切换/删除/刷新回放、IME 安全的 Enter 发送、移动端抽屉；`npm run build` 通过，三种模式用假 LLM 实跑截图验收
+- **下一步**：D4 排盘与记忆、D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
