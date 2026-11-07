@@ -371,6 +371,7 @@ pass_rate = 0.0
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
 | 12 | 30 条版每系统只跑 1 次，且题型与 prompt 在迭代中互相改过，属于 **development set**；`b04`（该取原条却直接引用检索片段）两边都挂 | 26/30 不能外推成泛化准确率；方差只能从 15 条版的三次重复（±1 条）间接推断 | 冻结 prompt 后用新题集做一次盲测；修 b04 的工具选择 |
 | 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
+| 14 | D4 排盘/记忆页的浏览器验收用的是**假 LLM + stub 检索**，没有真实 key | 盘面计算、接口契约、页面交互是真跑的；「解读」的文本质量与真实延迟没在浏览器里验过 | 有 key 后在 CloudStudio 走一遍 `#/fortune` 解读并截图 |
 
 > 关于"没做完"的部分：微调、换 LangChain/LlamaIndex 重写、向量库仍然**不做**；reranker 已接入但默认关闭、尚未打过 bigram 基线，RAGAS 忠实度排进 v2。多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
@@ -430,6 +431,12 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `GET` | `/v1/conversations/{id}/runs` | 该会话的运行记录 |
 | `GET` | `/v1/runs/{run_id}` | 回放：答案、耗时、token、工具调用、反馈 |
 | `POST` | `/v1/runs/{run_id}/feedback` | 好评/差评，差评可带 `expected_answer` |
+| `GET` | `/v1/memories` | 长期记忆列表（当前匿名用户，最多 200 条） |
+| `DELETE` | `/v1/memories/{id}` | 删除一条长期记忆；不存在或不属于本人返回 404 |
+| `POST` | `/v1/fortune/bazi` | 八字：四柱、五行、大运（纯计算，不调模型） |
+| `POST` | `/v1/fortune/astro` | 本命盘：行星黄经、整宫制宫位、相位（`ephem`） |
+| `POST` | `/v1/fortune/tarot` | 抽牌；不传 `seed` 时服务端定一个并返回，客户端回传即可复现 |
+| `POST` | `/v1/fortune/read` | 解读：服务端用 `params` 重算盘面后再调模型，不信任前端传来的盘 |
 | `POST` | `/chunks` | 按 chunk_id 批量取书名与原文（引用展开用，最多 20 条） |
 
 ```bash
@@ -463,6 +470,9 @@ npm run build      # tsc --noEmit + vite build，产物在 dist/
 - 代理目标用 `MINGLI_API_ORIGIN` 覆盖（默认 `http://127.0.0.1:8000`）；构建时用 `VITE_API_BASE` 指向后端完整地址（默认 `/api`）。
 - 身份是 localStorage 里的 `X-Anonymous-Id`：一个浏览器一个 id，换浏览器就是另一个人——演示够用，不是登录。
 - 样式是手写的纸 / 墨 / 朱砂设计令牌（`src/theme.css`），没有组件库；正文用宋体，UI 用无衬线。
+- 三个页面用 `#/chat`、`#/fortune`、`#/memory` 三个 hash 定位，没引 react-router。`useChat` 挂在 `App` 上，切到排盘页再切回来，正在生成的回答不会丢。
+- **排盘页**（`pages/FortunePage.tsx`）：八字 / 星盘 / 塔罗三个页签。盘面全部来自 `/v1/fortune/*` 的确定性计算；星盘是纯 SVG 轮盘（上升固定在左、黄经逆时针、整宫制宫号按上升星座推算），没有图表库。解读按钮把**输入参数**而不是算好的盘发给 `/v1/fortune/read`，由服务端重算后再交给模型；塔罗把服务端返回的 `seed` 原样回传，保证看到什么牌就解读什么牌。
+- **记忆页**（`pages/MemoryPage.tsx`）：列出跨会话抽出来的偏好与事实，删除是两步确认（先点「删除」，再点「确认删除」，2.6 秒后自动收回）。记忆只作个性化提示，**不作为引用依据**。
 - **并发**：默认同时最多 4 个生成请求（`MINGLI_MAX_CONCURRENCY`），超了立刻 429，不排队。
 - **trace**：内存缓存，进程重启即清空；持久化 trace 留给 Langfuse（下一步）。
 - **token 用量**：`/chat` 响应里的 `usage` 汇总本次请求内所有 LLM 调用的 token（含追问改写、Agent 每一步、JSON 重试），字段为 `prompt_tokens / completion_tokens / total_tokens / cached_tokens / llm_calls`；采集是线程内旁路累加（`src/usage.py`），不改变 `_chat` 的签名，脚本直接调 `rag.answer` 时自动静默。日志行同时输出 `tokens=`，可直接接成本看板。
@@ -689,7 +699,8 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D2（已完成，11/07）**：工具协议换成原生 function calling，单/多 Agent 共用 `src/tool_loop.py`；30 题零报错（单 23/30、多 26/30）；修复 JSON 模式提示词缺 `json` 关键字导致的多 Agent 400；429/5xx 有限重试
 - **D3 后端（已完成，11/08）**：逐 token 流。`src/llm.py`（异步、多 key、per-key 并发池、流式 tool_calls 拼装）、`src/answer_stream.py`（从流式 `json_object` 增量解出 `answer`）、`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream` 与 `/v1/conversations/{id}/chat/stream`；SSE 契约 `step/stage/delta/done/error`，15s 心跳，断连取消后台任务
 - **D3 前端（已完成，11/09）**：`frontend/` React 18 + Vite + TypeScript 对话页。逐 token 流式、`stage`/`step` 进度与工具轨迹、引用 chip 展开原文、RAG `[n]` 跳转（`citation_map` 落库）、会话新建/切换/删除/刷新回放、IME 安全的 Enter 发送、移动端抽屉；`npm run build` 通过，三种模式用假 LLM 实跑截图验收
-- **下一步**：D4 排盘与记忆、D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
+- **D4（已完成，11/10）**：排盘页与记忆页。后端 `src/api_fortune.py` 把 `src/fortune` 包成 `/v1/fortune/{bazi,astro,tarot,read}`（盘面纯计算，解读前服务端重算盘面，塔罗 seed 往返复现）；`GET/DELETE /v1/memories` 可查看/删除长期记忆；前端新增 `#/fortune`（三页签 + SVG 星盘轮盘）与 `#/memory`，hash 路由三页互通，移动端抽屉从任一页可开
+- **下一步**：D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 

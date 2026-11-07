@@ -105,6 +105,164 @@ export interface Chunk {
   text: string;
 }
 
+export interface Memory {
+  id: number;
+  kind: "preference" | "fact";
+  key: string;
+  value: string;
+  confidence: number;
+  updated_at: string;
+}
+
+// ---------- 排盘 ----------
+
+export type FortuneKind = "bazi" | "astro" | "tarot";
+
+export interface BirthInput {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
+export interface BaziInput extends BirthInput {
+  gender: "male" | "female";
+}
+
+export interface AstroInput extends BirthInput {
+  tz: number;
+  lat: number;
+  lon: number;
+  city: string;
+}
+
+export interface TarotInput {
+  spread: "single" | "three" | "cross";
+  seed?: number | null;
+}
+
+export interface BaziChart {
+  kind: "bazi";
+  input: {
+    solar: string;
+    lunar: string;
+    gender: "male" | "female";
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+  };
+  sizhu: Record<string, string>;
+  rizhu: string;
+  day_master: string;
+  shengxiao: string;
+  canggan: Record<string, string[]>;
+  shishen_gan: Record<string, string>;
+  shishen_zhi: Record<string, string[]>;
+  nayin: Record<string, string>;
+  wuxing: Record<string, number>;
+  wuxing_missing: string[];
+  xunkong: Record<string, string>;
+  taiyuan: string;
+  minggong: string;
+  shengong: string;
+  qiyun: { years: number; months: number; days: number; forward: boolean };
+  dayun: { start_year: number; start_age: number; ganzhi: string }[];
+  current_dayun: { start_year: number; start_age: number; ganzhi: string } | null;
+  text: string;
+}
+
+export interface AstroChart {
+  kind: "astro";
+  input: { solar: string; utc: string; city: string; lat: number; lon: number; tz: number };
+  planets: {
+    name: string;
+    lon: number;
+    sign: string;
+    degree: number;
+    retrograde: boolean;
+    house: number;
+  }[];
+  asc: { sign: string; degree: number; lon: number };
+  mc: { sign: string; degree: number; lon: number };
+  houses: { house: number; sign: string }[];
+  aspects: { a: string; b: string; aspect: string; angle: number; orb: number }[];
+  elements: Record<string, number>;
+  modalities: Record<string, number>;
+  house_system: string;
+  text: string;
+}
+
+export interface TarotChart {
+  kind: "tarot";
+  spread: string;
+  seed: number | null;
+  cards: {
+    position: string;
+    name: string;
+    arcana: string;
+    orientation: string;
+    meaning: string;
+    card_id: number;
+  }[];
+  text: string;
+}
+
+export type FortuneChart = BaziChart | AstroChart | TarotChart;
+
+export interface FortuneReading {
+  kind: FortuneKind;
+  summary: string;
+  sections: { title: string; content: string }[];
+  disclaimer: string;
+  parse_error?: boolean;
+}
+
+export function listMemories(): Promise<Memory[]> {
+  return request<Memory[]>("/v1/memories");
+}
+
+export function deleteMemory(id: number): Promise<void> {
+  return request<void>(`/v1/memories/${id}`, { method: "DELETE" });
+}
+
+export function drawBazi(input: BaziInput): Promise<BaziChart> {
+  return request<BaziChart>("/v1/fortune/bazi", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function drawAstro(input: AstroInput): Promise<AstroChart> {
+  return request<AstroChart>("/v1/fortune/astro", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function drawTarot(input: TarotInput): Promise<TarotChart> {
+  return request<TarotChart>("/v1/fortune/tarot", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function readFortune(
+  kind: FortuneKind,
+  params: Record<string, unknown>,
+  question?: string,
+  note?: string,
+): Promise<FortuneReading> {
+  // 解读可能调用模型，等得比普通请求久；
+  // key 不从前端传，走服务端环境变量。
+  return request<FortuneReading>("/v1/fortune/read", {
+    method: "POST",
+    body: JSON.stringify({ kind, params, question: question || null, note: note || null }),
+  });
+}
+
 // ---------- 会话接口 ----------
 
 export function listConversations(): Promise<Conversation[]> {

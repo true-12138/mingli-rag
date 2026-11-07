@@ -1,42 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { Composer } from "./components/Composer";
-import { EmptyState } from "./components/EmptyState";
-import { Sidebar } from "./components/Sidebar";
-import { TurnView } from "./components/TurnView";
+import { Sidebar, type View } from "./components/Sidebar";
+import { ChatPage } from "./pages/ChatPage";
+import { FortunePage } from "./pages/FortunePage";
+import { MemoryPage } from "./pages/MemoryPage";
 import type { Mode } from "./api";
 import { useChat } from "./useChat";
 
+// 轻量 hash 路由：#/chat、#/fortune、#/memory。
+// 不用 react-router——三个页面还不值得引一个路由库。
+function readView(): View {
+  const hash = window.location.hash.replace(/^#\/?/, "");
+  if (hash === "fortune") return "fortune";
+  if (hash === "memory") return "memory";
+  return "chat";
+}
+
 export default function App() {
+  // useChat 放在 App：切到排盘页再回来，正在生成的回答不会丢
   const chat = useChat();
   const [mode, setMode] = useState<Mode>("rag");
+  const [view, setView] = useState<View>(readView);
   const [drawer, setDrawer] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const stickRef = useRef(true);
-
-  const activeTitle =
-    chat.conversations.find((conv) => conv.id === chat.activeId)?.title ?? "新对话";
-
-  // 只在用户本来就贴着底部时才跟随；往上翻旧内容时不被拽回去
-  const onScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-  }, []);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el && stickRef.current) el.scrollTop = el.scrollHeight;
-  }, [chat.turns]);
-
-  const send = useCallback(
-    (question: string) => {
-      stickRef.current = true;
-      void chat.send(question, mode);
+    const onHash = () => {
+      setView(readView());
       setDrawer(false);
-    },
-    [chat, mode],
-  );
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const go = useCallback((next: View) => {
+    window.location.hash = `/${next}`;
+    setView(next);
+    setDrawer(false);
+  }, []);
 
   return (
     <div className={`app${drawer ? " app--drawer" : ""}`}>
@@ -45,6 +45,8 @@ export default function App() {
         activeId={chat.activeId}
         loading={chat.loadingList}
         streaming={chat.streaming}
+        view={view}
+        onView={go}
         onSelect={(id) => {
           chat.select(id);
           setDrawer(false);
@@ -59,75 +61,21 @@ export default function App() {
       <div className="scrim" onClick={() => setDrawer(false)} aria-hidden="true" />
 
       <main className="main">
-        <header className="topbar">
-          <button
-            className="icon-btn drawer-toggle"
-            onClick={() => setDrawer((open) => !open)}
-            aria-label="会话列表"
-          >
-            <MenuIcon />
-          </button>
-          <div className="topbar__title" title={activeTitle}>
-            {activeTitle}
-          </div>
-          <div className="topbar__meta">{modeLabel(mode)}</div>
-        </header>
-
-        {chat.fatal && (
-          <div className="banner" role="alert">
-            <span>{chat.fatal}</span>
-            <button className="banner__close" onClick={chat.clearFatal} aria-label="关闭">
-              ×
-            </button>
-          </div>
+        {view === "chat" && (
+          <ChatPage
+            chat={chat}
+            mode={mode}
+            onModeChange={setMode}
+            onOpenDrawer={() => setDrawer((open) => !open)}
+          />
         )}
-
-        <div className="thread" ref={scrollRef} onScroll={onScroll}>
-          <div className="thread__inner">
-            {chat.turns.length === 0 && !chat.loadingThread ? (
-              <EmptyState onPick={send} />
-            ) : (
-              chat.turns.map((turn) => (
-                <TurnView
-                  key={turn.key}
-                  turn={turn}
-                  chunks={chat.chunks}
-                  streaming={chat.streaming && turn.status === "streaming"}
-                  onAsk={send}
-                />
-              ))
-            )}
-            {chat.loadingThread && <div className="thread__loading">正在打开会话…</div>}
-          </div>
-        </div>
-
-        <Composer
-          mode={mode}
-          onModeChange={setMode}
-          streaming={chat.streaming}
-          onSend={send}
-          onStop={chat.stop}
-        />
+        {view === "fortune" && (
+          <FortunePage onOpenDrawer={() => setDrawer((open) => !open)} />
+        )}
+        {view === "memory" && (
+          <MemoryPage onOpenDrawer={() => setDrawer((open) => !open)} />
+        )}
       </main>
     </div>
-  );
-}
-
-function modeLabel(mode: Mode): string {
-  switch (mode) {
-    case "agent":
-      return "查证后回答";
-    case "multi":
-      return "多书对照";
-    default:
-      return "原文直答";
-  }
-}
-
-function MenuIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d="M2.5 5h13M2.5 9h13M2.5 13h9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
   );
 }

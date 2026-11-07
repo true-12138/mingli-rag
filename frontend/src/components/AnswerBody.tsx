@@ -9,7 +9,8 @@ import remarkGfm from "remark-gfm";
 
 interface Props {
   text: string;
-  onCite: (marker: number) => void;
+  /** 不传就只渲染文字，不把 [n] 变成可点的引用。 */
+  onCite?: (marker: number) => void;
 }
 
 const CITE = /\[(\d{1,4})\](?!\()/g;
@@ -47,6 +48,7 @@ export function AnswerBody({ text, onCite }: Props) {
   const components: Components = {
     a({ href, children }) {
       if (href?.startsWith("#cite-")) {
+        if (!onCite) return <span>{children}</span>;
         const marker = Number(href.slice(6));
         return (
           <sup
