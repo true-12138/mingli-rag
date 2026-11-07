@@ -36,6 +36,12 @@ tokenize = retrieval_utils.make_tokenizer(TOKENIZER, DATA_DIR / "terminology")
 # 「融合把单路强命中挤出 Top-5」这类问题上才值得开。
 RERANK = os.environ.get("MINGLI_RERANK", "0").strip().lower() not in ("", "0", "false", "no", "off")
 RERANK_MODEL_ID = os.environ.get("MINGLI_RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
+# 重排能看到多少条候选。默认=候选池 40；调大能捞回「融合排名 41–100 的 gold」，
+# 代价是 CrossEncoder 要打更多对。评测用 MINGLI_RERANK_POOL 扫一下再定。
+try:
+    RERANK_POOL = max(candidate_k, int(os.environ.get("MINGLI_RERANK_POOL", candidate_k)))
+except ValueError:
+    RERANK_POOL = candidate_k
 reranker = retrieval_utils.LazyReranker(RERANK_MODEL_ID)
 chunks=corpus.load_chunks(DATA_DIR)
 tokenized_corpus=[tokenize(c["chunk_text"]) for c in chunks]
@@ -146,7 +152,7 @@ def rrf_fuse(dense_list,bm25_list,k=rrf_k,topk=top_k,w_d=w_dense,w_b=w_bm25):
     out=[{"idx":i,"scores":s} for i,s in sorted_idx[:topk]]
     return out
 def retrieve_one(query,top_k=5,mode="rrf"):
-    cand=max(top_k,candidate_k)
+    cand=max(top_k,RERANK_POOL if RERANK else candidate_k)
     d_res=dense_search(query,cand)
     b_res=bm25_search(query,cand)
     if mode=="dense":
