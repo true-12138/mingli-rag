@@ -186,10 +186,11 @@ def test_agent_injects_memory_into_first_prompt(monkeypatch):
 
     def fake_chat(messages, **kwargs):
         seen["user"] = messages[-1]["content"]
-        return ('{"thought": "无依据", "action": "final", "can_answer": false, '
-                '"answer": "没有依据", "citations": [], "refusal_reason": "无"}')
+        # function calling 路径：没有 tool_calls 的消息就是终稿
+        return {"content": ('{"thought": "无依据", "can_answer": false, '
+                            '"answer": "没有依据", "citations": [], "refusal_reason": "无"}')}
 
-    monkeypatch.setattr(agent, "_chat", fake_chat)
+    monkeypatch.setattr(rag, "_chat_message", fake_chat)
     agent.agent_answer(
         "羊刃是什么",
         memories=[{"kind": "fact", "key": "birth_time", "value": "1992-11-15"}],

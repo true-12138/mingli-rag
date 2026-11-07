@@ -11,16 +11,21 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import tool_loop
+import tool_schema
 import tools
 from rag import REFUSAL_TEXT, _chat, _parse_json
 from conversation import history_block, memory_block, normalize_history, rewrite_question
 
 MAX_STEPS = 6
+# function=原生 tool_calls（默认）；json=旧的手写 ReAct，保留一版用于 A/B 和回滚
+TOOL_MODE = os.environ.get("MINGLI_TOOL_MODE", "function").strip().lower()
 
 SYSTEM_PROMPT = """你是古籍检索 Agent。你不能凭记忆回答，只能通过工具查证后再回答。
 
@@ -52,6 +57,35 @@ SYSTEM_PROMPT = """你是古籍检索 Agent。你不能凭记忆回答，只能�
 8. 对话历史和长期记忆只用于理解追问/个性化，不能作为回答证据；citations 只能来自本次工具实际返回过的 chunk_id。
 9. 检索词用术语本身（2–8 字），不要把整句问题塞进 query；同一个概念的古称可能不同（如七杀/偏官、羊刃/阳刃、空亡/旬空），某个词 0 命中或结果明显不相关时，换同义词、别名或缩短检索词再试一次。
 10. 命中的是目录/篇名（如「三十一．论正官」）却没有正文时，用 fetch_chunk(chunk_id, with_neighbors=true) 取相邻正文，不要只凭目录片段下结论。
+"""
+
+FUNCTION_SYSTEM_PROMPT = """你是古籍检索 Agent。你不能凭记忆回答，只能通过工具查证后再回答。
+工具已经以 function calling 形式提供，直接调用即可；一次可以调一个，也可以调多个。
+工具的 description 里写了参数含义和适用场景，按它来选。
+
+检索策略：
+- search_classics：mode="dense" 适合口语化转述，mode="bm25" 适合精确术语，不确定用 "rrf"；
+  book 传书名片段可限定在某本书内检索。
+- fetch_chunk：命中的是目录/篇名（如「三十一．论正官」）却没有正文时，
+  用 with_neighbors=true 取相邻正文，不要只凭目录片段下结论。
+- search_terms：术语表是词典不是原文，不能作为 citations 的出处。
+- draw_bazi / draw_astro / draw_tarot：确定性排盘/抽牌，同样的输入永远同一个结果；
+  返回值是既成事实，可以解释，不许重算、不许补充盘里没有的星体或神煞。
+
+规则：
+1. citations 只能填工具**实际返回过**的 chunk_id，不能自己编号、不能猜。
+2. 需要对比两本书时，分别对每本书调 search_classics(book="书名")。
+3. 片段只是主题相近但不能直接回答问题，必须 can_answer=false。
+4. 古代概念不能套现代生活：科举/功名≠考研，田宅≠商品房，官星≠考公，财星≠工资。
+5. 最多 6 次工具调用，超出会被强制按「证据不足」处理。
+6. 同一个出生时间只调一次排盘工具；解读用倾向性语言，不做生死/疾病/灾祸/婚姻成败的断言。
+7. 对话历史和长期记忆只用于理解追问/个性化，不能作为回答证据。
+8. 检索词用术语本身（2–8 字），不要把整句问题塞进 query；0 命中或结果不相关时，
+   换同义词/别名再试（七杀↔偏官、羊刃↔阳刃、空亡↔旬空）。
+
+证据足够后**不要再调用工具**，直接输出一个 JSON（不要 markdown 围栏）：
+{"can_answer": true 或 false, "answer": "回答正文", "citations": [chunk_id, ...], "refusal_reason": null 或 "为什么证据不足"}
+如果 can_answer 为 false，answer 固定为 "语料中没有足够的依据回答这个问题。"，citations 为 []。
 """
 
 
@@ -159,13 +193,120 @@ def _finalize(data, seen, trace):
     }
 
 
+def _record_call(trace, seen, name, args, result):
+    """把一次工具调用记进 trace，并把返回的 chunk_id 收进引用白名单。"""
+    got = _collect_ids(result)
+    seen.update(got)
+    trace.append({
+        "step": len(trace) + 1,
+        "thought": None,
+        "action": name,
+        "args": args,
+        "ok": result.get("ok"),
+        "chunk_ids": got,
+        "error": result.get("error"),
+    })
+
+
+def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
+    """原生 function calling 版：模型直接返回 tool_calls，不再自己拼 JSON 动作。"""
+    counter = {"llm_calls": 0}
+    history = normalize_history(history)
+    standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
+    trace, seen = [], set()
+    hist = history_block(history)
+    mem = memory_block(memories)
+    user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
+        "【问题】\n{}".format(standalone)
+    messages = [
+        {"role": "system", "content": FUNCTION_SYSTEM_PROMPT},
+        {"role": "user", "content": user_text},
+    ]
+
+    data = None
+    raw = ""
+    for _attempt in range(2):  # 终稿 JSON 解析失败时给一次纠正机会
+        raw, messages, _used = tool_loop.run(
+            messages,
+            api_key=api_key,
+            max_calls=max(0, max_steps - len(trace)),
+            schemas=tool_schema.SCHEMAS,
+            on_call=lambda name, args, result: _record_call(trace, seen, name, args, result),
+            counter=counter,
+        )
+        try:
+            data = _parse_json(raw)
+        except (json.JSONDecodeError, TypeError):
+            data = None
+        if isinstance(data, dict):
+            break
+        messages.append({"role": "assistant", "content": raw or ""})
+        messages.append({
+            "role": "user",
+            "content": (
+                "observation: 输出不是合法 JSON。不要再调用工具，只输出一个 JSON："
+                '{"can_answer": true/false, "answer": "...", "citations": [chunk_id], '
+                '"refusal_reason": null}'
+            ),
+        })
+
+    if isinstance(data, dict):
+        out = _finalize(data, seen, trace)
+    elif len(trace) >= max_steps:
+        out = {
+            "can_answer": False,
+            "answer": REFUSAL_TEXT,
+            "citations": [],
+            "citations_chunk_ids": [],
+            "invalid_citations": [],
+            "invalid_output": False,
+            "refusal_reason": "步数用尽（%d 步）仍未得出有依据的结论" % max_steps,
+            "retrieved_chunk_ids": sorted(seen),
+            "trace": trace,
+            "steps": len(trace),
+        }
+    else:
+        out = {
+            "can_answer": None,
+            "answer": "",
+            "citations": [],
+            "citations_chunk_ids": [],
+            "invalid_citations": [],
+            "invalid_output": True,
+            "error": "JSON 解析失败",
+            "raw": raw,
+            "retrieved_chunk_ids": sorted(seen),
+            "trace": trace,
+            "steps": len(trace),
+        }
+    out["rewritten_question"] = standalone
+    out["history_turns"] = len(history)
+    out["llm_calls"] = counter["llm_calls"]
+    out["tool_mode"] = "function"
+    return out
+
+
 def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
     """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
     history 是多轮对话历史；memories 是长期偏好/事实。两者都只用于理解问题，
     不作为回答证据。
+    MINGLI_TOOL_MODE=json 可切回旧的手写 ReAct，用于 A/B 对照。
     """
+    if TOOL_MODE == "json":
+        return _agent_answer_json(
+            question, max_steps=max_steps, api_key=api_key,
+            history=history, memories=memories,
+        )
+    return _agent_answer_function(
+        question, max_steps=max_steps, api_key=api_key,
+        history=history, memories=memories,
+    )
+
+
+def _agent_answer_json(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
+    """旧的手写 JSON ReAct。保留用于 A/B：MINGLI_TOOL_MODE=json。"""
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
@@ -202,6 +343,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
             out["rewritten_question"] = standalone
             out["history_turns"] = len(history)
             out["llm_calls"] = counter["llm_calls"]
+            out["tool_mode"] = "json"
             return out
 
         result = tools.call(action or "", **(data.get("args") or {}))
@@ -235,6 +377,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
         "rewritten_question": standalone,
         "history_turns": len(history),
         "llm_calls": counter["llm_calls"],
+        "tool_mode": "json",
     }
 
 

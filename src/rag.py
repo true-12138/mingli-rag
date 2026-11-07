@@ -71,19 +71,30 @@ def _parse_json(raw):
         # 白白浪费一步。退化为只取第一个对象：后面那个留给下一轮。
         obj, _end = json.JSONDecoder().raw_decode(raw)
         return obj
-def _chat(messages, temperature=0.0, api_key=None):
+def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choice=None):
+    """调一次模型，返回完整的 message 对象（而不是只取 content）。
+
+    function calling 需要拿到 tool_calls 和每个调用的 id，所以单独开这个口子；
+    不带 tools 时仍然用 response_format=json_object，行为和原来的 _chat 一致。
+    """
+    body = {
+        "model": MODEL,
+        "messages": messages,
+        "temperature": temperature,
+    }
+    if tools:
+        body["tools"] = tools
+        if tool_choice:
+            body["tool_choice"] = tool_choice
+    else:
+        body["response_format"] = {"type": "json_object"}
     resp = requests.post(
         DEEPSEEK_URL,
         headers={
             "Authorization": "Bearer {}".format(_get_api_key(api_key)),
             "Content-Type": "application/json",
         },
-        json={
-            "model": MODEL,
-            "messages": messages,
-            "temperature": temperature,
-            "response_format": {"type": "json_object"},
-        },
+        json=body,
         timeout=120,
     )
     resp.raise_for_status()
@@ -94,7 +105,12 @@ def _chat(messages, temperature=0.0, api_key=None):
         raise RuntimeError("DeepSeek 返回错误：{}".format(payload["error"]))
     # 旁路累计 token；没有 reset() 的调用方（脚本 / 测试）不记录，不影响行为
     usage.add(payload.get("usage"))
-    return payload["choices"][0]["message"]["content"]
+    return payload["choices"][0]["message"]
+
+
+def _chat(messages, temperature=0.0, api_key=None):
+    msg = _chat_message(messages, temperature=temperature, api_key=api_key)
+    return msg.get("content") or ""
 def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。

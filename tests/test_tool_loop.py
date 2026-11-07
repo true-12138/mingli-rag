@@ -1,0 +1,156 @@
+# -*- coding: utf-8 -*-
+"""function calling 协议层测试：不联网、不加载语料。
+
+用 stub 替换 sys.modules 里的 rag / tools，再加载真正的 tool_loop.py，
+只验证「tool_calls → 执行 → role=tool 回灌 → 收口」这条链路。
+"""
+import importlib.util
+import json
+import sys
+import types
+from pathlib import Path
+
+import pytest
+
+SRC = Path(__file__).resolve().parent.parent / "src"
+
+
+def _tool_call(cid, name, args):
+    return {
+        "id": cid,
+        "type": "function",
+        "function": {"name": name, "arguments": json.dumps(args, ensure_ascii=False)},
+    }
+
+
+class FakeAPI:
+    def __init__(self, replies):
+        self.replies = list(replies)
+        self.calls = []
+
+    def __call__(self, messages, tools=None, temperature=0.0, api_key=None, tool_choice=None):
+        self.calls.append({
+            "messages": [dict(m) for m in messages],
+            "tools": tools,
+            "tool_choice": tool_choice,
+        })
+        return self.replies.pop(0)
+
+
+@pytest.fixture
+def mods():
+    names = ("rag", "tools", "tool_loop")
+    saved = {n: sys.modules.get(n) for n in names}
+    fake_rag = types.SimpleNamespace(_chat_message=None)
+    fake_tools = types.SimpleNamespace(call=None)
+    sys.modules["rag"] = fake_rag
+    sys.modules["tools"] = fake_tools
+    sys.modules.pop("tool_loop", None)
+
+    spec = importlib.util.spec_from_file_location("tool_loop_under_test", SRC / "tool_loop.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    try:
+        yield mod, fake_rag, fake_tools
+    finally:
+        for name, old in saved.items():
+            if old is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = old
+
+
+def test_tool_call_is_executed_and_returned_to_model(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": None, "tool_calls": [_tool_call("c1", "search_classics", {"query": "正官"})]},
+        {"content": '{"thought": "够了"}'},
+    ])
+    fake_rag._chat_message = api
+    seen_calls = []
+
+    def fake_call(name, **kwargs):
+        seen_calls.append((name, kwargs))
+        return {"ok": True, "tool": name, "args": kwargs,
+                "result": {"hits": [{"chunk_id": 11}]}}
+
+    fake_tools.call = fake_call
+    trace = []
+    messages = [{"role": "user", "content": "问"}]
+
+    content, messages, used = mod.run(
+        messages, max_calls=3, schemas=[{"type": "function"}],
+        prepare=lambda name, args: dict(args, book="子平真诠"),
+        on_call=lambda name, args, result: trace.append((name, args, result["ok"])),
+        counter={"llm_calls": 0},
+    )
+
+    assert content == '{"thought": "够了"}'
+    assert used == 1
+    assert seen_calls == [("search_classics", {"query": "正官", "book": "子平真诠"})]
+    assert trace == [("search_classics", {"query": "正官", "book": "子平真诠"}, True)]
+
+    assistant, tool_msg = messages[-2], messages[-1]
+    assert assistant["role"] == "assistant"
+    assert assistant["tool_calls"][0]["id"] == "c1"
+    assert tool_msg["role"] == "tool"
+    assert tool_msg["tool_call_id"] == "c1"
+    assert json.loads(tool_msg["content"])["result"]["hits"][0]["chunk_id"] == 11
+
+    # 第二轮请求带着 tool 消息，且仍然开放工具
+    second = api.calls[1]["messages"]
+    assert second[-1]["role"] == "tool"
+    assert api.calls[1]["tools"] is not None
+
+
+def test_budget_caps_multi_calls_and_forces_final_without_tools(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "search_classics", {"query": "甲"}),
+            _tool_call("c2", "search_classics", {"query": "乙"}),
+        ]},
+        {"content": '{"thought": "ok"}'},
+    ])
+    fake_rag._chat_message = api
+    executed = []
+    fake_tools.call = lambda name, **kw: (
+        executed.append(kw["query"]) or {"ok": True, "result": {"hits": []}})
+
+    content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=1,
+        schemas=[{"type": "function"}],
+    )
+
+    assert executed == ["甲"]
+    assert used == 1
+    budget_msg = json.loads(messages[-1]["content"])
+    assert budget_msg["ok"] is False and "预算" in budget_msg["error"]
+    # 预算用完后，下一轮必须不再传 tools，模型只能直接收口
+    assert api.calls[1]["tools"] is None
+    assert content == '{"thought": "ok"}'
+
+
+def test_invalid_arguments_are_reported_not_raised(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [{
+            "id": "c1", "type": "function",
+            "function": {"name": "search_classics", "arguments": "{not json"},
+        }]},
+        {"content": '{"thought": "改好了"}'},
+    ])
+    fake_rag._chat_message = api
+    called = []
+    fake_tools.call = lambda name, **kw: called.append(name) or {"ok": True}
+
+    content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=2,
+        schemas=[{"type": "function"}],
+    )
+
+    assert called == []
+    assert used == 1
+    err = json.loads(messages[-1]["content"])
+    assert err["ok"] is False and "JSON" in err["error"]
+    assert content == '{"thought": "改好了"}'

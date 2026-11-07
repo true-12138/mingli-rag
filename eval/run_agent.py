@@ -257,6 +257,7 @@ def run(tasks: list[dict], args) -> dict:
                 "refusal_reason": res.get("refusal_reason"),
                 "steps": res.get("steps"),
                 "llm_calls": res.get("llm_calls"),
+                "tool_mode": res.get("tool_mode"),
                 "plan": res.get("plan"),
                 "verdict": res.get("verdict"),
                 "trace": res.get("trace"),
@@ -296,6 +297,9 @@ def run(tasks: list[dict], args) -> dict:
         s["n"] += 1
         if (r.get("judge") or {}).get("auto_pass"):
             s["pass"] += 1
+    modes = sorted({r.get("tool_mode") for r in results if r.get("tool_mode")})
+    if modes:
+        summary["tool_mode"] = modes[0] if len(modes) == 1 else modes
     calls = [r["llm_calls"] for r in results if isinstance(r.get("llm_calls"), int)]
     if calls:
         summary["llm_calls"] = {"total": sum(calls), "mean": round(sum(calls) / len(calls), 1)}

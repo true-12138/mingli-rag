@@ -27,6 +27,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import tool_loop
+import tool_schema
 import tools
 from agent import MAX_STEPS, _finalize
 from rag import _chat, _parse_json
@@ -34,6 +36,9 @@ from conversation import history_block, memory_block, normalize_history, rewrite
 
 EVIDENCE_CHAR = 420          # 喂给 Verifier / 汇总的每条证据截断长度
 RETRIEVER_MAX_CALLS = 2      # 单个检索子任务最多几次工具调用（先搜，必要时再翻原文）
+RETRIEVER_TOOLS = ("search_classics", "fetch_chunk", "list_books", "search_terms")
+RETRIEVER_SCHEMAS = [s for s in tool_schema.SCHEMAS
+                     if s["function"]["name"] in RETRIEVER_TOOLS]
 
 
 # ---------- 基础 ----------
@@ -51,6 +56,11 @@ class Budget:
         self.left -= 1
         self.used += 1
         return True
+
+    def consume(self, n):
+        n = max(0, int(n))
+        self.left -= n
+        self.used += n
 
 
 def _ask_json(system, prompt, counter=None, api_key=None):
@@ -169,23 +179,19 @@ out_of_scope 只有在**整个问题的核心诉求**都超出语料时才为 tr
 """
 
 RETRIEVER_PROMPT = """你是检索员，只负责一个子任务：把指定书里与子问题相关的原文找出来。
-
-输出 JSON，二选一：
-{"thought": "为什么这么搜", "action": "search_classics", "args": {"query": "...", "k": 8, "mode": "rrf"}}
-{"thought": "已经拿到能回答的原文", "action": "done"}
+你只能用提供的检索工具（search_classics / fetch_chunk / list_books / search_terms），不能直接作答。
 
 规则：
 1. book 由系统填入任务指定的书名，你不用写，也不许改成别的书或做全库检索。
 2. mode：精确术语用 bm25，口语化转述用 dense，不确定用 rrf。
-3. 一次检索拿到 3 条以上相关原文就 done，不要换个 mode 再搜一遍同样的词。
+3. 一次检索拿到 3 条以上相关原文就收口，不要换个 mode 再搜一遍同样的词。
 4. 如果命中的片段只有结论（断语、条款、口诀），却没有前提条件，
-   必须调 {"action": "fetch_chunk", "args": {"chunk_id": 123, "with_neighbors": true}}
-   读完整上下文再 done。
+   必须用 fetch_chunk(chunk_id, with_neighbors=true) 读完整上下文再收口。
 5. query 用术语短词（2–8 字），不要整句照抄子问题；0 命中或结果明显不相关时，
    换同义词/别名再搜一次（七杀↔偏官、羊刃↔阳刃、空亡↔旬空），不要重复同一个词。
-6. 如果命中的是目录/篇名（如「三十一．论正官」）却没有正文，调
-   {"action": "fetch_chunk", "args": {"chunk_id": 123, "with_neighbors": true}}
-   取相邻正文再 done，不要只凭目录片段下结论。
+6. 如果命中的是目录/篇名（如「三十一．论正官」）却没有正文，同样用
+   fetch_chunk(chunk_id, with_neighbors=true) 取相邻正文再收口，不要只凭目录片段下结论。
+7. 证据够了就**不要再调用工具**，直接输出 {"thought": "为什么够了/还缺什么"} 结束。
 """
 
 VERIFIER_PROMPT = """你是校验员。只判断材料够不够支撑回答，不写答案。
@@ -296,37 +302,24 @@ def _run_pre(plan, budget, trace, evidence, seen):
 
 
 def _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=None):
-    """一个子任务：在指定书内检索，必要时翻原文。返回最后一次的 thought 供记录。"""
+    """一个子任务：在指定书内检索，必要时翻原文。返回最后一次的 thought 供记录。
+
+    走原生 function calling：模型返回 tool_calls，参数由 API 保证是 JSON 对象；
+    收口 = 不再调用工具，输出 {"thought": ...}。
+    """
     messages = [
         {"role": "system", "content": RETRIEVER_PROMPT},
         {"role": "user", "content": "【子任务】在《{}》里检索：{}\n【前置结果】\n{}".format(
             task["book"], task["query"], context or "（无）")},
     ]
-    calls = 0
-    while calls < RETRIEVER_MAX_CALLS and budget.left > 0:
-        raw = _chat(messages, api_key=api_key)
-        counter["llm_calls"] = counter.get("llm_calls", 0) + 1
-        try:
-            data = _parse_json(raw)
-        except json.JSONDecodeError:
-            data = None
-        if not isinstance(data, dict):
-            messages.append({"role": "assistant", "content": raw[:300]})
-            messages.append({"role": "user", "content": "observation: 输出不是合法 JSON，请重新只输出一个 JSON。"})
-            continue
 
-        action = data.get("action")
-        if action == "done":
-            return data.get("thought") or ""
-
-        args = data.get("args") or {}
+    def prepare(name, args):
         # 检索类动作强制带上指定书名，防止退化成全库泛搜
-        if action == "search_classics":
+        if name == "search_classics":
             args["book"] = task["book"]
-        if not budget.take():
-            return "预算用尽"
+        return args
 
-        result = tools.call(action or "", **args)
+    def on_call(name, args, result):
         got = [h["chunk_id"] for h in _harvest(result)]
         seen.update(got)
         for h in _harvest(result):
@@ -336,12 +329,29 @@ def _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=Non
             })
         trace.append({
             "step": len(trace) + 1, "agent": "retriever",
-            "thought": data.get("thought"), "action": action, "args": args,
+            "thought": None, "action": name, "args": args,
             "ok": result.get("ok"), "chunk_ids": got, "error": result.get("error"),
         })
-        messages.append({"role": "assistant", "content": json.dumps(data, ensure_ascii=False)})
-        messages.append({"role": "user", "content": "observation: " + _short(result, 1600)})
-        calls += 1
+
+    allowed = min(RETRIEVER_MAX_CALLS, max(0, budget.left))
+    content, _messages, used = tool_loop.run(
+        messages,
+        api_key=api_key,
+        max_calls=allowed,
+        schemas=RETRIEVER_SCHEMAS,
+        prepare=prepare,
+        on_call=on_call,
+        counter=counter,
+    )
+    budget.consume(used)
+    if budget.left <= 0 and used >= allowed:
+        return "预算用尽" if used == 0 else "检索预算用尽"
+    try:
+        data = _parse_json(content)
+    except (json.JSONDecodeError, TypeError):
+        data = None
+    if isinstance(data, dict):
+        return data.get("thought") or ""
     return "检索未收口"
 
 
