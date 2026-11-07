@@ -23,13 +23,20 @@ candidate_k=40  # 融合前每路先取这么多，再截 top_k
 # 总 recall 不变却多了一个需要调的旋钮，20 道题的量样本上不划算。
 w_dense=1.0
 w_bm25=1.0
-def tokenize(text):
-    # 中文用字二元组：比单字更有区分度，也不需要 jieba 词典。
-    # v1.1 再换 jieba + data/terminology 自定义词典。
-    s="".join(ch for ch in text if not ch.isspace())
-    if len(s)<2:
-        return list(s)
-    return [s[i:i+2] for i in range(len(s)-1)]
+import retrieval_utils
+
+# BM25 分词器：默认字二元组（v1 口径），设 MINGLI_BM25_TOKENIZER=jieba
+# 换成 jieba + data/terminology 里的 324 条术语词典。
+# 换分词器会改变所有检索结果，评测必须整轮重跑，不能和旧数字混着比。
+TOKENIZER = os.environ.get("MINGLI_BM25_TOKENIZER", "bigram")
+tokenize = retrieval_utils.make_tokenizer(TOKENIZER, DATA_DIR / "terminology")
+
+# 重排：MINGLI_RERANK=1 时对候选池再打一次分。默认关闭——
+# 单次向量扫描 8,681 条约 1.6ms，耗时在 embedding 和 LLM 上，重排只在
+# 「融合把单路强命中挤出 Top-5」这类问题上才值得开。
+RERANK = os.environ.get("MINGLI_RERANK", "0").strip().lower() not in ("", "0", "false", "no", "off")
+RERANK_MODEL_ID = os.environ.get("MINGLI_RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
+reranker = retrieval_utils.LazyReranker(RERANK_MODEL_ID)
 chunks=corpus.load_chunks(DATA_DIR)
 tokenized_corpus=[tokenize(c["chunk_text"]) for c in chunks]
 embeds=np.load(data_emb).astype(np.float32)
@@ -142,19 +149,29 @@ def retrieve_one(query,top_k=5,mode="rrf"):
     cand=max(top_k,candidate_k)
     d_res=dense_search(query,cand)
     b_res=bm25_search(query,cand)
-    fused=rrf_fuse(d_res,b_res,topk=top_k)
     if mode=="dense":
         raw_list=d_res
     elif mode=="bm25":
         raw_list=b_res
     elif mode=="rrf":
-        raw_list=fused
+        # 要重排就先融合到候选池大小；只融合 top_k 的话没得选，重排等于空转
+        raw_list=rrf_fuse(d_res,b_res,topk=cand if RERANK else top_k)
     else:
         raise ValueError("mode 只能是dense、bm25、rrf中的一种")
+    if RERANK:
+        raw_list=retrieval_utils.apply_rerank(
+            query,
+            raw_list,
+            [c["chunk_text"] for c in chunks],
+            top_k,
+            reranker,
+            on_error=lambda exc: print(
+                "[warn] rerank 失败，保留融合顺序：{}".format(exc), file=sys.stderr),
+        )
     final=[]
     for item in raw_list[:top_k]:
         c=chunks[item["idx"]]
-        final.append({
+        hit={
             "query":query,
             # idx 是语料行号（0 起），chunk_id 才是评测和引用用的 1 起编号
             "chunk_id":c["chunk_id"],
@@ -162,7 +179,10 @@ def retrieve_one(query,top_k=5,mode="rrf"):
             "rrf_score":item["scores"],
             "text":c["chunk_text"],
             "meta":c["meta"]
-        })
+        }
+        if "rerank_score" in item:
+            hit["rerank_score"]=item["rerank_score"]
+        final.append(hit)
     return final
 
 if __name__=="__main__":
