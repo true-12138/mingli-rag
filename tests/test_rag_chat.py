@@ -12,10 +12,11 @@ import usage  # noqa: E402
 
 
 class FakeResp:
-    def __init__(self, payload, status_code=200, text=""):
+    def __init__(self, payload, status_code=200, text="", headers=None):
         self.payload = payload
         self.status_code = status_code
         self.text = text
+        self.headers = headers or {}
 
     def json(self):
         return self.payload
@@ -43,6 +44,51 @@ def test_http_400_surfaces_api_body(monkeypatch):
     monkeypatch.setattr(rag.requests, "post", _post({}, status_code=400, text=body))
     with pytest.raises(RuntimeError, match="HTTP 400.*word json"):
         rag._chat([{"role": "user", "content": "hi"}], api_key="k")
+
+
+def test_500_is_retried_then_succeeds(monkeypatch):
+    """2026-11-07 多 Agent 评测出现过 7/30 条瞬时 500；重试后不应整题作废。"""
+    payload = {"choices": [{"message": {"content": "ok"}}]}
+    calls = {"n": 0}
+
+    def post(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return FakeResp({}, status_code=500, text="internal error")
+        return FakeResp(payload)
+
+    monkeypatch.setattr(rag.requests, "post", post)
+    monkeypatch.setattr(rag.time, "sleep", lambda *_: None)
+    assert rag._chat([{"role": "user", "content": "hi"}], api_key="k") == "ok"
+    assert calls["n"] == 2
+
+
+def test_500_after_all_attempts_still_raises(monkeypatch):
+    calls = {"n": 0}
+
+    def post(*args, **kwargs):
+        calls["n"] += 1
+        return FakeResp({}, status_code=500, text="internal error")
+
+    monkeypatch.setattr(rag.requests, "post", post)
+    monkeypatch.setattr(rag.time, "sleep", lambda *_: None)
+    with pytest.raises(RuntimeError, match="HTTP 500"):
+        rag._chat([{"role": "user", "content": "hi"}], api_key="k")
+    assert calls["n"] == rag.RETRY_ATTEMPTS
+
+
+def test_400_is_not_retried(monkeypatch):
+    """请求本身错了，重试只是把同一个错误再买一遍。"""
+    calls = {"n": 0}
+
+    def post(*args, **kwargs):
+        calls["n"] += 1
+        return FakeResp({}, status_code=400, text="bad request")
+
+    monkeypatch.setattr(rag.requests, "post", post)
+    with pytest.raises(RuntimeError, match="HTTP 400"):
+        rag._chat([{"role": "user", "content": "hi"}], api_key="k")
+    assert calls["n"] == 1
 
 
 def test_valid_payload_returns_content_and_records_usage(monkeypatch):

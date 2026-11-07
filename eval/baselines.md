@@ -100,3 +100,29 @@
    作为可复现的对照，不设为默认。
 
 复现：`python scripts/probe_jieba_dict.py`（篇名词典）与 `MINGLI_BM25_TOKENIZER=jieba_search`。
+
+---
+
+## reranker 与分词的五组对照（2026-11-07，D1）
+
+同一份 8,681 条语料、同一批 20 道可答题，只改分词器和重排开关。
+`line` 口径，表中是 20 题均值；明细见 `eval/retrieval_*.csv`：
+
+| 配置 | 开关 | dense R@5 / MRR | BM25 R@5 / MRR | RRF R@5 / MRR |
+|---|---|---:|---:|---:|
+| bigram（现行默认） | 默认 | 0.625 / 0.487 | 0.525 / 0.387 | **0.750 / 0.618** |
+| jieba + 324 词典 | `MINGLI_BM25_TOKENIZER=jieba` | 0.625 / 0.487 | 0.350 / 0.300 | 0.675 / 0.513 |
+| bigram + rerank | `MINGLI_RERANK=1` | **0.775 / 0.573** | 0.575 / 0.517 | 0.700 / 0.600 |
+| bigram + rerank，pool=100 | 再加 `MINGLI_RERANK_POOL=100` | 0.725 / 0.557 | **0.650 / 0.567** | 0.725 / 0.564 |
+| jieba + rerank | 两者都开 | **0.775 / 0.573** | 0.475 / 0.475 | **0.750 / 0.613** |
+
+结论：
+
+1. **重排对单路有效**：dense 从 0.625 提到 0.775，BM25 从 0.525 提到 0.575（pool=100 时到 0.650）。
+2. **但对 RRF 没有增益**：三种重排配置的 RRF 最高 0.750 / MRR 0.613，没有超过 bigram 基线 0.750 / 0.618。
+   两路候选被同一个 cross-encoder 重新排序后差异被压平，融合本来依赖的互补性消失。
+3. 因此 reranker 保留为开关，**不设默认**；下一步应该只对融合后的候选池重排一次，而不是每路各排一次。
+4. 样本仍然只有 20 题，0.025 的 RRF 差距就是半道题，不当成显著结论。
+
+明细：`eval/retrieval_bigram.csv`、`retrieval_jieba.csv`、`retrieval_rerank.csv`、
+`retrieval_rerank100.csv`、`retrieval_jieba_rerank.csv`。

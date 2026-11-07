@@ -1,6 +1,7 @@
 import io
 import json
 import os
+import time
 from dotenv import load_dotenv
 load_dotenv()
 import re
@@ -71,6 +72,37 @@ def _parse_json(raw):
         # 白白浪费一步。退化为只取第一个对象：后面那个留给下一轮。
         obj, _end = json.JSONDecoder().raw_decode(raw)
         return obj
+# 429 是限流，5xx 是服务端瞬时故障：都值得重试。400 是请求本身有问题，
+# 重试只会把同一个错误再买一遍，所以原样抛出。
+RETRY_STATUS = (429, 500, 502, 503, 504)
+RETRY_ATTEMPTS = 3
+RETRY_MAX_WAIT = 8.0
+
+
+def _post_chat(body, api_key=None):
+    """POST 一次 chat/completions，对 429/5xx 做有限次指数退避。
+
+    2026-11-07 多 Agent 全量评测里出现过 7/30 条 HTTP 500，单次请求的实现
+    会把整题判失败；加这层后，同样的题只会慢几秒，不会整批作废。
+    """
+    headers = {
+        "Authorization": "Bearer {}".format(_get_api_key(api_key)),
+        "Content-Type": "application/json",
+    }
+    resp = None
+    for attempt in range(RETRY_ATTEMPTS):
+        resp = requests.post(DEEPSEEK_URL, headers=headers, json=body, timeout=120)
+        if resp.status_code not in RETRY_STATUS or attempt + 1 >= RETRY_ATTEMPTS:
+            return resp
+        raw_wait = (getattr(resp, "headers", None) or {}).get("Retry-After")
+        try:
+            delay = float(raw_wait)
+        except (TypeError, ValueError):
+            delay = 2.0 ** attempt
+        time.sleep(min(delay, RETRY_MAX_WAIT))
+    return resp
+
+
 def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choice=None):
     """调一次模型，返回完整的 message 对象（而不是只取 content）。
 
@@ -88,15 +120,7 @@ def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choi
             body["tool_choice"] = tool_choice
     else:
         body["response_format"] = {"type": "json_object"}
-    resp = requests.post(
-        DEEPSEEK_URL,
-        headers={
-            "Authorization": "Bearer {}".format(_get_api_key(api_key)),
-            "Content-Type": "application/json",
-        },
-        json=body,
-        timeout=120,
-    )
+    resp = _post_chat(body, api_key=api_key)
     if resp.status_code >= 400:
         # 只抛状态码的话，400 分不清是 schema 不合法、JSON 模式缺关键字还是消息顺序问题。
         # 把 API 返回的原文带进异常，评测结果里才能直接看到原因。

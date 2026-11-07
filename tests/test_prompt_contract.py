@@ -21,12 +21,19 @@ def _prompt(source: str, name: str) -> str:
     return m.group(1)
 
 
+# 所有走 rag._chat（response_format=json_object）的 prompt 都在这里。
+# 只守检索员那两个不够：D2 之前 PLANNER / VERIFIER / SYNTHESIZER 也共用一个坑。
 @pytest.mark.parametrize("source,name", [
+    ("agent.py", "SYSTEM_PROMPT"),
     ("agent.py", "FUNCTION_SYSTEM_PROMPT"),
+    ("agent_multi.py", "PLANNER_PROMPT"),
     ("agent_multi.py", "RETRIEVER_PROMPT"),
+    ("agent_multi.py", "VERIFIER_PROMPT"),
+    ("agent_multi.py", "SYNTHESIZER_PROMPT"),
+    ("rag.py", "SYSTEM_PROMPT"),
 ])
 def test_json_mode_prompts_mention_json(source, name):
-    """这两个提示词会配 response_format=json_object 使用，必须含 json 字样。"""
+    """这些提示词都会配 response_format=json_object 使用，必须含 json 字样。"""
     body = _prompt(source, name)
     assert re.search(r"json", body, re.I), \
         "{} 缺 json 关键字，JSON 模式会 400".format(name)

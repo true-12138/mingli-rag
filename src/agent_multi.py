@@ -479,6 +479,9 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
     res["history_turns"] = len(history)
     res["plan"] = plan
     res["verdict"] = verdict
+    # 和单 Agent 对齐：结果文件必须能证明这一轮跑的是原生 tool_calls，
+    # 否则 D2 的 function calling / JSON ReAct A/B 无法从落盘结果复核。
+    res["tool_mode"] = "function"
     return res
 
 
