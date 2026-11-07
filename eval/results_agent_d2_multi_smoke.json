@@ -1,0 +1,58 @@
+{
+ "summary": {
+  "tag": "d2_multi_smoke",
+  "agent": "multi",
+  "code_commit": "f573ebe",
+  "tasks_sha256": "a160a6c5b118",
+  "total": 2,
+  "auto_pass": 0,
+  "dual_book_explicit": 0,
+  "dual_book_applicable": 0,
+  "errors": 2,
+  "elapsed_seconds": 49.8,
+  "by_type": {
+   "多跳": {
+    "n": 1,
+    "pass": 0
+   },
+   "复合": {
+    "n": 1,
+    "pass": 0
+   }
+  }
+ },
+ "tasks": [
+  {
+   "id": "a04",
+   "type": "多跳",
+   "name": "月令在取格中的地位",
+   "question": "取格的时候到底以月令为主，还是以透出的天干为主？我看的书说法不一样。",
+   "usage": {
+    "prompt_tokens": 2262,
+    "completion_tokens": 289,
+    "total_tokens": 2551,
+    "cached_tokens": 1024,
+    "llm_calls": 2
+   },
+   "error": "HTTPError: 400 Client Error: Bad Request for url: https://api.deepseek.com/chat/completions",
+   "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_agent.py\", line 249, in run\n    res = solve(task[\"question\"], max_steps=int(task.get(\"max_steps\", 6)))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 457, in agent_answer\n    _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=api_key)\n  File \"/workspace/src/agent_multi.py\", line 337, in _retrieve\n    content, _messages, used = tool_loop.run(\n                               ^^^^^^^^^^^^^^\n  File \"/workspace/src/tool_loop.py\", line 64, in run\n    msg = rag._chat_message(\n          ^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/rag.py\", line 100, in _chat_message\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.deepseek.com/chat/completions\n",
+   "seconds": 27.9
+  },
+  {
+   "id": "d01",
+   "type": "复合",
+   "name": "排盘到取用的完整链路",
+   "question": "1995 年 8 月 20 日下午 3 点，女，出生地广州。排八字，看月令取什么格，再按《穷通宝鉴》说该用什么调候，最后给我一个取用建议。",
+   "usage": {
+    "prompt_tokens": 2687,
+    "completion_tokens": 298,
+    "total_tokens": 2985,
+    "cached_tokens": 2048,
+    "llm_calls": 2
+   },
+   "error": "HTTPError: 400 Client Error: Bad Request for url: https://api.deepseek.com/chat/completions",
+   "traceback": "Traceback (most recent call last):\n  File \"/workspace/eval/run_agent.py\", line 249, in run\n    res = solve(task[\"question\"], max_steps=int(task.get(\"max_steps\", 6)))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/agent_multi.py\", line 457, in agent_answer\n    _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=api_key)\n  File \"/workspace/src/agent_multi.py\", line 337, in _retrieve\n    content, _messages, used = tool_loop.run(\n                               ^^^^^^^^^^^^^^\n  File \"/workspace/src/tool_loop.py\", line 64, in run\n    msg = rag._chat_message(\n          ^^^^^^^^^^^^^^^^^^\n  File \"/workspace/src/rag.py\", line 100, in _chat_message\n    resp.raise_for_status()\n  File \"/workspace/.venv/lib/python3.11/site-packages/requests/models.py\", line 1167, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 400 Client Error: Bad Request for url: https://api.deepseek.com/chat/completions\n",
+   "seconds": 21.9
+  }
+ ]
+}

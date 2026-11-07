@@ -1,0 +1,403 @@
+{
+ "summary": {
+  "tag": "d2_smoke",
+  "agent": "single",
+  "code_commit": "f573ebe",
+  "tasks_sha256": "a160a6c5b118",
+  "total": 2,
+  "auto_pass": 1,
+  "dual_book_explicit": 1,
+  "dual_book_applicable": 2,
+  "errors": 0,
+  "elapsed_seconds": 114.2,
+  "by_type": {
+   "多跳": {
+    "n": 1,
+    "pass": 0
+   },
+   "复合": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "tool_mode": "function",
+  "llm_calls": {
+   "total": 7,
+   "mean": 3.5
+  }
+ },
+ "tasks": [
+  {
+   "id": "a01",
+   "type": "多跳",
+   "name": "调候与扶抑的优先级仲裁",
+   "question": "我是甲木日主，生在腊月（丑月），八字里水多火少。有人说该用丙火调候，有人说要先看身强身弱再取用神，到底听谁的？",
+   "usage": {
+    "prompt_tokens": 21564,
+    "completion_tokens": 907,
+    "total_tokens": 22471,
+    "cached_tokens": 9088,
+    "llm_calls": 3
+   },
+   "can_answer": true,
+   "answer": "两说并不冲突，古籍里本来就是「以月令用神为主，再配气候互参」——不是二选一。\n\n一、主次关系。《子平真诠》原文：「论命惟以月令用神为主，然亦须配气候而互参之。」（《命理探源·论用神配气候得失》引沈孝瞻同语）也就是说，先定月令格局用神，这是主干；调候是「互参」的第二个维度，不是替代品。所以「先看身强身弱再取用神」这一路更接近主干，「用丙火调候」是主干确定后的重要修正项。\n\n二、冬木（腊月甲木）为什么调候分量特别重。原文说：「冬木逢水，虽透官星，亦难必贵，盖金寒而水益冻，冻水不能生木，其理然也。」又说：「而用之冬木，尤为秀气，以冬木逢火，不惟可以泄身，而即可以调候也。」可见在冬月水旺的场合，火不只是「泄身」的普通用神，它同时承担调候职能，一物两用，所以分量比一般格局里更重。你自述水多火少，正落在「冻水不能生木」这一条上。\n\n三、调候可以「权用」，即临时变通。原文：「伤官见官，为祸百端，而金水见之，反为秀气。非官之不畏夫伤，而调候为急，权而用之也。」说明气候之急时，可以打破常规宜忌，这是调候说的真正含义——是「急则权用」，不是「凡冬生一律用丙」。\n\n四、所以怎么听。按古籍的逻辑顺序：先以月令（丑月）定格局用神，再看身之强弱决定扶抑（身弱喜印比帮身，身旺喜泄喜克），最后用气候检验——若全局金寒水冻、木无生意，则火为当务之急，此时即便格局上另有取用，也要把火放在优先位置。反过来，若身已弱而水木成势、火只是点缀，就不能一味补火而伤及格局。\n\n需要提醒：以上是取用的方法论，具体到你这一造该取何字，还要看四柱天干透出、地支会合与有无根气，不能只凭「甲木、丑月、水多火少」三句话定论。另外「调候用丙」在古籍中是就格局成败、秀气而言，不是现代意义上的生活建议。",
+   "citations": [
+    1530,
+    1592,
+    1593,
+    6437,
+    1531
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 4,
+   "llm_calls": 3,
+   "tool_mode": "function",
+   "plan": null,
+   "verdict": null,
+   "trace": [
+    {
+     "step": 1,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "调候",
+      "k": 6
+     },
+     "ok": true,
+     "chunk_ids": [
+      4381,
+      1531,
+      61,
+      1530,
+      4150,
+      1593
+     ],
+     "error": null
+    },
+    {
+     "step": 2,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "甲木丑月",
+      "k": 6
+     },
+     "ok": true,
+     "chunk_ids": [
+      2425,
+      1264,
+      716,
+      6551,
+      697,
+      720
+     ],
+     "error": null
+    },
+    {
+     "step": 3,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "身强身弱",
+      "k": 6,
+      "book": "子平真诠"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1614,
+      1591,
+      1616,
+      1586,
+      1590,
+      1624
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "冬木逢火",
+      "k": 5
+     },
+     "ok": true,
+     "chunk_ids": [
+      1530,
+      5903,
+      6437,
+      1592,
+      1593
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": false,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "4 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1530, 1592, 1593, 6437, 1531] -> ['命理探源', '子平真诠评注', '子平真诠评注', '三命通会', '命理探源']"
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": false,
+      "detail": {
+       "at_step": null,
+       "via": null
+      }
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "明确给出「调候优先还是扶抑优先」的判断，或说明两书各自适用的条件"
+    ],
+    "cited_books": [
+     "命理探源",
+     "子平真诠评注",
+     "子平真诠评注",
+     "三命通会",
+     "命理探源"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": false,
+     "book_specs": [
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": false,
+       "via": null
+      },
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 74.2
+  },
+  {
+   "id": "d01",
+   "type": "复合",
+   "name": "排盘到取用的完整链路",
+   "question": "1995 年 8 月 20 日下午 3 点，女，出生地广州。排八字，看月令取什么格，再按《穷通宝鉴》说该用什么调候，最后给我一个取用建议。",
+   "usage": {
+    "prompt_tokens": 27979,
+    "completion_tokens": 1405,
+    "total_tokens": 29384,
+    "cached_tokens": 8448,
+    "llm_calls": 4
+   },
+   "can_answer": true,
+   "answer": "【排盘】公历 1995-08-20 15:00（农历一九九五年七月廿五），女，广州。四柱：年 乙亥 ｜ 月 甲申 ｜ 日 癸未 ｜ 时 庚申。日主为癸水，生于申月。五行分布：木2、火0、土1、金3、水2，缺火。藏干：年支亥藏壬、甲；月支申藏庚、壬、戊；日支未藏己、丁、乙；时支申藏庚、壬、戊。十神：年干乙为食神，月干甲为伤官，时干庚为正印；月支申中庚为正印、壬为劫财、戊为正官。当前大运为丁亥（27 岁起）。\n\n【月令取格】按《子平真诠》的原则，“八字用神，专求月令，以日干配月令地支，而生克不同，格局分焉”，又说“八字用神专凭月令，月无用神，徐寻格局”，并强调“月令，本也；外格，末也”。本命日主癸水，月令申金，申中庚金为主气，庚金生癸水，属于印绶生身，所以月令取格应落在印绶格（正印）上，不宜舍月令而另取外格。书中还说“印绶喜其生身，正偏同为美格，故财与印不分偏正，同为一格而论之”，所以这里不必在正印、偏印上过分纠结。\n\n【《穷通宝鉴》调候】《穷通宝鉴·论癸水》“七月癸水”条说：“七月癸水，正母旺子相之时，癸虽死申，殊不知申中有庚生之，名死处逢生，弱中复强，即运行西北，亦不死也，但庚司令，刚锐极矣，必取丁火为用。”又说：“或丁透有甲，名有焰之火，必主科甲；或丁透无甲，又无壬癸，即有一二庚金，亦有生监，有二丁更妙；或金多乏丁制者，贫困之人。”可见申月癸水的调候关键在丁火，用来制住刚锐的庚金，使金水不至于过冷过锐。\n\n【对照本命】本命月支、时支两申，时干庚金透出，金气偏重（金3），正合“庚司令，刚锐极矣”的情形；而全局火为零，丁火只藏在日支未中，属于“金多乏丁”的格局，正是《穷通宝鉴》所说的需要丁火来制金、暖局。\n\n【取用建议】综合来看，取用可以分两层：一是以月令印绶为格局根本，金水相生，日主不弱；二是以丁火为主要调候用神，用来制庚、暖金水，甲木（年支亥中甲、月干甲）作为引火之物，使丁火有焰。也就是说，格局上顺用印绶，调候上取丁火为先、甲木为辅，忌金水再重、火土全无。大运方面，现行丁亥运天干透丁，与调候所需相应；但亥为水地，会助旺水势，所以丁火能否得力，还要看流年是否配合。\n\n以上是依据命书体例所作的格局与调候分析，属于倾向性判断，不作吉凶成败的断言。",
+   "citations": [
+    1609,
+    1583,
+    1616,
+    2827
+   ],
+   "invalid_citations": [],
+   "invalid_output": false,
+   "refusal_reason": null,
+   "steps": 6,
+   "llm_calls": 4,
+   "tool_mode": "function",
+   "plan": null,
+   "verdict": null,
+   "trace": [
+    {
+     "step": 1,
+     "thought": null,
+     "action": "draw_bazi",
+     "args": {
+      "year": 1995,
+      "month": 8,
+      "day": 20,
+      "hour": 15,
+      "minute": 0,
+      "gender": "female"
+     },
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 2,
+     "thought": null,
+     "action": "list_books",
+     "args": {},
+     "ok": true,
+     "chunk_ids": [],
+     "error": null
+    },
+    {
+     "step": 3,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "癸水申月",
+      "book": "穷通宝鉴",
+      "mode": "rrf",
+      "k": 6
+     },
+     "ok": true,
+     "chunk_ids": [
+      2828,
+      2826,
+      2825,
+      2827,
+      2762,
+      2824
+     ],
+     "error": null
+    },
+    {
+     "step": 4,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "query": "月令取格",
+      "book": "子平真诠",
+      "mode": "rrf",
+      "k": 6
+     },
+     "ok": true,
+     "chunk_ids": [
+      1631,
+      1609,
+      1601,
+      1639,
+      1583,
+      1602
+     ],
+     "error": null
+    },
+    {
+     "step": 5,
+     "thought": null,
+     "action": "search_classics",
+     "args": {
+      "book": "子平真诠",
+      "k": 5,
+      "mode": "rrf",
+      "query": "印绶格"
+     },
+     "ok": true,
+     "chunk_ids": [
+      1618,
+      1631,
+      1616,
+      1613,
+      1622
+     ],
+     "error": null
+    },
+    {
+     "step": 6,
+     "thought": null,
+     "action": "fetch_chunk",
+     "args": {
+      "chunk_id": 2827,
+      "with_neighbors": false
+     },
+     "ok": true,
+     "chunk_ids": [
+      2827
+     ],
+     "error": null
+    }
+   ],
+   "judge": {
+    "auto_pass": true,
+    "checks": [
+     {
+      "name": "max_steps",
+      "ok": true,
+      "detail": "6 / 6"
+     },
+     {
+      "name": "citation_book",
+      "ok": true,
+      "detail": "[1609, 1583, 1616, 2827] -> ['子平真诠评注', '子平真诠评注', '子平真诠评注', '穷通宝鉴']"
+     },
+     {
+      "name": "tool:draw_bazi",
+      "ok": true,
+      "detail": {
+       "at_step": 1,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=子平真诠评注)",
+      "ok": true,
+      "detail": {
+       "at_step": 4,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "tool:search_classics(book=穷通宝鉴)",
+      "ok": true,
+      "detail": {
+       "at_step": 3,
+       "via": "book_arg"
+      }
+     },
+     {
+      "name": "answered",
+      "ok": true,
+      "detail": "can_answer=True invalid=False"
+     }
+    ],
+    "needs_human": [
+     "排盘四柱与出生时间一致（该时间农历七月廿五、申月）",
+     "最终建议中必须区分「原文所述」与「自己的推断」"
+    ],
+    "cited_books": [
+     "子平真诠评注",
+     "子平真诠评注",
+     "子平真诠评注",
+     "穷通宝鉴"
+    ],
+    "diagnostics": {
+     "dual_book_explicit": true,
+     "book_specs": [
+      {
+       "need": "search_classics(book=子平真诠评注)",
+       "ok": true,
+       "via": "book_arg"
+      },
+      {
+       "need": "search_classics(book=穷通宝鉴)",
+       "ok": true,
+       "via": "book_arg"
+      }
+     ]
+    }
+   },
+   "seconds": 40.0
+  }
+ ]
+}
