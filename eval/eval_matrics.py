@@ -2,12 +2,17 @@ import argparse
 import csv
 import json
 import sys
-sys.path.append("../src")
-from retrieval import retrieve_one
-import corpus
+from pathlib import Path
+
+# 以前是 sys.path.append("../src") + "./questions.jsonl"：只有先 cd 进 eval/ 才跑得起来，
+# 在项目根目录直接跑会 ModuleNotFoundError。改成按本文件定位，从哪儿跑都一样。
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+from retrieval import retrieve_one  # noqa: E402
+import corpus  # noqa: E402
 # -------------------------- 配置区 --------------------------
-QUESTION_PATH = "./questions.jsonl"
-OUTPUT_CSV = "./results_v2.csv"
+QUESTION_PATH = str(ROOT / "eval" / "questions.jsonl")
+OUTPUT_CSV = str(ROOT / "eval" / "results_v2.csv")
 TOP_K = 5
 STRATEGIES = ["dense", "bm25", "rrf"]
 def load_chunks():
