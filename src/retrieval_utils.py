@@ -58,12 +58,18 @@ def make_tokenizer(mode: str, terminology_dir: Path | None = None):
     也不要让整个服务起不来。警告写 stderr——MCP stdio 通道把 stdout 当协议帧。
     """
     mode = (mode or "bigram").strip().lower()
-    if mode != "jieba":
+    if mode == "bigram":
         return bigram_tokens
+    # 写错模式名必须报错。以前这里对任何非 "jieba" 的值都静默返回二元组，
+    # 于是 MINGLI_BM25_TOKENIZER=jieba_search 会悄悄跑成 bigram，
+    # 结果文件看起来正常、结论却是假的。
+    if mode not in ("jieba", "jieba_search"):
+        raise ValueError(
+            "MINGLI_BM25_TOKENIZER 只能是 bigram / jieba / jieba_search，收到 {!r}".format(mode))
     try:
         import jieba
     except ImportError:
-        print("[warn] MINGLI_BM25_TOKENIZER=jieba 但没装 jieba，退回字二元组",
+        print("[warn] MINGLI_BM25_TOKENIZER={} 但没装 jieba，退回字二元组".format(mode),
               file=sys.stderr)
         return bigram_tokens
 
@@ -71,10 +77,16 @@ def make_tokenizer(mode: str, terminology_dir: Path | None = None):
     # freq 给到 1e5：比默认词频强势，保证「正官格」不会被切成「正官/格」
     for term in terms:
         jieba.add_word(term, freq=100000)
-    print("bm25 tokenizer: jieba + {} 条术语".format(len(terms)), file=sys.stderr)
+    print("bm25 tokenizer: {} + {} 条术语".format(mode, len(terms)), file=sys.stderr)
 
-    def _tok(text: str) -> list[str]:
-        return [t for t in jieba.lcut(text) if t.strip()]
+    if mode == "jieba_search":
+        # 索引模式：长词连同其子词一起输出（「正官格」→ 正官 / 官格 / 正官格），
+        # 既保留词边界，又不会因为切法不同而漏掉子串匹配。
+        def _tok(text: str) -> list[str]:
+            return [t for t in jieba.cut_for_search(text) if t.strip()]
+    else:
+        def _tok(text: str) -> list[str]:
+            return [t for t in jieba.lcut(text) if t.strip()]
 
     return _tok
 

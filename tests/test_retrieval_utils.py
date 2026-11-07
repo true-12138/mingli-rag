@@ -90,3 +90,24 @@ def test_apply_rerank_rejects_wrong_score_count():
     items = [{"idx": 0}, {"idx": 1}]
     out = ru.apply_rerank("q", items, ["a", "b"], 2, Short())
     assert [it["idx"] for it in out] == [0, 1]  # 形状不对时退回原顺序
+
+
+def test_unknown_tokenizer_mode_raises():
+    # 静默退回 bigram 会让评测结果假得像真的，必须报错
+    with pytest.raises(ValueError):
+        ru.make_tokenizer("jieba-seach")
+
+
+def test_jieba_search_keeps_subwords(tmp_path):
+    pytest.importorskip("jieba")
+    # 不给词典的话 jieba 不认识「正官格」，只会切成 正官/格，
+    # 这里要验证的正是「加载了术语后，索引模式会同时吐出长词和子词」
+    (tmp_path / "t.jsonl").write_text(
+        "\n".join(json.dumps({"term": t}, ensure_ascii=False)
+                  for t in ("正官格", "正官", "官格")),
+        encoding="utf-8")
+    got = ru.make_tokenizer("jieba_search", tmp_path)("正官格怎么取用")
+    plain = ru.make_tokenizer("jieba", tmp_path)("正官格怎么取用")
+    # 普通模式只吐整词，索引模式会连子词一起吐——子串匹配才不会因为切法不同而丢
+    assert plain == ["正官格", "怎么", "取用"]
+    assert ["正官", "官格"] == [t for t in got if t in ("正官", "官格")]
