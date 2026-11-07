@@ -30,6 +30,24 @@ sys.path.insert(0, str(ROOT / "src"))
 TASKS_PATH = ROOT / "eval" / "agent_tasks.jsonl"
 
 
+def _provenance() -> dict:
+    """把代码提交号和任务文件哈希写进结果，避免拿旧工作区跑出无法追溯的数字。"""
+    import hashlib
+    import subprocess
+
+    try:
+        commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=str(ROOT), text=True
+        ).strip()
+    except Exception:
+        commit = None
+    try:
+        tasks_sha = hashlib.sha256(TASKS_PATH.read_bytes()).hexdigest()[:12]
+    except Exception:
+        tasks_sha = None
+    return {"code_commit": commit, "tasks_sha256": tasks_sha}
+
+
 def die(msg: str) -> None:
     print(msg, file=sys.stderr)
     raise SystemExit(1)
@@ -211,6 +229,10 @@ def get_agent(name: str):
 
 
 def run(tasks: list[dict], args) -> dict:
+    prov = _provenance()
+    print("[provenance] code={} tasks={}".format(
+        prov["code_commit"] or "unknown", prov["tasks_sha256"] or "unknown"), flush=True)
+
     id2book = build_id2book()
     solve = get_agent(args.agent)
     results = []
@@ -260,6 +282,7 @@ def run(tasks: list[dict], args) -> dict:
     summary = {
         "tag": args.tag,
         "agent": args.agent,
+        **prov,
         "total": len(results),
         "auto_pass": sum(1 for r in results if (r.get("judge") or {}).get("auto_pass")),
         "dual_book_explicit": sum(1 for d in duals if d["dual_book_explicit"]),

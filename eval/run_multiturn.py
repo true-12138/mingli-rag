@@ -48,6 +48,24 @@ except ImportError:  # pragma: no cover - requirements.txt 里有 python-dotenv
 TASKS_PATH = ROOT / "eval" / "multiturn.jsonl"
 
 
+def _provenance() -> dict:
+    """把代码提交号和任务文件哈希写进结果，避免拿旧工作区跑出无法追溯的数字。"""
+    import hashlib
+    import subprocess
+
+    try:
+        commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=str(ROOT), text=True
+        ).strip()
+    except Exception:
+        commit = None
+    try:
+        tasks_sha = hashlib.sha256(TASKS_PATH.read_bytes()).hexdigest()[:12]
+    except Exception:
+        tasks_sha = None
+    return {"code_commit": commit, "tasks_sha256": tasks_sha}
+
+
 def die(msg: str) -> None:
     print(msg, file=sys.stderr)
     raise SystemExit(1)
@@ -224,6 +242,10 @@ def run(tasks: list[dict], args) -> dict:
             "或在终端 export DEEPSEEK_API_KEY=sk-xxxx。\n"
             "不要把 key 写进命令行参数、提交到仓库或贴进聊天窗口。")
 
+    prov = _provenance()
+    print("[provenance] code={} tasks={}".format(
+        prov["code_commit"] or "unknown", prov["tasks_sha256"] or "unknown"), flush=True)
+
     id2book = build_id2book()
     solve = get_agent(args.agent)
     results = []
@@ -288,6 +310,7 @@ def run(tasks: list[dict], args) -> dict:
     summary = {
         "tag": args.tag,
         "agent": args.agent,
+        **prov,
         "total": len(results),
         "auto_pass": sum(1 for r in results if r["judge"]["auto_pass"]),
         "errors": sum(1 for r in results if any(t.get("error") for t in r["turns"])),
