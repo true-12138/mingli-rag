@@ -12,18 +12,17 @@ import usage  # noqa: E402
 
 
 class FakeResp:
-    def __init__(self, payload):
+    def __init__(self, payload, status_code=200, text=""):
         self.payload = payload
-
-    def raise_for_status(self):
-        return None
+        self.status_code = status_code
+        self.text = text
 
     def json(self):
         return self.payload
 
 
-def _post(payload):
-    return lambda *args, **kwargs: FakeResp(payload)
+def _post(payload, status_code=200, text=""):
+    return lambda *args, **kwargs: FakeResp(payload, status_code, text)
 
 
 def test_null_payload_raises_clear_error(monkeypatch):
@@ -35,6 +34,14 @@ def test_null_payload_raises_clear_error(monkeypatch):
 def test_error_payload_raises_clear_error(monkeypatch):
     monkeypatch.setattr(rag.requests, "post", _post({"error": {"message": "bad"}}))
     with pytest.raises(RuntimeError, match="DeepSeek 返回错误"):
+        rag._chat([{"role": "user", "content": "hi"}], api_key="k")
+
+
+def test_http_400_surfaces_api_body(monkeypatch):
+    """400 只抛状态码没法定位；必须把 API 说的原因带出来。"""
+    body = '{"error": {"message": "prompt must contain the word json"}}'
+    monkeypatch.setattr(rag.requests, "post", _post({}, status_code=400, text=body))
+    with pytest.raises(RuntimeError, match="HTTP 400.*word json"):
         rag._chat([{"role": "user", "content": "hi"}], api_key="k")
 
 

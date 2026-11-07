@@ -97,7 +97,10 @@ def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choi
         json=body,
         timeout=120,
     )
-    resp.raise_for_status()
+    if resp.status_code >= 400:
+        # 只抛状态码的话，400 分不清是 schema 不合法、JSON 模式缺关键字还是消息顺序问题。
+        # 把 API 返回的原文带进异常，评测结果里才能直接看到原因。
+        raise RuntimeError("DeepSeek HTTP {}：{}".format(resp.status_code, resp.text[:600]))
     payload = resp.json()
     if not isinstance(payload, dict):
         raise RuntimeError("DeepSeek 返回了空/非对象 JSON：{!r}".format(payload))
