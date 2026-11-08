@@ -767,6 +767,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂；版式、对话、排盘卡片）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约
 │   ├── retrieval.py           # dense + BM25 + RRF（纯 numpy）
+│   ├── bm25_fast.py           # 倒排索引 BM25，与 rank_bm25 分数一致、不占 GIL
 │   ├── rag.py                 # DeepSeek 调用、JSON 强制、引用校验、拒答
 │   ├── conversation.py        # 多轮：历史裁剪、追问改写、失败回退
 │   ├── platform_db.py         # 数据/评测中台共用的 SQLite schema 与连接
@@ -791,6 +792,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
 │   ├── test_mcp_server.py     # MCP 工具注册 / schema / 可复现 / 错误返回
 │   ├── test_mcp_client.py     # MCP client：配置 / 名字规范化 / schema / 分发
+│   ├── test_bm25_fast.py      # 倒排索引 BM25 与 rank_bm25 分数/排序一致
 │   ├── test_multiturn_eval.py # 多轮集书名 / 判分器通过-失败形态
 │   ├── test_memory.py         # 记忆抽取过滤 / 摘要触发 / 注入不越权
 │   ├── test_cost_report.py    # P50/P95 / 缓存价拆分 / 缺 usage 处理

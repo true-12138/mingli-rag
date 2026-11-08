@@ -71,7 +71,16 @@ if embeds.shape[0] < len(chunks):
 norms=np.linalg.norm(embeds,axis=1,keepdims=True)
 norms[norms==0]=1.0
 embeds=embeds/norms
-bm25=BM25Okapi(tokenized_corpus)
+# BM25 实现：默认倒排索引版，`MINGLI_BM25_IMPL=ref` 退回去用 rank_bm25 做 A/B。
+# rank_bm25 的 get_scores 每个 query 词都要扫全库，吃满 GIL，多线程完全不扩展
+# （实测 1 线程 31.9 QPS / 8 线程 31.2 QPS）；打分公式两边一致，见 bm25_fast.py。
+BM25_IMPL = "ref" if os.environ.get(
+    "MINGLI_BM25_IMPL", "fast").strip().lower() == "ref" else "fast"
+if BM25_IMPL == "ref":
+    bm25 = BM25Okapi(tokenized_corpus)
+else:
+    from bm25_fast import FastBM25
+    bm25 = FastBM25(tokenized_corpus)
 
 
 class _LazyModel:

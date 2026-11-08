@@ -277,6 +277,7 @@ def health() -> dict[str, Any]:
         "embedding_loaded": bool(getattr(retrieval.model, "loaded", False)),
         "embedding_backend": getattr(retrieval, "EMBED_BACKEND", "unknown"),
         "query_cache": retrieval.query_cache_stats(),
+        "bm25_impl": getattr(retrieval, "BM25_IMPL", "unknown"),
         "modes": ["rag", "agent", "multi"],
         "retrieval_modes": ["dense", "bm25", "rrf"],
         "max_concurrency": MAX_CONCURRENCY,
