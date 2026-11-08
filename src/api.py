@@ -31,6 +31,12 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Literal
 
+# 检索是一次 8,681×1,024 的点积，OpenBLAS 默认按核数再开一套线程；几十个并发
+# 请求就是几百个 BLAS 线程互相抢。压成单线程后：/retrieve 服务端 P50 18ms→10.5ms，
+# P95 350ms→82.6ms（64 并发）。必须在 numpy 被 import 之前设置才生效。
+for _nv in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_nv, os.environ.get("MINGLI_BLAS_THREADS", "1"))
+
 import requests
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
