@@ -141,6 +141,9 @@ async def worker(
             except (TypeError, ValueError):
                 pass
             await asyncio.sleep(min(wait, 5.0))
+        elif not result["ok"]:
+            # 连不上/超时时别空转；否则 20 个 worker 会瞬间打出几万次重试
+            await asyncio.sleep(0.5)
 
 
 async def progress(stats: dict, started: float, interval: float) -> None:
@@ -168,6 +171,7 @@ async def main() -> int:
     ap.add_argument("--cache", action="store_true", help="允许命中语义缓存（默认绕过）")
     ap.add_argument("--request-timeout", type=float, default=180.0)
     ap.add_argument("--progress-interval", type=float, default=10.0)
+    ap.add_argument("--quiet", action="store_true", help="不输出进度")
     ap.add_argument("--max-error-rate", type=float, default=0.01,
                     help="错误率超过该值退出码为 1")
     args = ap.parse_args()
@@ -200,16 +204,42 @@ async def main() -> int:
     )
 
     async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
-        reporter = asyncio.create_task(
-            progress(stats, started, args.progress_interval)
-        )
+        # 预检：连不上就明确报错，别让 20 个 worker 空转出几万条 ConnectError
+        try:
+            health = await client.get(args.base.rstrip("/") + "/health", timeout=5.0)
+            if health.status_code != 200:
+                print(
+                    "[answers] 预检失败：GET /health -> HTTP %d" % health.status_code,
+                    file=sys.stderr,
+                    flush=True,
+                )
+                return 2
+        except Exception as exc:  # noqa: BLE001
+            print(
+                "[answers] 预检失败：连不上 %s（%s）。先确认 API 已启动："
+                "curl %s/health" % (
+                    args.base, exc, args.base.rstrip("/"),
+                ),
+                file=sys.stderr,
+                flush=True,
+            )
+            return 2
+
+        if not args.quiet:
+            print("[answers] 预检通过：/health 200", file=sys.stderr, flush=True)
+        reporter = None
+        if not args.quiet:
+            reporter = asyncio.create_task(
+                progress(stats, started, args.progress_interval)
+            )
         try:
             await asyncio.gather(
                 *(worker(i, client, url, headers, args, stop_at, stats)
                   for i in range(args.concurrency))
             )
         finally:
-            reporter.cancel()
+            if reporter is not None:
+                reporter.cancel()
     elapsed = time.perf_counter() - started
 
     results = stats["results"]

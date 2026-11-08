@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -101,17 +102,22 @@ class LazyReranker:
     def __init__(self, model_id: str):
         self.model_id = model_id
         self._m = None
+        # 与 BGE-M3 同样的并发首载问题：不加锁会每个线程各载一份
+        self._lock = threading.Lock()
 
     @property
     def loaded(self) -> bool:
         return self._m is not None
 
     def _load(self):
-        os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
-        from sentence_transformers import CrossEncoder
+        with self._lock:
+            if self._m is not None:
+                return self._m
+            os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+            from sentence_transformers import CrossEncoder
 
-        self._m = CrossEncoder(self.model_id, max_length=512)
-        return self._m
+            self._m = CrossEncoder(self.model_id, max_length=512)
+            return self._m
 
     def score(self, pairs: list[tuple[str, str]]):
         scores = self._load().predict(pairs)
