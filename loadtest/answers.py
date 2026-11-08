@@ -265,8 +265,28 @@ async def main() -> int:
         "ttfb_ms_p95": pct(ttfb, 95),
         "total_ms_p50": pct(total, 50),
         "total_ms_p95": pct(total, 95),
+        "error_kinds": {
+            # 服务端明确回了 event: error（上游 LLM / 内部异常）
+            "error_event": sum(1 for r in results if r.get("error_event")),
+            # 200 但流结束得干干净净，没有 done 也没有 error：连接被截断
+            "stream_truncated": sum(
+                1 for r in results
+                if r.get("status") == 200
+                and not r.get("done")
+                and not r.get("error_event")
+            ),
+            "http": sum(
+                1 for r in results
+                if r.get("status") is not None and r.get("status") != 200
+            ),
+        },
         "errors": [
-            {"status": r.get("status"), "error": r.get("error")}
+            {
+                "status": r.get("status"),
+                "done": r.get("done"),
+                "error_event": r.get("error_event"),
+                "error": r.get("error"),
+            }
             for r in results if not r["ok"]
         ][:5],
     }

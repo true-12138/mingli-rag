@@ -25,6 +25,11 @@ import time
 from contextlib import asynccontextmanager
 
 import httpx
+from dotenv import load_dotenv
+
+# llm 可能先于 rag 被 import（api -> agent -> llm），而 URL/模型名在模块加载时
+# 就读环境变量；这里自己加载一次，否则 .env 里的 MINGLI_LLM_URL 会被忽略。
+load_dotenv()
 
 DEEPSEEK_URL = os.environ.get("MINGLI_LLM_URL", "https://api.deepseek.com/chat/completions")
 MODEL = os.environ.get("MINGLI_LLM_MODEL", "deepseek-chat")
@@ -277,6 +282,7 @@ class LLMClient:
                 usage = None
                 emitted = False
                 retryable = False
+                retry_after: float | None = None
                 try:
                     async with self._slot(key):
                         async with client.stream(
@@ -286,6 +292,10 @@ class LLMClient:
                             if resp.status_code >= 400:
                                 text = (await resp.aread()).decode("utf-8", "replace")
                                 self._mark_failure(key, api_key)
+                                try:
+                                    retry_after = float(resp.headers.get("Retry-After", ""))
+                                except (TypeError, ValueError):
+                                    retry_after = None
                                 if resp.status_code in RETRY_STATUS and attempt + 1 < RETRY_ATTEMPTS:
                                     retryable = True
                                 else:
@@ -332,7 +342,11 @@ class LLMClient:
                     retryable = True
                 if retryable:
                     key = self._failover_key(api_key, tried, key)
-                    await asyncio.sleep(_retry_delay(None, attempt))
+                    delay = _retry_delay(None, attempt)
+                    if retry_after is not None:
+                        # 上游明确要求等待时不能抢跑，否则 429 会一直拦着
+                        delay = min(max(retry_after, delay), RETRY_MAX_WAIT)
+                    await asyncio.sleep(delay)
                     continue
                 break
         raise LLMError("流式请求在重试后仍未建立")

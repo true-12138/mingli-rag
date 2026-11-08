@@ -11,8 +11,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from retrieval import retrieve_one
 from conversation import history_block, memory_block, normalize_history, rewrite_question
 import usage
-DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
-MODEL = "deepseek-chat"
+DEEPSEEK_URL = os.environ.get("MINGLI_LLM_URL", "https://api.deepseek.com/chat/completions")
+MODEL = os.environ.get("MINGLI_LLM_MODEL", "deepseek-chat")
 REFUSAL_TEXT = "语料中没有足够的依据回答这个问题。"
 SYSTEM_PROMPT = """你是一个只依据给定古籍片段回答问题的助手。
 规则：

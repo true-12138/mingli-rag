@@ -284,6 +284,8 @@ def health() -> dict[str, Any]:
         "semantic_cache": semcache.info(),
         "database": db_info(),
         "llm_keys": llm.default_client().key_count(),
+        "llm_model": llm.MODEL,
+        "llm_url": llm.DEEPSEEK_URL,
         "streaming": True,
         "trace_cache": len(_TRACES),
     }
@@ -627,7 +629,10 @@ async def chat_stream(
             )
             push("done", out)
         except llm.LLMError as exc:
-            logger.warning("stream upstream failed trace_id=%s status=%s", trace_id, exc.status)
+            logger.warning(
+                "stream upstream failed trace_id=%s status=%s body=%s",
+                trace_id, exc.status, (getattr(exc, "body", "") or "")[:200],
+            )
             push("error", {"message": "上游模型调用失败", "request_id": current_request_id()})
         except Exception:
             logger.exception("stream failed trace_id=%s mode=%s", trace_id, req.mode)
