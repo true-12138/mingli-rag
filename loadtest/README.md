@@ -5,7 +5,10 @@
 | 场景 | 脚本 | 说明 |
 |---|---|---|
 | 200 个 SSE 连接保持 10 分钟 | `hold_sse.py` | 连 `GET /v1/events`，只收心跳，不触发模型 |
-| 20 条并发回答 | `k6-smoke.js` | 每次请求触发一次完整回答；`timings.waiting` 近似首 token |
+| 20 条并发回答 | `answers.py` | 逐 token 读 SSE，能区分「200 但没收到 done」；`X-No-Cache: 1` 绕过缓存 |
+| 同上（k6 口径） | `k6-smoke.js` | 每次请求触发一次完整回答；`timings.waiting` 近似首 token |
+| 检索 QPS | `retrieve.py` | 直打 `/retrieve`，不过 LLM、不过语义缓存 |
+| 内存稳定性 | `rss_sampler.py` | 按 `/proc` 汇总 API 进程树 RSS，输出 CSV |
 
 ## 200 连接
 
@@ -24,9 +27,26 @@ python loadtest/hold_sse.py --connections 200 --duration 600 \
 
 退出码非 0 表示有连接失败。`heartbeats_total` 约等于 `连接数 × 时长 / 15s`。
 
+## 检索 QPS
+
+验收线：≥100 QPS，P95 ≤200ms。`/retrieve` 是同步端点（走线程池），每次
+都真实做一遍向量检索，不经过 LLM 和语义缓存，所以这组数才是检索吞吐。
+
+```bash
+python loadtest/retrieve.py --concurrency 32 --duration 30
+python loadtest/retrieve.py --concurrency 64 --duration 60 --min-qps 100 --max-p95 200
+python loadtest/retrieve.py --concurrency 64 --duration 60 --mode dense   # 只走向量
+```
+
+并发要压到 32 以上才能看出上限；返回 200 但 `hits` 为空按失败计。退出码非 0
+表示 QPS 或 P95 没过验收线。
+
 ## 并发回答
 
 ```bash
+python loadtest/answers.py --concurrency 20 --duration 300      # 默认绕过缓存
+python loadtest/answers.py --concurrency 20 --duration 300 --cache
+
 k6 run loadtest/k6-smoke.js                       # 10 并发 / 2 分钟
 NO_CACHE=1 VUS=20 DURATION=5m k6 run loadtest/k6-smoke.js    # 20 并发 / 5 分钟
 TOKEN=xxx BASE=https://your-host NO_CACHE=1 VUS=20 k6 run loadtest/k6-smoke.js
@@ -45,6 +65,15 @@ TOKEN=xxx BASE=https://your-host NO_CACHE=1 VUS=20 k6 run loadtest/k6-smoke.js
 连接池/槽位状态看 `/health` 的 `concurrency_gate` 与 `semantic_cache`；
 实时指标看 `/metrics` 的 `mingli_answer_slots_active`、
 `mingli_gate_acquire_total`、`mingli_semcache_hits_total`。
+
+## 内存稳定性
+
+```bash
+python loadtest/rss_sampler.py --pattern src/api.py --duration 1800 --interval 30
+```
+
+按 `/proc/<pid>/task/<tid>/children` 把 master + uvicorn worker 的进程树加总，
+每 30s 一行写进 `rss.csv`。看首尾差值：30 分钟内涨幅 <1% 视为无泄漏。
 
 ## 本地
 
