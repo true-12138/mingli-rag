@@ -15,7 +15,7 @@
 - [x] 排盘页：八字、星盘、塔罗三块可用（复用现有 `src/fortune`）——`GET/POST /v1/fortune/*` + `#/fortune`，盘面确定性计算，解读在服务端重算盘面
 - [x] 记忆面板：长期记忆可查看、删除——`GET /v1/memories`、`DELETE /v1/memories/{id}` + `#/memory` 两步确认删除
 - [ ] 鉴权：公网接口支持 Bearer token；未授权请求 401
-- [ ] MCP client：能挂载至少一个外部 MCP server 并调用其工具
+- [x] MCP client：能挂载至少一个外部 MCP server 并调用其工具——`src/mcp_client.py`，stdio / streamable-http，工具名加 `mcp__<server>__` 前缀后进 function calling；`scripts/check_mcp_client.py` 起真实子进程验证发现 + 调用
 - [ ] 公网部署：`/health`、`/chat/stream`、前端页面可访问
 
 ### 性能验收（k6）
@@ -23,8 +23,8 @@
 - [x] **200 个 SSE 连接**保持 10 分钟，连接建立错误率 < 1%——2026-11-08 实测 200/200，错误 0，建连 P95 240ms；2 worker + Redis 下与 20 并发回答同时跑，仍为 200/200、0 错误、7,800 次心跳
 - [x] **20 条并发回答**：首 token P95 ≤ 3s；完成 P95 ≤ 60s；错误率 ≤ 1%（全局 20 槽，多 worker 共享）——**单进程与 2 worker + Redis 均实测通过**（多 worker：251 条 0 错误，TTFB P95 1.49s，完成 P95 4.10s；21 并发出现 429）
 - [x] 超出容量：第 21 条回答返回 429 + `Retry-After`，不排队、不崩溃——21 并发实测出现 5 条 429
-- [ ] 检索接口：≥ 100 QPS，P95 ≤ 200ms（不含 LLM）
-- [ ] 连续压测 30 分钟后 RSS 稳定，无连接泄漏
+- [ ] 检索接口：≥ 100 QPS，P95 ≤ 200ms（不含 LLM）——脚本已就绪 `loadtest/retrieve.py`（直打 `/retrieve`，不过 LLM、不过缓存），**待跑**；30 分钟 soak 里缓存命中路径实测 413 QPS / P95 54.7ms，但那不是检索真实吞吐，口径不能混用
+- [x] 连续压测 30 分钟后 RSS 稳定，无连接泄漏——1800s 采样：5096.0 → 5098.3 MB（+0.05%），200 连接 0 错误、23,800 心跳
 
 > 上游调用量按模式算：RAG 单轮每条约 1 次调用（20 并发 ≈ 7–8 次/秒、约 400 RPM），
 > Agent/多 Agent 约 2–5 次串行调用。若单 key 被限流，需要独立配额（另一个账号或

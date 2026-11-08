@@ -12,8 +12,10 @@ agent 循环（src/agent.py）负责决定调哪个工具、传什么参数。
 from __future__ import annotations
 
 import json
+import logging
 import re
 import sys
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +27,8 @@ from fortune.astro import natal_chart
 from fortune.bazi import paipan as _paipan_bazi
 from fortune.tarot import draw as _draw_tarot
 from retrieval import bm25, chunks, embeds, model, rrf_k, tokenize
+
+logger = logging.getLogger("mingli.tools")
 
 BOOK_FIELDS = ("book", "volume", "chapter")
 
@@ -281,6 +285,32 @@ TOOLS = {
 }
 
 
+# 外部 MCP server 挂载的工具。没配 `mcp_servers.json` 时这里永远是 None，
+# 只有一次文件存在性检查的代价，不会起进程、不会联网。
+_EXTERNAL = None
+_EXTERNAL_LOCK = threading.Lock()
+_NO_EXTERNAL = object()
+
+
+def external_registry():
+    """返回已配置的 MCP 注册表；没配置返回 None。首次调用时才建连。"""
+    global _EXTERNAL
+    if _EXTERNAL is not None:
+        return None if _EXTERNAL is _NO_EXTERNAL else _EXTERNAL
+    with _EXTERNAL_LOCK:
+        if _EXTERNAL is None:
+            try:
+                import mcp_client
+                reg = mcp_client.registry()
+                _EXTERNAL = reg if reg.configs else _NO_EXTERNAL
+            except Exception:  # noqa: BLE001 - 挂载失败不能拖垮内置工具
+                logger.warning("MCP client 初始化失败，外部工具不可用", exc_info=True)
+                _EXTERNAL = _NO_EXTERNAL
+    return None if _EXTERNAL is _NO_EXTERNAL else _EXTERNAL
+
+
+
+
 def call(name, **kwargs):
     """按名字调工具。未知工具名或参数不合法都返回 ok=False，而不是抛异常。
 
@@ -289,11 +319,17 @@ def call(name, **kwargs):
     """
     fn = TOOLS.get(name)
     if fn is None:
+        reg = external_registry()
+        if reg is not None and reg.has(name):
+            return reg.call(name, kwargs)
         return {
             "ok": False,
             "tool": name,
             "args": kwargs,
-            "error": "未知工具，可用：%s" % ", ".join(sorted(TOOLS)),
+            "error": "未知工具，可用：%s" % ", ".join(
+                sorted(list(TOOLS) + ([t["function"]["name"]
+                                       for t in reg.schemas()] if reg else []))
+            ),
         }
     try:
         return fn(**kwargs)

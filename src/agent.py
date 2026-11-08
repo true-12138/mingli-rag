@@ -244,7 +244,7 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
             messages,
             api_key=api_key,
             max_calls=max(0, max_steps - len(trace)),
-            schemas=tool_schema.SCHEMAS,
+            schemas=tool_schema.all_schemas(),
             on_call=lambda name, args, result: _record_call(trace, seen, name, args, result),
             counter=counter,
         )
@@ -346,7 +346,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
             messages,
             api_key=api_key,
             max_calls=max(0, max_steps - len(trace)),
-            schemas=tool_schema.SCHEMAS,
+            schemas=tool_schema.all_schemas(),
             on_call=record,
             # 已经下发过正文就不再重放，避免前端看到重复文本
             on_delta=emit if (on_delta is not None and not streamed["any"]) else None,

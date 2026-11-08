@@ -29,6 +29,8 @@ data/app.sqlite3-*
 .taste-skill/
 # 成本报表由 eval/report_cost.py 生成，数字随跑批变化，不进仓库
 eval/cost_report.json
+# 外部 MCP server 的本地配置（可能带 token）；模板见 mcp_servers.example.json
+mcp_servers.json
 
 
 

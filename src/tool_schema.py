@@ -148,3 +148,21 @@ SCHEMAS = [
 ]
 
 NAME2SCHEMA = {s["function"]["name"]: s for s in SCHEMAS}
+
+
+def all_schemas():
+    """内置 7 个 + 已挂载的外部 MCP 工具。
+
+    `SCHEMAS` 保持静态，单测和文档都以它为准；外部工具只有在
+    `mcp_servers.json` 存在时才会出现，没配置就原样返回。
+    延迟 import tools 是为了避免 tools ↔ tool_schema 的循环导入。
+    """
+    base = list(SCHEMAS)
+    try:
+        from tools import external_registry
+        reg = external_registry()
+    except Exception:  # noqa: BLE001 - 挂载失败不能拖垮内置工具
+        return base
+    if reg is not None:
+        base.extend(reg.schemas())
+    return base

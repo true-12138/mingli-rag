@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "time": {
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "fetch": {
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "allow": ["fetch"]
+    }
+  }
+}

@@ -371,7 +371,7 @@ pass_rate = 0.0
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 加 Nginx 限流 + 接 Langfuse 做持久化 trace |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
 | 12 | 30 条版每系统只跑 1 次，且题型与 prompt 在迭代中互相改过，属于 **development set**；`b04`（该取原条却直接引用检索片段）两边都挂 | 26/30 不能外推成泛化准确率；方差只能从 15 条版的三次重复（±1 条）间接推断 | 冻结 prompt 后用新题集做一次盲测；修 b04 的工具选择 |
-| 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
+| 13 | MCP server + client 都有了（client 支持 stdio / streamable-http、工具白名单）；但 server 的 HTTP transport 仍无鉴权 | 默认只绑 `127.0.0.1`；client 挂载的外部工具没有做「哪些工具允许进 prompt」的策略，只靠 `allow` 白名单 | 给 server 的 HTTP transport 加 token + 给 client 加按会话的工具开关 |
 | 14 | D4 排盘/记忆页的浏览器验收用的是**假 LLM + stub 检索**，没有真实 key | 盘面计算、接口契约、页面交互是真跑的；「解读」的文本质量与真实延迟没在浏览器里验过 | 有 key 后在 CloudStudio 走一遍 `#/fortune` 解读并截图 |
 | 15 | D5 并发底座的本地验证：Redis 用 fakeredis 测 Lua 语义，Postgres 只验证 URL/连接池配置，embedding 服务用假编码器测微批；本机没有 Redis/PG 服务 | 单测覆盖逻辑，但**没跑过真实 Redis 多 worker 共享 20 槽、Postgres 写竞争、真实 BGE-M3 微批吞吐**；200/20 数字尚未产生 | 在 CloudStudio / 部署机 `docker compose up` 后跑 `loadtest/`，把 `/health` 的 `backend` 和压测结果贴回 README |
 | 16 | 语义缓存不是全局向量检索：Redis 普通镜像无 RediSearch，语义层索引只在各进程内 | 多 worker 下精确命中共享，**语义命中各进程各自学习**；新扩容的进程冷启动 | 需要全局语义命中时换 Redis Stack / 独立向量库，并重跑检索评测确认口径 |
@@ -637,7 +637,7 @@ python eval/run_feedback.py --mode rag --baseline <id>   # 回归门，掉超过
 python scripts/demo_closed_loop.py
 ```
 
-### 6.3 MCP server（v1.6）
+### 6.3 MCP server / client（v1.6 + v1.8）
 
 `src/mcp_server.py` 把 Agent 的 7 个工具按 MCP 暴露出去，Claude Desktop、Cursor 或自建 MCP client 可以发现并调用：
 
@@ -671,7 +671,51 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 
 设计上只做协议适配，不复制业务逻辑：每个 tool 都转调 `tools.call`，所以 CLI、Agent、MCP 三个入口的参数校验和错误格式完全一致。schema 由类型注解生成，`mode` / `gender` 是枚举而不是自由字符串。启动信息必须写 stderr——stdio 通道把 stdout 当 JSON-RPC 帧，`retrieval.py` 曾把 `chunks:8681|...` 打到 stdout，客户端会报 `Failed to parse JSONRPC message`。
 
-**边界**：只做了 server，没做 client，Agent 不能动态挂载第三方 server；HTTP transport 没有鉴权，默认只绑 `127.0.0.1`。另外，MCP 和 function calling 不是同一层：MCP 管工具怎么被发现、怎么被调用，function calling / JSON action 管模型怎么表达"我要调哪个工具"。
+**边界**：HTTP transport 没有鉴权，默认只绑 `127.0.0.1`。另外，MCP 和 function calling 不是同一层：MCP 管工具怎么被发现、怎么被调用，function calling / JSON action 管模型怎么表达"我要调哪个工具"。
+
+#### MCP client：反向挂载外部 server
+
+`src/mcp_client.py` 是反方向：连别人的 MCP server，把它的工具当成自己的工具。
+挂上之后这些工具会进 function calling 的 schema，名字加 `mcp__<server>__` 前缀，
+调用仍然走 `tools.call`，所以 trace、错误格式、步数预算和内置 7 个工具完全一致。
+
+配置文件默认读仓库根目录的 `mcp_servers.json`（`MINGLI_MCP_CONFIG` 可覆盖），
+**不配置就完全不联网、不起子进程**：
+
+```bash
+cp mcp_servers.example.json mcp_servers.json
+python scripts/check_mcp_client.py            # 列出发现到的工具
+python scripts/check_mcp_client.py --call mcp__time__get_current_time \
+    --args '{"timezone":"Asia/Shanghai"}'
+```
+
+```json
+{
+  "servers": {
+    "time": { "transport": "stdio", "command": "uvx", "args": ["mcp-server-time"] },
+    "remote": {
+      "transport": "streamable-http",
+      "url": "https://example.com/mcp",
+      "headers": { "Authorization": "Bearer ${SOME_TOKEN}" },
+      "allow": ["search"]
+    }
+  }
+}
+```
+
+- `transport`：`stdio` / `streamable-http`。
+- `command` 写 `python` / `python3` 会替换成当前解释器，venv 和容器里不用改配置。
+- `allow` 是工具白名单；`headers` 支持 `${ENV_VAR}`，token 放环境变量而不是配置文件。
+- 单个 server 连不上只记 warning 并跳过，不影响内置工具和其他 server。
+
+实现上连接保持在一个常驻 asyncio 循环里（`_ServerWorker`）：stdio / HTTP 的连接是
+anyio task group 的上下文，必须「谁进谁出」，所以 `initialize`、`list_tools`、
+`call_tool` 都在同一个协程里跑，只用 `run_coroutine_threadsafe` 从同步代码投递调用。
+否则会踩到 cross-task cancel scope 的报错。
+
+验证：`python scripts/check_mcp_client.py` 会起一个真实子进程 MCP server，
+发现工具并调用一次；`tests/test_mcp_client.py` 覆盖配置解析、名字规范化、
+schema 转换、结果折叠和分发逻辑（不起子进程）。
 
 ### 6.4 长期记忆与会话摘要（v1.7 最小闭环）
 
@@ -715,6 +759,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── answer_stream.py       # 从流式 json_object 里增量解出 answer 字段
 │   ├── sse.py                 # SSE 帧 / 心跳 / 断连取消
 │   ├── mcp_server.py          # MCP：把 7 个工具暴露给 Claude Desktop / Cursor
+│   ├── mcp_client.py          # MCP client：挂载外部 server，工具进 function calling
 │   ├── guards.py              # Bearer 鉴权 + 并发信号量（线程版 + SSE 异步版）
 │   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
 │   ├── db/                    # 业务库：base(连接) / models(8 张表) / repo(读写)
@@ -745,6 +790,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── test_conversation.py   # 历史裁剪 / 改写回退 / 引用隔离
 │   ├── test_platform.py       # 数据版本 + 质量门 + 评测导入 + 回归门
 │   ├── test_mcp_server.py     # MCP 工具注册 / schema / 可复现 / 错误返回
+│   ├── test_mcp_client.py     # MCP client：配置 / 名字规范化 / schema / 分发
 │   ├── test_multiturn_eval.py # 多轮集书名 / 判分器通过-失败形态
 │   ├── test_memory.py         # 记忆抽取过滤 / 摘要触发 / 注入不越权
 │   ├── test_cost_report.py    # P50/P95 / 缓存价拆分 / 缺 usage 处理
@@ -765,7 +811,9 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── run_feedback.py        # 重跑差评用例 + 回归门
 │   └── make_chart.py          # 由评测明细生成对比图
 ├── scripts/
-│   └── demo_closed_loop.py    # 一条命令跑通反馈闭环（假模型、临时库）
+│   ├── demo_closed_loop.py    # 一条命令跑通反馈闭环（假模型、临时库）
+│   ├── check_llm.py           # 验证供应商三条契约：流式 / JSON / tools
+│   └── check_mcp_client.py    # 起一个真实 MCP server，发现并调用工具
 ├── data/
 │   ├── chunks/punct.jsonl     # 标点组（2,830 行，chunk_id 1..2830）
 │   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681）
