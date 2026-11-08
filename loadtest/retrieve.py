@@ -102,8 +102,13 @@ async def worker(
                     stats["failed"] += 1
                     stats["empty"] += 1
                 else:
+                    body = resp.json()
                     stats["ok"] += 1
                     stats["latencies"].append(elapsed)
+                    # 服务端自己报的 retrieve 耗时：和客户端延迟的差值就是排队时间
+                    server_ms = body.get("elapsed_ms")
+                    if isinstance(server_ms, (int, float)):
+                        stats["server_ms"].append(float(server_ms))
         except Exception as exc:  # noqa: BLE001 - 压测要汇总所有失败
             stats["failed"] += 1
             if len(stats["errors"]) < 5:
@@ -162,7 +167,8 @@ async def main() -> int:
 
     stats = {
         "completed": 0, "ok": 0, "failed": 0, "empty": 0,
-        "inflight": 0, "latencies": [], "status_counts": {}, "errors": [],
+        "inflight": 0, "latencies": [], "server_ms": [],
+        "status_counts": {}, "errors": [],
     }
 
     async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
@@ -218,6 +224,9 @@ async def main() -> int:
         "latency_ms_p50": pct(lat, 50),
         "latency_ms_p95": p95,
         "latency_ms_p99": pct(lat, 99),
+        # 服务端 retrieve_one 自己的耗时；远小于客户端延迟就说明瓶颈在排队
+        "server_ms_p50": pct(stats["server_ms"], 50),
+        "server_ms_p95": pct(stats["server_ms"], 95),
         "errors": stats["errors"],
     }
     print(json.dumps(summary, ensure_ascii=False), flush=True)
