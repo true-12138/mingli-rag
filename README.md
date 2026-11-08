@@ -2,8 +2,7 @@
 
 一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
-[公开 Demo（ModelScope 创空间）](https://modelscope.cn/studios/Trueful/mingli-rag) ·
-[直达 Streamlit](https://trueful-mingli-rag.ms.show) ·
+[公开 Demo](https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/)（CloudStudio 单机，实例运行期间可用） ·
 [HTTP API 文档](#61-http-apiv14) ·
 [检索评测明细](eval/results_8681_tuned.csv) ·
 [拒答评测明细](eval/refusal_results.csv) ·
@@ -57,7 +56,7 @@ flowchart LR
         J -->|"true"| K["答案 + [编号] 引用"]
         J -->|"false"| L["固定拒答语"]
         K --> M["引用编号校验<br/>越界 → invalid_citations"]
-        M --> N["Streamlit / ModelScope"]
+        M --> N["React 前端 / HTTP API"]
         L --> N
     end
 ```
@@ -67,14 +66,14 @@ flowchart LR
 | 语料 | 45 部 / 8,681 chunk（标点组 16 部 2,830 + 无标点组 29 部 5,851），目标 450 字 / 上限 700 / 句级重叠 60 | `data/chunks/punct.jsonl`、`data/chunks/unpunct.jsonl` |
 | 向量化 | BGE-M3，1024 维，归一化后存 `.npy` | `src/embed.py` → `data/embeddings.npy` |
 | dense 检索 | 纯 numpy 矩阵乘；8,681 条暴力全量，毫秒级，不需要向量库 | `src/retrieval.py:41` |
-| 稀疏检索 | `rank_bm25` + 字二元组分词（不依赖 jieba 词典） | `src/retrieval.py:47` |
+| 稀疏检索 | 倒排索引 BM25（打分与 `rank_bm25` 一致）+ 字二元组分词（不依赖 jieba 词典）；`MINGLI_BM25_IMPL=ref` 可切回参照实现做 A/B | `src/bm25_fast.py`、`src/retrieval.py` |
 | 融合 | RRF，k=10，每路先取 40 再截 Top-5 | `src/retrieval.py:53` |
 | 生成 | `deepseek-chat`，`temperature=0`，`response_format=json_object` | `src/rag.py:59` |
 | 约束 | 引用编号 → chunk_id 映射与校验；声称能答但零有效引用 → `invalid_output` | `src/rag.py:116` |
-| 界面 | Streamlit：面向访客的「问古籍」「排盘」两页；检索后端、Top-k、轨迹、数据/评测中台收进维护页（`?admin=1`） | `src/app.py` |
+| 界面 | React（`frontend/`）：问古籍、排盘、记忆三页；检索后端、Top-k、轨迹、数据/评测中台仍在 Streamlit 维护页（`?admin=1`） | `frontend/src/`、`src/app.py` |
 | API | FastAPI：`/chat`、`/retrieve`、`/trace`、`/health`、`/v1/events`；全局回答槽 + 可选 Bearer token | `src/api.py` |
 | 并发底座 | Redis 全局回答槽与每用户额度；Postgres 业务库；独立 embedding 服务；200 连接与 20 回答分开测 | `src/gate.py`、`src/embed_service.py`、`loadtest/` |
-| 部署 | ModelScope 创空间，入口见 `modelscope.yml`；独立 API 走 `Dockerfile` / `docker-compose.yml`（含 Postgres / Redis / embed） | `app.py`、`Dockerfile` |
+| 部署 | CloudStudio 单机：宿主机 Nginx 同源提供前端、`/api/` 反代并注入 Bearer token；也可用 `Dockerfile` / `docker-compose.yml`（含 Postgres / Redis / embed） | `deploy/`、`Dockerfile` |
 
 **一次请求发生了什么**
 
@@ -772,10 +771,10 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 
 ```text
 .
-├── app.py                     # Streamlit 入口（ModelScope 按 modelscope.yml 拉起）
+├── app.py                     # Streamlit 入口（维护页；公开部署已改用 React + FastAPI）
 ├── Dockerfile                 # FastAPI 单镜像（不打包 BGE-M3 权重）
 ├── docker-compose.yml         # 本地一键起 API + HF 权重缓存 volume
-├── deploy/                    # ECS：Nginx 限流反代 + systemd 开机自启
+├── deploy/                    # 部署：Nginx 同源反代（注入 token）、systemd unit
 ├── src/
 │   ├── app.py                 # 界面：问古籍 + 排盘；维护页（?admin=1）放中台与后端开关
 │   ├── api.py                 # FastAPI：/chat /chat/stream /retrieve /trace /health /metrics
@@ -886,7 +885,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D6 语义缓存与压测（已完成）**：`src/semcache.py` 精确层 + 语义层；`loadtest/answers.py` 不依赖 k6；CloudStudio 单进程实测 200 连接 0 错误、20 并发 TTFB P95 1.39s / 完成 P95 4.93s、21 并发出现 429
 - **D6.5 检索吞吐与内存（已完成，11/08）**：`rank_bm25` 的 `get_scores` 每词扫全库、吃满 GIL（1 线程 31.9 QPS = 8 线程 31.2），换成倒排索引 `src/bm25_fast.py`（打分与 `BM25Okapi` 对齐，有对照测试）；`api.py` 在 numpy 导入前压 BLAS 线程。`/retrieve` 16 并发 130.5 QPS / P95 176.7ms；30 分钟 soak RSS +0.05%
 - **D7 部署与鉴权（已完成，11/08）**：CloudStudio 单机公网跑通——宿主机 Nginx 同源提供前端、`/api/` 反代、服务端注入 Bearer token；直连 API 401、经 Nginx 200、`/metrics` 404；浏览器真实提问逐 token 流式。MCP client 挂载外部 server 见 §6.3
-- **下一步**：D7 终评文档对齐（评测表标注 `code_commit`、压测报告与最终代码一致）、ModelScope 创空间同步、必要时把 SQLite 记忆库换成独立服务
+- **下一步**：D7 终评文档对齐（评测表标注 `code_commit`、压测报告与最终代码一致）、重启后一键拉起服务的脚本、必要时把 SQLite 记忆库换成独立服务
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
