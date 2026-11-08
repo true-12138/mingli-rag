@@ -74,6 +74,9 @@ async def worker(
     while time.perf_counter() < stop_at:
         question = QUESTIONS[rng.randrange(len(QUESTIONS))]
         n += 1
+        if args.unique:
+            # 每条都不一样，query 编码缓存必然 miss——测的是「冷查询」上限
+            question = "%s（%d-%d）" % (question, idx, n)
         stats["inflight"] += 1
         started = time.perf_counter()
         try:
@@ -135,6 +138,8 @@ async def main() -> int:
     ap.add_argument("--top-k", type=int, default=5)
     ap.add_argument("--mode", default="rrf", choices=("dense", "bm25", "rrf"))
     ap.add_argument("--token", default=os.environ.get("MINGLI_API_TOKEN"))
+    ap.add_argument("--unique", action="store_true",
+                    help="每题都不同，强制 query 编码缓存 miss（测冷查询上限）")
     ap.add_argument("--min-qps", type=float, default=0.0,
                     help="低于该 QPS 退出码为 1（验收线 100）")
     ap.add_argument("--max-p95", type=float, default=0.0,

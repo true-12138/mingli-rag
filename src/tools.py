@@ -26,7 +26,7 @@ import corpus
 from fortune.astro import natal_chart
 from fortune.bazi import paipan as _paipan_bazi
 from fortune.tarot import draw as _draw_tarot
-from retrieval import bm25, chunks, embeds, model, rrf_k, tokenize
+from retrieval import bm25, chunks, embeds, encode_query, rrf_k, tokenize
 
 logger = logging.getLogger("mingli.tools")
 
@@ -96,7 +96,7 @@ def search_classics(query, k=5, book=None, mode="rrf"):
 
     cand = max(k * 4, 20)
 
-    q_emb = model.encode(query, normalize_embeddings=True)
+    q_emb = encode_query(query)
     sims = embeds @ q_emb
     d_rows = _topk(sims, rows, cand)
 

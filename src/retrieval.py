@@ -1,6 +1,7 @@
 import os
 import sys
 import threading
+from collections import OrderedDict
 from pathlib import Path
 import numpy as np
 from rank_bm25 import BM25Okapi
@@ -103,6 +104,14 @@ class _LazyModel:
             return self._load_locked()
 
     def _load_locked(self):
+        # torch 默认会按核数开线程，再乘以并发请求数就是几十上百个线程抢几颗核。
+        # 多 worker + 并发编码时这会把吞吐拖垮（实测 64 并发只有 16.6 QPS），
+        # 所以先压住线程数，把并行度交给 MINGLI_EMBED_CONCURRENCY 控制。
+        try:
+            import torch
+            torch.set_num_threads(max(1, int(os.environ.get("MINGLI_TORCH_THREADS", "2"))))
+        except Exception:  # noqa: BLE001 - 没有 torch 也不该挡住加载
+            pass
         # 大陆网络直连 huggingface 多数会失败。用户没显式配置时默认走镜像，
         # 想直连就把 HF_ENDPOINT 设成 https://huggingface.co。
         os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
@@ -148,8 +157,90 @@ else:
     model = _LazyModel(MODEL_ID)
     EMBED_BACKEND = "local"
 
+# --------------------------------------------------------------------------- #
+# query 编码：LRU 缓存 + 并发上限
+#
+# 检索的耗时几乎全在 query 编码上（BGE-M3 单条几十毫秒），numpy 点积和 BM25
+# 都是毫秒级。两件事决定了 /retrieve 的吞吐：
+#
+# 1. 同一个问题反复问是常态（前端重试、多轮追问、压测轮换题库），
+#    缓存 query 向量能把重复问题的编码降到 0。
+# 2. 不加限制时 64 个线程会同时调 encode，每个 encode 内部又开 torch 多线程，
+#    几十个编码在几颗核上互相抢，吞吐反而比串行还低——实测 64 并发只有 16.6 QPS。
+#
+# 所以：本地模型用信号量把并发编码数压到核数附近（MINGLI_EMBED_CONCURRENCY），
+# torch 线程数单独可控（MINGLI_TORCH_THREADS）；远程 embed 服务自己有批处理，
+# 不再加本地信号量。
+# --------------------------------------------------------------------------- #
+QUERY_CACHE_MAX = max(0, int(os.environ.get("MINGLI_QUERY_CACHE", "2048")))
+_QUERY_CACHE: "OrderedDict[str, np.ndarray]" = OrderedDict()
+_QUERY_CACHE_LOCK = threading.Lock()
+_QUERY_CACHE_HITS = 0
+_QUERY_CACHE_MISSES = 0
+_EMBED_SEM = None if EMBED_URL else threading.BoundedSemaphore(
+    max(1, int(os.environ.get("MINGLI_EMBED_CONCURRENCY", "2")))
+)
+
+
+def _cache_get(key):
+    global _QUERY_CACHE_HITS
+    if not QUERY_CACHE_MAX:
+        return None
+    with _QUERY_CACHE_LOCK:
+        hit = _QUERY_CACHE.get(key)
+        if hit is not None:
+            _QUERY_CACHE.move_to_end(key)
+            _QUERY_CACHE_HITS += 1
+        return hit
+
+
+def _cache_put(key, vec):
+    global _QUERY_CACHE_MISSES
+    with _QUERY_CACHE_LOCK:
+        _QUERY_CACHE_MISSES += 1
+        if not QUERY_CACHE_MAX:
+            return
+        _QUERY_CACHE[key] = vec
+        _QUERY_CACHE.move_to_end(key)
+        while len(_QUERY_CACHE) > QUERY_CACHE_MAX:
+            _QUERY_CACHE.popitem(last=False)
+
+
+def encode_query(query):
+    """把 query 编码成归一化向量：优先查缓存，未命中才真正跑模型。"""
+    hit = _cache_get(query)
+    if hit is not None:
+        return hit
+
+    if _EMBED_SEM is None:
+        vec = model.encode(query, normalize_embeddings=True)
+    else:
+        with _EMBED_SEM:
+            # 拿到信号量后再查一次：排队期间同一个问题可能已经被别人编码好了
+            hit = _cache_get(query)
+            if hit is not None:
+                return hit
+            vec = model.encode(query, normalize_embeddings=True)
+
+    vec = np.asarray(vec, dtype=np.float32)
+    _cache_put(query, vec)
+    return vec
+
+
+def query_cache_stats():
+    with _QUERY_CACHE_LOCK:
+        return {
+            "size": len(_QUERY_CACHE),
+            "max": QUERY_CACHE_MAX,
+            "hits": _QUERY_CACHE_HITS,
+            "misses": _QUERY_CACHE_MISSES,
+            "concurrency": (None if _EMBED_SEM is None
+                            else int(os.environ.get("MINGLI_EMBED_CONCURRENCY", "2"))),
+        }
+
+
 def dense_search(query,topk=top_k):
-    q_emb=np.asarray(model.encode(query,normalize_embeddings=True),dtype=np.float32)
+    q_emb=encode_query(query)
     sims=embeds@q_emb
     indices=np.argsort(sims)[::-1][:topk]
     res=[{"idx":i,"scores":float(sims[i] )} for i in indices]

@@ -36,10 +36,20 @@ python loadtest/hold_sse.py --connections 200 --duration 600 \
 python loadtest/retrieve.py --concurrency 32 --duration 30
 python loadtest/retrieve.py --concurrency 64 --duration 60 --min-qps 100 --max-p95 200
 python loadtest/retrieve.py --concurrency 64 --duration 60 --mode dense   # 只走向量
+python loadtest/retrieve.py --concurrency 64 --duration 60 --unique       # 冷查询
 ```
 
-并发要压到 32 以上才能看出上限；返回 200 但 `hits` 为空按失败计。退出码非 0
-表示 QPS 或 P95 没过验收线。
+**两种口径要分开报，不能混用**：
+
+| 口径 | 命令 | 测的是什么 |
+|---|---|---|
+| 重复问题 | 默认 | query 编码命中 LRU，剩余成本是 BM25 + 点积，代表真实流量里重复问 |
+| 冷查询 | `--unique` | 每条都是新问题，编码缓存必然 miss，代表编码吞吐的硬件上限 |
+
+`/retrieve` 的耗时几乎全在 BGE-M3 编码上（单条几十毫秒），numpy 点积和 BM25
+都是毫秒级。所以在 CPU 机器上「冷查询 100 QPS」物理上做不到，能过 100 QPS
+的是重复问题口径或 GPU/远程 embed 服务。并发要压到 32 以上才能看出上限；
+返回 200 但 `hits` 为空按失败计。退出码非 0 表示 QPS 或 P95 没过验收线。
 
 ## 并发回答
 
