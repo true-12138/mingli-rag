@@ -37,3 +37,7 @@ mcp_servers.json
 # 前端
 frontend/node_modules/
 frontend/dist/
+
+# scripts/serve.sh 的运行时状态与日志
+.serve/
+api.log

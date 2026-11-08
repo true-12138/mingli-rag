@@ -1,4 +1,4 @@
-# 命理古籍 RAG Agent · v1.8
+# 命理古籍 RAG Agent · v1.9
 
 一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
@@ -394,6 +394,16 @@ alembic upgrade head               # 首次运行：创建业务库 8 张表，�
 export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
 ```
+
+要跑「React 前端 + FastAPI + Nginx」的完整同源形态（公网 Demo 就是这么部署的），用脚本一条命令拉起：
+
+```bash
+./scripts/serve.sh up       # Redis → API（绑 127.0.0.1:8000）→ Nginx，并打印四条验收
+./scripts/serve.sh status   # 看监听和 /health
+./scripts/serve.sh down     # 停 API 和 Nginx（Redis 不动）
+```
+
+Nginx 站点配置不存在时脚本只提示、不猜 token；生成方法见 [`deploy/README.md`](deploy/README.md) §6。
 
 - `data/embeddings.npy`（**8,681 × 1024，约 34 MB**）**已随仓库提供**，开箱即用，覆盖标点组 + 无标点组全部语料。若文件行数少于 chunk 数，启动时会打印 `[warn] 索引只覆盖前 N 条语料`，此时只检索已编码的部分。
 - 重建索引：先 `python src/build_index.py` 校验语料，再 `python src/embed.py` 重新编码（8,681 条，GPU 上十几分钟，纯 CPU 要数小时）
@@ -885,6 +895,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D6 语义缓存与压测（已完成）**：`src/semcache.py` 精确层 + 语义层；`loadtest/answers.py` 不依赖 k6；CloudStudio 单进程实测 200 连接 0 错误、20 并发 TTFB P95 1.39s / 完成 P95 4.93s、21 并发出现 429
 - **D6.5 检索吞吐与内存（已完成，11/08）**：`rank_bm25` 的 `get_scores` 每词扫全库、吃满 GIL（1 线程 31.9 QPS = 8 线程 31.2），换成倒排索引 `src/bm25_fast.py`（打分与 `BM25Okapi` 对齐，有对照测试）；`api.py` 在 numpy 导入前压 BLAS 线程。`/retrieve` 16 并发 130.5 QPS / P95 176.7ms；30 分钟 soak RSS +0.05%
 - **D7 部署与鉴权（已完成，11/08）**：CloudStudio 单机公网跑通——宿主机 Nginx 同源提供前端、`/api/` 反代、服务端注入 Bearer token；直连 API 401、经 Nginx 200、`/metrics` 404；浏览器真实提问逐 token 流式。MCP client 挂载外部 server 见 §6.3
+- **v1.9（已完成，11/08）**：把「重启后要手工拉三个进程」收成 `scripts/serve.sh up/status/down`（Redis → API 绑回环 → Nginx → 四条验收）；公开入口切到 CloudStudio，撤下 ModelScope 创空间
 - **下一步**：D7 终评文档对齐（评测表标注 `code_commit`、压测报告与最终代码一致）、重启后一键拉起服务的脚本、必要时把 SQLite 记忆库换成独立服务
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）

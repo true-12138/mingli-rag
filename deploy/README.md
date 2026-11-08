@@ -76,7 +76,13 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1/metrics   # 404
 
 ## 6. 不用 Docker 的部署方式
 
-宿主机直接跑 uvicorn + Nginx：
+宿主机直接跑 uvicorn + Nginx。配置好一次之后，重启机器/工作区只要：
+
+```bash
+./scripts/serve.sh up       # Redis → API（127.0.0.1）→ Nginx，并打印四条验收
+```
+
+下面是脚本做的事，手工执行时照这个顺序：
 
 ```bash
 # 后端：必须绑 127.0.0.1。api.py 默认 0.0.0.0，那样 8000 会直接暴露到公网，
