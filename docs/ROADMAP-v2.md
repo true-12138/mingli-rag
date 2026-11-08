@@ -14,9 +14,10 @@
 - [x] 三种模式（RAG / 单 Agent / 多 Agent）都可流式，工具步骤实时显示
 - [x] 排盘页：八字、星盘、塔罗三块可用（复用现有 `src/fortune`）——`GET/POST /v1/fortune/*` + `#/fortune`，盘面确定性计算，解读在服务端重算盘面
 - [x] 记忆面板：长期记忆可查看、删除——`GET /v1/memories`、`DELETE /v1/memories/{id}` + `#/memory` 两步确认删除
-- [ ] 鉴权：公网接口支持 Bearer token；未授权请求 401
+- [x] 鉴权：公网接口支持 Bearer token；未授权请求 401——2026-11-08 公网部署实测：直连 `127.0.0.1:8000/trace/x` 返回 401，经 Nginx `/api/trace/x` 返回 404（token 由服务端注入并放行）
 - [x] MCP client：能挂载至少一个外部 MCP server 并调用其工具——`src/mcp_client.py`，stdio / streamable-http，工具名加 `mcp__<server>__` 前缀后进 function calling；`scripts/check_mcp_client.py` 起真实子进程验证发现 + 调用
-- [ ] 公网部署：`/health`、`/chat/stream`、前端页面可访问
+- [x] 公网部署：`/health`、`/chat/stream`、前端页面可访问——2026-11-08 CloudStudio 单机，
+  宿主机 Nginx 同源 + 服务端注入 token；`/health` 200、`/` 200、`/metrics` 404，浏览器真实提问逐 token 流式返回
 
 ### 性能验收（k6）
 

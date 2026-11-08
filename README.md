@@ -605,6 +605,21 @@ Redis / embed；`alembic upgrade head` 在容器启动时执行。镜像不打�
 查询下载到共享的 `hf_cache` volume；语料和 embedding 随镜像提供。完整步骤与鉴权验收见
 [`deploy/README.md`](deploy/README.md)。
 
+**公网部署实录（2026-11-08）**：在 CloudStudio 单机上跑通，入口
+`https://<workspace-id>--80.ap-shanghai2.cloudstudio.club/`（平台做 TLS 终止后转到宿主机 80）。
+
+- **同源结构**：宿主机 Nginx 提供 `frontend/dist`，`/api/` 去掉前缀反代到 `127.0.0.1:8000`，
+  并在服务端注入 `Authorization: Bearer $MINGLI_API_TOKEN`；浏览器不持有 token。API 绑回环，
+  `/metrics` 直接返回 404。
+- **四条验收**：直连 `127.0.0.1:8000/trace/x` → `401`；经 Nginx 的 `/api/trace/x` → `404`
+  （token 已放行，只是 trace 不存在）；`/metrics` → `404`；`/` → `200`。浏览器里真实提问
+  **逐字流式返回**，引用可展开。
+- **两个坑**（部署笔记，不是理论）：
+  1. `envsubst` 必须带变量白名单（`envsubst '${MINGLI_API_TOKEN}'`）。不带参数会把 nginx 自己的
+     `$host`、`$remote_addr` 一起替换成空串，`nginx -t` 报 `invalid number of arguments`。
+  2. 业务库版本号停在 head 但 `conversations` 缺 `summary_upto_id`（旧库被 stamp 过）。最省事的
+     修法不是补列，而是备份后删库重跑 `alembic upgrade head`，顺带消掉其他潜在漂移。
+
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 
 **公网 Demo 的问答与解读**：若部署环境没有配置 `DEEPSEEK_API_KEY`，页面会在「古籍问答」和排盘页提供「填入自己的 DeepSeek Key」入口——key 只存在当前会话，不写日志、不落盘，也不会作用于其他访客。要在公网让所有访客免填直接可用，请在创空间的环境变量里配置该 key。
@@ -869,7 +884,9 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D4（已完成，11/10）**：排盘页与记忆页。后端 `src/api_fortune.py` 把 `src/fortune` 包成 `/v1/fortune/{bazi,astro,tarot,read}`（盘面纯计算，解读前服务端重算盘面，塔罗 seed 往返复现）；`GET/DELETE /v1/memories` 可查看/删除长期记忆；前端新增 `#/fortune`（三页签 + SVG 星盘轮盘）与 `#/memory`，hash 路由三页互通，移动端抽屉从任一页可开
 - **D5 并发底座（已完成）**：Redis 全局回答槽与每用户额度（`src/gate.py`）、Postgres 业务库与连接池、独立 embedding 服务（微批）、`GET /v1/events` 连接流、LLM 跨 key failover/熔断、`loadtest/`；另修复并发首载模型导致的 CUDA OOM（懒加载加锁）
 - **D6 语义缓存与压测（已完成）**：`src/semcache.py` 精确层 + 语义层；`loadtest/answers.py` 不依赖 k6；CloudStudio 单进程实测 200 连接 0 错误、20 并发 TTFB P95 1.39s / 完成 P95 4.93s、21 并发出现 429
-- **下一步**：Redis 多 worker 共享槽复测、检索 QPS、30 分钟 RSS、部署/鉴权/MCP、D7 终评与文档
+- **D6.5 检索吞吐与内存（已完成，11/08）**：`rank_bm25` 的 `get_scores` 每词扫全库、吃满 GIL（1 线程 31.9 QPS = 8 线程 31.2），换成倒排索引 `src/bm25_fast.py`（打分与 `BM25Okapi` 对齐，有对照测试）；`api.py` 在 numpy 导入前压 BLAS 线程。`/retrieve` 16 并发 130.5 QPS / P95 176.7ms；30 分钟 soak RSS +0.05%
+- **D7 部署与鉴权（已完成，11/08）**：CloudStudio 单机公网跑通——宿主机 Nginx 同源提供前端、`/api/` 反代、服务端注入 Bearer token；直连 API 401、经 Nginx 200、`/metrics` 404；浏览器真实提问逐 token 流式。MCP client 挂载外部 server 见 §6.3
+- **下一步**：D7 终评文档对齐（评测表标注 `code_commit`、压测报告与最终代码一致）、ModelScope 创空间同步、必要时把 SQLite 记忆库换成独立服务
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
