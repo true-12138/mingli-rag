@@ -15,3 +15,5 @@ data/platform.sqlite3
 data/platform.sqlite3-*
 data/.quota.json
 data/.quota.tmp
+frontend/node_modules
+frontend/dist

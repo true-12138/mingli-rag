@@ -1,0 +1,52 @@
+# 同源部署：静态前端 + /api/ 反代到 FastAPI。
+# 官方 nginx 镜像启动时会对 /etc/nginx/templates/*.template 做 envsubst，
+# ${MINGLI_API_TOKEN} 从容器环境变量注入；token 不进入前端构建产物。
+#
+# 上游用 compose 服务名 api；单独跑容器时改成宿主机地址。
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # 请求体只有一个问题 + 最多 20 条历史，64k 足够
+    client_max_body_size 64k;
+
+    # 前端静态资源；hash 路由也回落到 index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API 与 SSE：去掉 /api 前缀后转给 FastAPI
+    location /api/ {
+        proxy_pass http://api:8000/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 服务端注入 Bearer token：浏览器不需要、也拿不到它。
+        # 没配置 MINGLI_API_TOKEN 时后端本来就会放行。
+        proxy_set_header Authorization "Bearer ${MINGLI_API_TOKEN}";
+
+        # SSE 必须关缓冲，否则逐 token 会变成一次性返回
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    # 探活不记日志；/metrics 走静态回落会返回 index.html，这里明确 404，
+    # 需要指标时在容器网络内访问 api:8000/metrics
+    location = /health {
+        proxy_pass http://api:8000/health;
+        access_log off;
+    }
+
+    location = /metrics {
+        return 404;
+    }
+}

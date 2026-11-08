@@ -3,7 +3,9 @@ services:
     build: .
     image: mingli-rag-api:local
     ports:
-      - "8000:8000"
+      # 只绑本机：公网入口统一走 web（Nginx 注入 Bearer token），
+      # 直接暴露 8000 会绕过鉴权。压测仍可打 127.0.0.1:8000。
+      - "127.0.0.1:8000:8000"
     environment:
       # 从宿主机环境或同目录 .env 读取；.env 不进仓库
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
@@ -35,6 +37,21 @@ services:
       timeout: 5s
       start_period: 60s
       retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.frontend
+    image: mingli-rag-web:local
+    ports:
+      - "80:80"
+    environment:
+      # 由 Nginx 在反代时注入 Authorization，浏览器不持有 token
+      MINGLI_API_TOKEN: ${MINGLI_API_TOKEN:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
   embed:
     build: .

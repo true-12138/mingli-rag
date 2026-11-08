@@ -1,28 +1,34 @@
-# 部署到 ECS（FastAPI + Docker + Nginx）
+# 部署（Docker Compose + Nginx 同源）
 
-目标：一台 2 核 4G 的 Ubuntu 22.04，公网能访问 `/health`，`/chat` 能跑，
-Nginx 做限流和反代，systemd 保证开机自启。
+目标：公网只暴露一个入口。Nginx 提供前端静态页，并把 `/api/` 反代到 FastAPI，
+**在服务端注入 Bearer token**——浏览器不持有、也拿不到 `MINGLI_API_TOKEN`。
+
+```
+Browser ──▶ Nginx (:80) ──/api/──▶ FastAPI (:8000) ──▶ Redis / Postgres / Embed
+              └── 前端静态资源
+```
+
+> 不要把 token 编进前端（`VITE_*`）。打包后任何人都能在 JS 里看到它。
 
 ## 1. 机器准备
 
 ```bash
 sudo apt update
-sudo apt install -y docker.io docker-compose-plugin nginx
-sudo systemctl enable --now docker nginx
+sudo apt install -y docker.io docker-compose-plugin
+sudo systemctl enable --now docker
 ```
 
-2C4G 足够跑检索和 DeepSeek 调用；**首次查询会下载 BGE-M3 权重（几 GB）**，
-建议先挂好 `hf_cache` volume，或把本地权重放进 `MINGLI_MODEL_DIR`。
+2C4G 可以跑，但 BGE-M3 由独立的 `embed` 服务常驻（compose 已配置
+`MINGLI_EMBED_URL=http://embed:8100`），不要改成每个 worker 本地加载。
+首次启动会下载模型权重到 `hf_cache` volume。
 
-## 2. 拉代码与配置
+## 2. 配置
 
 ```bash
-sudo mkdir -p /opt/mingli-rag && sudo chown $USER:$USER /opt/mingli-rag
 git clone https://github.com/true-12138/mingli-rag.git /opt/mingli-rag
 cd /opt/mingli-rag
-
 cp .env.example .env
-# 编辑 .env：至少填 DEEPSEEK_API_KEY，并设置 MINGLI_API_TOKEN
+# 至少填 DEEPSEEK_API_KEY，并设置 MINGLI_API_TOKEN
 chmod 600 .env
 ```
 
@@ -33,57 +39,72 @@ chmod 600 .env
 ```bash
 docker compose up -d --build
 docker compose ps
-curl -s localhost:8000/health
+curl -s localhost/health
 ```
 
-首次构建会装 torch / sentence-transformers，镜像比较大；构建完启动时只加载语料和
-`embeddings.npy`，BGE-M3 在第一次检索时才加载。
+打开 `http://<服务器IP>/` 应该能进对话页。`8000` 端口只绑在
+`127.0.0.1`，公网直接访问不到——这是故意的，防止绕过 Nginx 的 token 注入。
 
-带 token 调用：
+## 4. 鉴权验证
 
 ```bash
-curl -s localhost:8000/chat \
-  -H "Authorization: Bearer $MINGLI_API_TOKEN" \
+# 1) 绕过 Nginx 直连 API：应 401
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8000/chat \
   -H 'Content-Type: application/json' \
   -d '{"question":"羊刃分几种？","mode":"rag"}'
+# 期望：401
+
+# 2) 经过 Nginx：token 由服务端注入，应 200
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1/api/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"羊刃分几种？","mode":"rag"}'
+# 期望：200
+
+# 3) 确认 8000 没有对公网监听
+ss -ltn | grep ':8000'      # 应只有 127.0.0.1:8000
+
+# 4) /metrics 不对外
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1/metrics   # 404
 ```
 
-## 4. Nginx + HTTPS
+## 5. HTTPS
+
+- 云平台自带负载均衡/证书：直接把平台入口指向实例的 80 端口即可。
+- 自己在宿主机做 TLS：让宿主机 Nginx/Caddy 监听 443，反代到
+  `127.0.0.1:8080`；同时把 compose 里 `web` 的端口改成
+  `127.0.0.1:8080:80`，避免 80 端口冲突。
+
+## 6. 不用 Docker 的部署方式
+
+宿主机直接跑 uvicorn + Nginx：
 
 ```bash
-sudo cp deploy/nginx.conf /etc/nginx/sites-available/mingli-api
-sudo ln -s /etc/nginx/sites-available/mingli-api /etc/nginx/sites-enabled/
-# 改 server_name 为自己的域名
+# 后端
+MINGLI_WORKERS=2 MINGLI_REDIS_URL=redis://127.0.0.1:6379/0 \
+  nohup python src/api.py > api.log 2>&1 &
+
+# 前端
+cd frontend && npm ci && npm run build
+sudo mkdir -p /var/www/mingli-dist
+sudo cp -r dist/* /var/www/mingli-dist/
+
+# Nginx：生成配置时注入 token，不落盘到仓库
+MINGLI_API_TOKEN=... envsubst '${MINGLI_API_TOKEN}' < deploy/nginx.conf \
+  | sudo tee /etc/nginx/sites-available/mingli > /dev/null
+sudo ln -s /etc/nginx/sites-available/mingli /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d api.example.com
 ```
 
-Nginx 里已经做了 `2r/s` + burst 10 的限流；应用层还有 `MINGLI_MAX_CONCURRENCY`
-（默认 4）兜底，超了返回 429。
+## 7. 验收清单
 
-## 5. 开机自启
+- [ ] `curl https://<域名>/health` 返回 200，`chunks=8681`、`embedding_dim=1024`
+- [ ] 不带 token 直连 `127.0.0.1:8000/chat` 返回 401
+- [ ] 经 `/api/chat` 的请求正常返回（token 由 Nginx 注入）
+- [ ] 前端三种模式都能流式输出，引用可展开
+- [ ] `docker compose logs api` 里没有 key、没有 traceback
+- [ ] `docker compose restart` 后 `/health` 自动恢复
 
-```bash
-sudo cp deploy/mingli-api.service /etc/systemd/system/
-# 把 WorkingDirectory 改成 /opt/mingli-rag
-sudo systemctl daemon-reload
-sudo systemctl enable --now mingli-api
-sudo systemctl status mingli-api
-```
+## 8. 还没做的
 
-## 6. 验收清单
-
-- [ ] `curl https://api.example.com/health` 返回 200，`chunks=8681`、`embedding_dim=1024`
-- [ ] `/chat` 三种 `mode` 都能返回；`rag` 和 `agent` 至少各跑 1 条真实问题
-- [ ] 不带 token 返回 401（设置了 `MINGLI_API_TOKEN` 时）
-- [ ] 并发打 10 个请求，超出部分返回 429，服务不崩
-- [ ] `docker compose logs -f api` 里没有 key、没有 traceback
-- [ ] 重启机器后 `systemctl status mingli-api` 是 active，`/health` 自动恢复
-
-## 7. 还没做的
-
-- Langfuse 自建与逐轮 trace（下一步）
-- P50/P95、token/成本统计（下一步）
-- 多副本 / 负载均衡（单机 2C4G 暂时不需要）
+- Langfuse 自建与逐轮 trace
+- 多副本 / 负载均衡（需把 Redis 槽与语义缓存迁到共享实例，已具备条件）

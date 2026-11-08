@@ -584,13 +584,15 @@ npm run build      # tsc --noEmit + vite build，产物在 dist/
 Docker：
 
 ```bash
-docker compose up --build       # http://localhost:8000/docs
+docker compose up --build       # 页面 http://localhost/，API 文档 http://localhost/api/docs
 ```
 
-compose 会一起起 Postgres、Redis 和独立的 embedding 服务，API 通过
-`MINGLI_DB_URL` / `MINGLI_REDIS_URL` / `MINGLI_EMBED_URL` 连过去；`alembic upgrade head`
-在 API 容器启动时执行。镜像不会打包 BGE-M3 权重，首次查询下载到共享的 `hf_cache`
-volume；语料和 34 MB embedding 随镜像提供。ECS + Nginx + systemd 的完整步骤见
+compose 会一起起 Postgres、Redis、独立的 embedding 服务和 Nginx（`web`）。Nginx 同源
+提供前端静态页，并把 `/api/` 反代到 FastAPI；设置了 `MINGLI_API_TOKEN` 时，**由 Nginx
+在反代时注入 Bearer token**，浏览器不持有它。API 的 8000 只绑在 `127.0.0.1`，公网
+绕不过去。API 通过 `MINGLI_DB_URL` / `MINGLI_REDIS_URL` / `MINGLI_EMBED_URL` 连 Postgres /
+Redis / embed；`alembic upgrade head` 在容器启动时执行。镜像不打包 BGE-M3 权重，首次
+查询下载到共享的 `hf_cache` volume；语料和 embedding 随镜像提供。完整步骤与鉴权验收见
 [`deploy/README.md`](deploy/README.md)。
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。

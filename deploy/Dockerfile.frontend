@@ -1,0 +1,19 @@
+# 构建 React 静态资源，再用 nginx 同源提供页面并反代 /api。
+# 构建：docker build -f deploy/Dockerfile.frontend -t mingli-web:local .
+FROM node:20-alpine AS build
+
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+FROM nginx:1.27-alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY deploy/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+
+# 官方镜像会在启动时用环境变量替换模板里的 ${MINGLI_API_TOKEN}
+ENV MINGLI_API_TOKEN=""
+
+EXPOSE 80
