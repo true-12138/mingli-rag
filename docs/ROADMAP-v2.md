@@ -33,10 +33,10 @@
 
 ### 质量门槛
 
-- [ ] 新增模块有单测；CI 全量测试通过
-- [ ] 评测结果写入 `code_commit` / `tasks_sha256`，可追溯
-- [ ] 日志不含 API key；`.env` 不进仓库
-- [ ] README 的结果表与压测报告可复现
+- [x] 新增模块有单测；CI 全量测试通过——MCP client 13 条、`FastBM25` 对照测试、闸门/缓存/检索均有覆盖；GitHub Actions 最近一次 run 通过（2026-11-08）
+- [x] 评测结果写入 `code_commit` / `tasks_sha256`，可追溯——`eval/results_*.json` 每条带 provenance，README §3 标注代码 `ba49e39`
+- [x] 日志不含 API key；`.env` 不进仓库——`grep -c 'DEEPSEEK_API_KEY' api.log` = 0；`.gitignore` 含 `.env`
+- [x] README 的结果表与压测报告可复现——`loadtest/README.md` 给了每个数字的命令，`scripts/serve.sh` 一条命令拉起同源形态
 
 ## 2. 非目标
 
