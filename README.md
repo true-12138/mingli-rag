@@ -628,6 +628,8 @@ Redis / embed；`alembic upgrade head` 在容器启动时执行。镜像不打�
      `$host`、`$remote_addr` 一起替换成空串，`nginx -t` 报 `invalid number of arguments`。
   2. 业务库版本号停在 head 但 `conversations` 缺 `summary_upto_id`（旧库被 stamp 过）。最省事的
      修法不是补列，而是备份后删库重跑 `alembic upgrade head`，顺带消掉其他潜在漂移。
+- **注意**：CloudStudio 是开发沙箱，工作区关闭或空闲回收后地址就失效。要「发出去随时能打开」，
+  需要一台常驻云服务器，完整步骤见 [`deploy/VPS.md`](deploy/VPS.md)。
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 

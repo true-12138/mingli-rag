@@ -1,5 +1,8 @@
 # 部署（Docker Compose + Nginx 同源）
 
+> 要「网址发出去、别人随时能打开」，需要一台常驻机器而不是开发沙箱——完整步骤见
+> [`VPS.md`](VPS.md)。本文是同一套部署的细节说明。
+
 目标：公网只暴露一个入口。Nginx 提供前端静态页，并把 `/api/` 反代到 FastAPI，
 **在服务端注入 Bearer token**——浏览器不持有、也拿不到 `MINGLI_API_TOKEN`。
 
