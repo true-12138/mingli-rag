@@ -22,7 +22,9 @@ services:
       redis:
         condition: service_healthy
       embed:
-        condition: service_started
+        # embedding 服务启动时预加载模型；等它 healthy 再起 API，
+        # 避免第一批请求撞上模型冷加载
+        condition: service_healthy
     volumes:
       # BGE-M3 权重只下载一次，容器重建不重下
       - hf_cache:/root/.cache/huggingface

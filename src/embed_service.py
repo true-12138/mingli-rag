@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import threading
 import time
 from contextlib import asynccontextmanager
 from typing import Any, Callable, Sequence
@@ -39,15 +40,19 @@ MAX_QUEUE = int(os.environ.get("MINGLI_EMBED_MAX_QUEUE", "512"))
 EMBED_TOKEN = os.environ.get("MINGLI_EMBED_TOKEN", "").strip()
 
 _model = None
+_model_lock = threading.Lock()
 
 
 def _load_model():
     global _model
-    if _model is None:
-        os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
-        from sentence_transformers import SentenceTransformer
+    if _model is not None:
+        return _model
+    with _model_lock:
+        if _model is None:
+            os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+            from sentence_transformers import SentenceTransformer
 
-        _model = SentenceTransformer(MODEL_ID)
+            _model = SentenceTransformer(MODEL_ID)
     return _model
 
 
@@ -180,6 +185,10 @@ class EmbedRequest(BaseModel):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 启动时加载模型。uvicorn 会在 lifespan 完成后才开始接连接，所以
+    # /health 第一次可达时模型一定已经就绪，不会把 15–20 秒的冷启动
+    # 摊到第一批用户请求上。
+    await asyncio.to_thread(_load_model)
     yield
 
 

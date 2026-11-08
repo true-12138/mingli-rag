@@ -501,6 +501,19 @@ NO_CACHE=1 VUS=10 DURATION=2m k6 run loadtest/k6-smoke.js   # 先 10，再 20
 200 连接测试挂在 `/v1/events`，不是 `/chat/stream`——后者每条连接都会触发一次模型
 调用，200 条就是 200 条并发回答，和验收口径冲突。细节见 [`loadtest/README.md`](loadtest/README.md)。
 
+**实测结果**（2026-11-08，CloudStudio，单进程 uvicorn；未配 Redis，闸门为进程内实现；
+回答压测带 `X-No-Cache: 1`，走真实模型）：
+
+| 场景 | 结果 |
+|---|---|
+| 200 个 SSE 连接保持 10 分钟 | **200/200 保持**，错误率 0，建连 P50 222ms / P95 240ms，心跳 7,800 次 |
+| 20 并发回答 × 60s（热态） | **403 条全部成功**，错误率 0，TTFB P50 550ms / **P95 1.39s**，整条回答 P50 2.87s / P95 4.93s，约 6.4 条/秒 |
+| 21 并发 × 15s（故意超卖） | 101 × 200 + **5 × 429**，TTFB P95 2.34s，服务未被拖垮 |
+| 冷启动首批（模型未加载） | 首批 20 条约 15s；已通过 embedding 服务启动预加载消除 |
+
+> 口径说明：以上是**单进程 20 槽**的结果。多 worker 共享同一条 20 槽容量线需要
+> 配 `MINGLI_REDIS_URL`，该场景尚未实测；检索 QPS 与 30 分钟 RSS 也待补。
+
 ### 6.1.2 语义缓存（D6）
 
 回答层缓存，只接 **单轮 RAG**。命中时直接返回 `done`（流式会先补一个整段
@@ -782,8 +795,9 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D3 后端（已完成，11/08）**：逐 token 流。`src/llm.py`（异步、多 key、per-key 并发池、流式 tool_calls 拼装）、`src/answer_stream.py`（从流式 `json_object` 增量解出 `answer`）、`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream` 与 `/v1/conversations/{id}/chat/stream`；SSE 契约 `step/stage/delta/done/error`，15s 心跳，断连取消后台任务
 - **D3 前端（已完成，11/09）**：`frontend/` React 18 + Vite + TypeScript 对话页。逐 token 流式、`stage`/`step` 进度与工具轨迹、引用 chip 展开原文、RAG `[n]` 跳转（`citation_map` 落库）、会话新建/切换/删除/刷新回放、IME 安全的 Enter 发送、移动端抽屉；`npm run build` 通过，三种模式用假 LLM 实跑截图验收
 - **D4（已完成，11/10）**：排盘页与记忆页。后端 `src/api_fortune.py` 把 `src/fortune` 包成 `/v1/fortune/{bazi,astro,tarot,read}`（盘面纯计算，解读前服务端重算盘面，塔罗 seed 往返复现）；`GET/DELETE /v1/memories` 可查看/删除长期记忆；前端新增 `#/fortune`（三页签 + SVG 星盘轮盘）与 `#/memory`，hash 路由三页互通，移动端抽屉从任一页可开
-- **D5 并发底座（代码完成，压测待跑）**：Redis 全局回答槽与每用户额度（`src/gate.py`）、Postgres 业务库与连接池、独立 embedding 服务（微批）、`GET /v1/events` 连接流、LLM 跨 key failover/熔断、`loadtest/`；本地 fake LLM 验证连接流与流式回答正常，200/20 正式数据要在云上跑
-- **下一步**：D6 语义缓存 + k6 200/20 正式压测 + 部署/鉴权/MCP、D7 终评与文档
+- **D5 并发底座（已完成）**：Redis 全局回答槽与每用户额度（`src/gate.py`）、Postgres 业务库与连接池、独立 embedding 服务（微批）、`GET /v1/events` 连接流、LLM 跨 key failover/熔断、`loadtest/`；另修复并发首载模型导致的 CUDA OOM（懒加载加锁）
+- **D6 语义缓存与压测（已完成）**：`src/semcache.py` 精确层 + 语义层；`loadtest/answers.py` 不依赖 k6；CloudStudio 单进程实测 200 连接 0 错误、20 并发 TTFB P95 1.39s / 完成 P95 4.93s、21 并发出现 429
+- **下一步**：Redis 多 worker 共享槽复测、检索 QPS、30 分钟 RSS、部署/鉴权/MCP、D7 终评与文档
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 
