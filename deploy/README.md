@@ -79,14 +79,17 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1/metrics   # 404
 宿主机直接跑 uvicorn + Nginx：
 
 ```bash
-# 后端
-MINGLI_WORKERS=2 MINGLI_REDIS_URL=redis://127.0.0.1:6379/0 \
+# 后端：必须绑 127.0.0.1。api.py 默认 0.0.0.0，那样 8000 会直接暴露到公网，
+# 绕过 Nginx 的同源入口（token 仍然校验，但入口不唯一了）。
+MINGLI_HOST=127.0.0.1 MINGLI_WORKERS=2 MINGLI_REDIS_URL=redis://127.0.0.1:6379/0 \
   nohup python src/api.py > api.log 2>&1 &
 
-# 前端
-cd frontend && npm ci && npm run build
+# 前端：服务器上没装 Node 时，直接从已构建的 web 镜像里取产物
 sudo mkdir -p /var/www/mingli-dist
-sudo cp -r dist/* /var/www/mingli-dist/
+_cid=$(docker create mingli-rag-web:local)
+sudo docker cp "$_cid":/usr/share/nginx/html/. /var/www/mingli-dist/
+docker rm "$_cid"
+# 或者本地构建：cd frontend && npm ci && npm run build && sudo cp -r dist/* /var/www/mingli-dist/
 
 # Nginx：生成配置时注入 token，不落盘到仓库
 MINGLI_API_TOKEN=... envsubst '${MINGLI_API_TOKEN}' < deploy/nginx.conf \
