@@ -1,49 +1,88 @@
 # -*- coding: utf-8 -*-
-"""HTTP 层的两个小闸门：鉴权与并发上限。
+"""HTTP 层的三个小闸门：鉴权、全局并发槽、每用户额度。
 
-原来写在 `api.py` 里；第 2 步新增 `/v1` 接口后两套接口都要用，
-所以抽出来共用，逻辑没有变化。
+并发槽从「进程内信号量」换成 `gate.py`：没有 Redis 时退化为进程内，
+配了 `MINGLI_REDIS_URL` 后多 worker / 多实例共享同一条容量线。
+语义不变：满了立刻 429，不排队。
 """
 from __future__ import annotations
 
 import asyncio
 import hmac
 import os
-import threading
 from typing import Any
 
 from fastapi import Header, HTTPException
 
-MAX_CONCURRENCY = int(os.environ.get("MINGLI_MAX_CONCURRENCY", "4"))
-_SLOTS = threading.BoundedSemaphore(MAX_CONCURRENCY)
+import gate
 
-# SSE 连接是长连接：线程信号量管不了它（async 端点不占线程），
-# 所以单独给流式回答一个异步信号量。200 个连接里同时生成的上限由它控制。
-STREAM_CONCURRENCY = int(os.environ.get(
-    "MINGLI_STREAM_CONCURRENCY", str(max(MAX_CONCURRENCY, 20))))
-_stream_slots: asyncio.Semaphore | None = None
+# 兼容旧调用方 / 测试：实际槽数由 `MINGLI_ANSWER_SLOTS` 决定，默认 20。
+MAX_CONCURRENCY = gate.answer_limit()
+STREAM_CONCURRENCY = MAX_CONCURRENCY
+
+
+def _slot() -> Any:
+    """同步回答槽：`/chat`、`/v1/.../chat`。"""
+    token = gate.get_gate().try_acquire("answer", gate.answer_limit(), gate.ANSWER_SLOT_TTL)
+    if token is None:
+        raise HTTPException(
+            status_code=429,
+            detail="服务繁忙，请稍后重试",
+            headers={"Retry-After": "2"},
+        )
+    try:
+        yield
+    finally:
+        gate.get_gate().release("answer", token)
 
 
 async def _stream_slot() -> Any:
-    """语义和 `_slot` 一致：满了立刻 429 + Retry-After，不排队吃内存。
-
-    因为连接可以挂很久，超限必须快速失败；这里用非阻塞的可用性检查，
-    极短时间内两个请求同时通过检查的情况由信号量本身兜底（多等几毫秒）。
-    """
-    global _stream_slots
-    if _stream_slots is None:
-        _stream_slots = asyncio.Semaphore(STREAM_CONCURRENCY)
-    if _stream_slots.locked():
+    """SSE 回答槽：与同步接口共用同一条全局容量线。"""
+    try:
+        token = await asyncio.to_thread(
+            gate.get_gate().try_acquire,
+            "answer",
+            gate.answer_limit(),
+            gate.ANSWER_SLOT_TTL,
+        )
+    except Exception as exc:  # noqa: BLE001 - 闸门异常不该拖垮请求
+        raise HTTPException(status_code=503, detail="并发闸门暂不可用") from exc
+    if token is None:
         raise HTTPException(
             status_code=429,
             detail="流式回答排队已满，请稍后重试",
             headers={"Retry-After": "3"},
         )
-    await _stream_slots.acquire()
     try:
         yield
     finally:
-        _stream_slots.release()
+        try:
+            await asyncio.to_thread(gate.get_gate().release, "answer", token)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _quota(
+    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
+    x_deepseek_key: str | None = Header(default=None, alias="X-DeepSeek-Key"),
+) -> None:
+    """每用户每日 LLM 次数。默认关闭；访客自带 key 不计数。"""
+    if x_deepseek_key or gate.quota_limit() <= 0:
+        return
+    anon = (x_anonymous_id or "demo").strip()[:64] or "demo"
+    ok, used = gate.take_quota(anon)
+    if not ok:
+        raise HTTPException(
+            status_code=429,
+            detail="今日免费额度已用完（{}/天），请明天再试或填入自己的 Key".format(
+                gate.quota_limit()
+            ),
+            headers={
+                "Retry-After": "3600",
+                "X-Quota-Limit": str(gate.quota_limit()),
+                "X-Quota-Used": str(used),
+            },
+        )
 
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:
@@ -57,15 +96,5 @@ def _require_token(authorization: str | None = Header(default=None)) -> None:
         raise HTTPException(status_code=401, detail="token 不正确")
 
 
-def _slot() -> Any:
-    """限制同时在跑的生成请求；超限立刻返回 429，而不是排队把内存吃满。"""
-    if not _SLOTS.acquire(blocking=False):
-        raise HTTPException(
-            status_code=429,
-            detail="服务繁忙，请稍后重试",
-            headers={"Retry-After": "2"},
-        )
-    try:
-        yield
-    finally:
-        _SLOTS.release()
+def gate_info() -> dict[str, Any]:
+    return gate.info()

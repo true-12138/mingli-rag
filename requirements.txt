@@ -25,8 +25,15 @@ mcp>=2.3,<3
 # 业务数据库（v1.6）：用户 / 会话 / 消息 / 运行 / 工具审计 / 反馈 / 额度
 SQLAlchemy>=2.0,<3
 alembic>=1.13,<2
+# 部署用 Postgres，驱动走 psycopg 3（binary wheel 免编译）
+psycopg[binary]>=3.1,<4
+
+# 并发底座（D5）：全局回答槽、每用户额度
+redis>=5.0,<7
 
 # 测试
 pytest>=7.0
 # FastAPI TestClient 依赖 httpx；以前只在 CI 里单独装，这里补上
 httpx>=0.27,<1
+# 不装 Redis 服务也能测全局闸门的 Lua 语义（[lua] 带 lupa）
+fakeredis[lua]>=2.20,<3

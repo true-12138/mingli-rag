@@ -127,9 +127,19 @@ class _LazyModel:
         return getattr(self._load(), name)
 
 
-model=_LazyModel(MODEL_ID)
+# 配了 MINGLI_EMBED_URL 就把 query 编码交给独立服务；否则本地懒加载。
+# 两条路径对调用方是同一个 `model.encode` 接口。
+EMBED_URL = os.environ.get("MINGLI_EMBED_URL", "").strip()
+if EMBED_URL:
+    import embed_client
+    model = embed_client.RemoteEmbedder(EMBED_URL)
+    EMBED_BACKEND = "remote"
+else:
+    model = _LazyModel(MODEL_ID)
+    EMBED_BACKEND = "local"
+
 def dense_search(query,topk=top_k):
-    q_emb=model.encode(query,normalize_embeddings=True)
+    q_emb=np.asarray(model.encode(query,normalize_embeddings=True),dtype=np.float32)
     sims=embeds@q_emb
     indices=np.argsort(sims)[::-1][:topk]
     res=[{"idx":i,"scores":float(sims[i] )} for i in indices]

@@ -72,8 +72,9 @@ flowchart LR
 | 生成 | `deepseek-chat`，`temperature=0`，`response_format=json_object` | `src/rag.py:59` |
 | 约束 | 引用编号 → chunk_id 映射与校验；声称能答但零有效引用 → `invalid_output` | `src/rag.py:116` |
 | 界面 | Streamlit：面向访客的「问古籍」「排盘」两页；检索后端、Top-k、轨迹、数据/评测中台收进维护页（`?admin=1`） | `src/app.py` |
-| API | FastAPI：`/chat`、`/retrieve`、`/trace`、`/health`；并发信号量 + 可选 Bearer token | `src/api.py` |
-| 部署 | ModelScope 创空间，入口见 `modelscope.yml`；独立 API 走 `Dockerfile` / `docker-compose.yml` | `app.py`、`Dockerfile` |
+| API | FastAPI：`/chat`、`/retrieve`、`/trace`、`/health`、`/v1/events`；全局回答槽 + 可选 Bearer token | `src/api.py` |
+| 并发底座 | Redis 全局回答槽与每用户额度；Postgres 业务库；独立 embedding 服务；200 连接与 20 回答分开测 | `src/gate.py`、`src/embed_service.py`、`loadtest/` |
+| 部署 | ModelScope 创空间，入口见 `modelscope.yml`；独立 API 走 `Dockerfile` / `docker-compose.yml`（含 Postgres / Redis / embed） | `app.py`、`Dockerfile` |
 
 **一次请求发生了什么**
 
@@ -372,6 +373,7 @@ pass_rate = 0.0
 | 12 | 30 条版每系统只跑 1 次，且题型与 prompt 在迭代中互相改过，属于 **development set**；`b04`（该取原条却直接引用检索片段）两边都挂 | 26/30 不能外推成泛化准确率；方差只能从 15 条版的三次重复（±1 条）间接推断 | 冻结 prompt 后用新题集做一次盲测；修 b04 的工具选择 |
 | 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
 | 14 | D4 排盘/记忆页的浏览器验收用的是**假 LLM + stub 检索**，没有真实 key | 盘面计算、接口契约、页面交互是真跑的；「解读」的文本质量与真实延迟没在浏览器里验过 | 有 key 后在 CloudStudio 走一遍 `#/fortune` 解读并截图 |
+| 15 | D5 并发底座的本地验证：Redis 用 fakeredis 测 Lua 语义，Postgres 只验证 URL/连接池配置，embedding 服务用假编码器测微批；本机没有 Redis/PG 服务 | 单测覆盖逻辑，但**没跑过真实 Redis 多 worker 共享 20 槽、Postgres 写竞争、真实 BGE-M3 微批吞吐**；200/20 数字尚未产生 | 在 CloudStudio / 部署机 `docker compose up` 后跑 `loadtest/`，把 `/health` 的 `backend` 和压测结果贴回 README |
 
 > 关于"没做完"的部分：微调、换 LangChain/LlamaIndex 重写、向量库仍然**不做**；reranker 已接入但默认关闭、尚未打过 bigram 基线，RAGAS 忠实度排进 v2。多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
@@ -421,7 +423,8 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `POST` | `/chat` | 问答，`mode` 可选 `rag` / `agent` / `multi`，支持 `history` |
 | `POST` | `/chat/stream` | 同上，SSE 逐 token 返回：`step` / `stage` / `delta` / `done` / `error` |
 | `GET` | `/trace/{trace_id}` | 取回最近一次请求的完整结果（内存里保留最近 200 条） |
-| `GET` | `/metrics` | Prometheus 文本格式：请求数、耗时直方图、在途数、LLM token |
+| `GET` | `/metrics` | Prometheus 文本格式：请求数、耗时直方图、在途数、LLM token、回答槽 |
+| `GET` | `/v1/events` | 轻量 SSE 连接流：hello + 心跳，不触发模型；200 连接压测挂这里 |
 | `POST` | `/v1/conversations` | 新建会话，返回 `conversation_id` |
 | `GET` | `/v1/conversations` | 会话列表（含消息数） |
 | `GET` | `/v1/conversations/{id}` | 会话详情与全部消息 |
@@ -456,6 +459,47 @@ curl -s localhost:8000/chat \
 - **访客自带 key**：请求头 `X-DeepSeek-Key`，只作用于本次请求，不落日志、不进 trace。不要放在浏览器前端。
 - **会话回放**：`runs` 表存 `citations_json`（含 RAG 的 `[n] → chunk_id` 映射），`GET /v1/conversations/{id}` 的 `runs[].citation_map` 可直接用来还原引用编号。
 
+### 6.1.1 并发底座（D5）
+
+目标口径是 **20 条并发回答 + 200 个保持中的 SSE 连接**，两者分开算。
+
+| 组件 | 做什么 | 开关 |
+|---|---|---|
+| 全局回答槽 | 同步 `/chat` 与流式 `/chat/stream` 共用一条容量线；满了立刻 429，不排队 | `MINGLI_ANSWER_SLOTS`（默认 20）、`MINGLI_REDIS_URL` |
+| 业务库 | 会话/消息/运行/记忆从 SQLite 换到 Postgres，有界连接池 | `MINGLI_DB_URL`、`MINGLI_DB_POOL_SIZE`（20）、`MINGLI_DB_MAX_OVERFLOW`（10） |
+| 独立 embedding | BGE-M3 只常驻一处，请求微批合并；API worker 不再各载一份 | `MINGLI_EMBED_URL`、`MINGLI_EMBED_MAX_BATCH`（32）、`MINGLI_EMBED_WAIT_MS`（20） |
+| 连接流 | `GET /v1/events` 只发 hello + 心跳，200 连接不占回答槽 | 无 |
+| 每用户额度 | 服务端 key 的每日调用上限；访客自带 key 不计数 | `MINGLI_USER_DAILY_LIMIT`（默认 0 = 关闭） |
+| 多 worker | 槽在 Redis，不会因为 4 个 worker 变成 4×20 | `MINGLI_WORKERS` |
+
+没配 `MINGLI_REDIS_URL` 时闸门退化为进程内实现，单机开发照常跑；`/health` 的
+`concurrency_gate.backend` 会如实显示 `local` 还是 `redis`。Redis 故障时同样退化，
+`/metrics` 的 `mingli_gate_redis_errors_total` 会计数——**降级不静默**。
+
+启动顺序（本地全量）：
+
+```bash
+# 1) embedding 服务（首次会下载 BGE-M3）
+uvicorn embed_service:app --app-dir src --host 0.0.0.0 --port 8100
+
+# 2) API（Postgres / Redis 用环境变量指过去）
+export MINGLI_DB_URL=postgresql+psycopg://mingli:mingli@127.0.0.1:5432/mingli
+export MINGLI_REDIS_URL=redis://127.0.0.1:6379/0
+export MINGLI_EMBED_URL=http://127.0.0.1:8100
+alembic upgrade head
+MINGLI_WORKERS=4 python src/api.py
+```
+
+压测：
+
+```bash
+python loadtest/hold_sse.py --connections 200 --duration 600
+VUS=10 DURATION=2m k6 run loadtest/k6-smoke.js   # 先 10，再 20
+```
+
+200 连接测试挂在 `/v1/events`，不是 `/chat/stream`——后者每条连接都会触发一次模型
+调用，200 条就是 200 条并发回答，和验收口径冲突。细节见 [`loadtest/README.md`](loadtest/README.md)。
+
 ### 6.2 React 对话页（`frontend/`）
 
 独立的 Vite + React 18 + TypeScript 单页，对接上面的 `/v1` 接口：回答逐 token 出现；RAG 正文里的 `[n]` 可点，展开对应原文；多 Agent 的 `stage` 显示当前阶段与工具轨迹；会话列表支持新建 / 切换 / 删除，刷新后按 `runs` + `citation_map` 原样恢复。
@@ -486,7 +530,11 @@ Docker：
 docker compose up --build       # http://localhost:8000/docs
 ```
 
-镜像不会打包 BGE-M3 权重，首次查询下载到 compose 的 `hf_cache` volume；语料和 34 MB embedding 随镜像提供。ECS + Nginx + systemd 的完整步骤见 [`deploy/README.md`](deploy/README.md)。
+compose 会一起起 Postgres、Redis 和独立的 embedding 服务，API 通过
+`MINGLI_DB_URL` / `MINGLI_REDIS_URL` / `MINGLI_EMBED_URL` 连过去；`alembic upgrade head`
+在 API 容器启动时执行。镜像不会打包 BGE-M3 权重，首次查询下载到共享的 `hf_cache`
+volume；语料和 34 MB embedding 随镜像提供。ECS + Nginx + systemd 的完整步骤见
+[`deploy/README.md`](deploy/README.md)。
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 
@@ -700,7 +748,8 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D3 后端（已完成，11/08）**：逐 token 流。`src/llm.py`（异步、多 key、per-key 并发池、流式 tool_calls 拼装）、`src/answer_stream.py`（从流式 `json_object` 增量解出 `answer`）、`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream` 与 `/v1/conversations/{id}/chat/stream`；SSE 契约 `step/stage/delta/done/error`，15s 心跳，断连取消后台任务
 - **D3 前端（已完成，11/09）**：`frontend/` React 18 + Vite + TypeScript 对话页。逐 token 流式、`stage`/`step` 进度与工具轨迹、引用 chip 展开原文、RAG `[n]` 跳转（`citation_map` 落库）、会话新建/切换/删除/刷新回放、IME 安全的 Enter 发送、移动端抽屉；`npm run build` 通过，三种模式用假 LLM 实跑截图验收
 - **D4（已完成，11/10）**：排盘页与记忆页。后端 `src/api_fortune.py` 把 `src/fortune` 包成 `/v1/fortune/{bazi,astro,tarot,read}`（盘面纯计算，解读前服务端重算盘面，塔罗 seed 往返复现）；`GET/DELETE /v1/memories` 可查看/删除长期记忆；前端新增 `#/fortune`（三页签 + SVG 星盘轮盘）与 `#/memory`，hash 路由三页互通，移动端抽屉从任一页可开
-- **下一步**：D5 Postgres + pgvector + Redis + 4 worker、D6 ECS 部署 + MCP client + 鉴权、D7 终评与文档
+- **D5 并发底座（代码完成，压测待跑）**：Redis 全局回答槽与每用户额度（`src/gate.py`）、Postgres 业务库与连接池、独立 embedding 服务（微批）、`GET /v1/events` 连接流、LLM 跨 key failover/熔断、`loadtest/`；本地 fake LLM 验证连接流与流式回答正常，200/20 正式数据要在云上跑
+- **下一步**：D6 语义缓存 + k6 200/20 正式压测 + 部署/鉴权/MCP、D7 终评与文档
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
 

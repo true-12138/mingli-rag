@@ -42,18 +42,21 @@ import agent
 import agent_multi
 import api_conversations
 import api_fortune
+import gate
 import llm
 import rag
 import retrieval
 import sse
 import usage
+from db.base import db_info
 from guards import (
     MAX_CONCURRENCY,
     STREAM_CONCURRENCY,
-    _SLOTS,
+    _quota,
     _require_token,
     _slot,
     _stream_slot,
+    gate_info,
 )
 from observability import (
     METRICS,
@@ -222,6 +225,7 @@ def root() -> dict[str, Any]:
         "endpoints": [
             "/health",
             "/metrics",
+            "/v1/events",
             "/chat",
             "/chat/stream",
             "/retrieve",
@@ -252,10 +256,14 @@ def health() -> dict[str, Any]:
         "embedding_dim": int(retrieval.embeds.shape[1]),
         "embedding_model": retrieval.MODEL_ID,
         "embedding_loaded": bool(getattr(retrieval.model, "loaded", False)),
+        "embedding_backend": getattr(retrieval, "EMBED_BACKEND", "unknown"),
         "modes": ["rag", "agent", "multi"],
         "retrieval_modes": ["dense", "bm25", "rrf"],
         "max_concurrency": MAX_CONCURRENCY,
         "stream_concurrency": STREAM_CONCURRENCY,
+        "concurrency_gate": gate_info(),
+        "database": db_info(),
+        "llm_keys": llm.default_client().key_count(),
         "streaming": True,
         "trace_cache": len(_TRACES),
     }
@@ -307,7 +315,34 @@ def lookup_chunks(
 @app.get("/metrics", response_class=PlainTextResponse, tags=["ops"])
 def metrics() -> str:
     """Prometheus 文本格式。只暴露计数和直方图，不含任何用户内容。"""
-    return METRICS.render()
+    lines = METRICS.render().rstrip("\n").split("\n")
+    lines += gate.render_metrics()
+    return "\n".join(lines) + "\n"
+
+
+@app.get("/v1/events")
+async def events(
+    request: Request,
+    _: None = Depends(_require_token),
+) -> StreamingResponse:
+    """轻量 SSE 连接流：只保持连接、发心跳，不触发模型调用。
+
+    200 连接压测挂在这里，回答槽另算。真正的通知（会话完成、后台任务）
+    以后可以复用这条通道，往队列里推事件即可。
+    """
+    heartbeat = min(SSE_HEARTBEAT, 15.0)
+
+    async def gen():
+        yield sse.sse_frame("hello", {"ok": True, "ts": round(time.time(), 3)})
+        while True:
+            if await request.is_disconnected():
+                break
+            await asyncio.sleep(heartbeat)
+            yield ": keep-alive\n\n"
+
+    return StreamingResponse(
+        gen(), media_type="text/event-stream", headers=dict(sse.SSE_HEADERS)
+    )
 
 
 @app.get("/trace/{trace_id}", response_model=TraceResponse)
@@ -358,7 +393,8 @@ def chat(
     req: ChatRequest,
     x_deepseek_key: str | None = Header(default=None),
     _: None = Depends(_require_token),
-    __: None = Depends(_slot),
+    __: None = Depends(_quota),
+    ___: None = Depends(_slot),
 ) -> dict[str, Any]:
     started = time.perf_counter()
     trace_id = uuid.uuid4().hex
@@ -432,7 +468,8 @@ async def chat_stream(
     req: ChatRequest,
     x_deepseek_key: str | None = Header(default=None),
     _: None = Depends(_require_token),
-    __: None = Depends(_stream_slot),
+    __: None = Depends(_quota),
+    ___: None = Depends(_stream_slot),
 ) -> StreamingResponse:
     """和 `/chat` 同样的入参，按 SSE 逐 token 返回。"""
     started = time.perf_counter()
@@ -518,9 +555,20 @@ if __name__ == "__main__":
     import uvicorn
 
     configure_logging()
-    uvicorn.run(
-        app,
-        host=os.environ.get("MINGLI_HOST", "0.0.0.0"),
-        port=int(os.environ.get("MINGLI_PORT", "8000")),
-        log_level="info",
-    )
+    workers = int(os.environ.get("MINGLI_WORKERS", "1"))
+    if workers > 1:
+        # 多 worker 时传 import string；全局回答槽在 Redis，不会变成 N 倍上限
+        uvicorn.run(
+            "api:app",
+            host=os.environ.get("MINGLI_HOST", "0.0.0.0"),
+            port=int(os.environ.get("MINGLI_PORT", "8000")),
+            log_level="info",
+            workers=workers,
+        )
+    else:
+        uvicorn.run(
+            app,
+            host=os.environ.get("MINGLI_HOST", "0.0.0.0"),
+            port=int(os.environ.get("MINGLI_PORT", "8000")),
+            log_level="info",
+        )

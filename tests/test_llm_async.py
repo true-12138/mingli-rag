@@ -96,6 +96,74 @@ def test_stream_yields_deltas_and_final_message():
     asyncio.run(run())
 
 
+def test_complete_fails_over_to_second_key(monkeypatch):
+    seen = []
+
+    def handler(request):
+        auth = request.headers.get("authorization", "")
+        seen.append(auth)
+        if auth == "Bearer k1":
+            return httpx.Response(429, text="rate limited")
+        return httpx.Response(200, json=_ok_message("from k2"))
+
+    monkeypatch.setattr("llm._retry_delay", lambda *a, **kw: 0.0)
+
+    async def run():
+        client = _client(handler, keys=("k1", "k2"))
+        message, _ = await client.complete([{"role": "user", "content": "hi"}])
+        assert message["content"] == "from k2"
+
+    asyncio.run(run())
+    assert seen == ["Bearer k1", "Bearer k2"]
+
+
+def test_explicit_key_is_not_failed_over(monkeypatch):
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers.get("authorization", ""))
+        return httpx.Response(429, text="rate limited")
+
+    monkeypatch.setattr("llm._retry_delay", lambda *a, **kw: 0.0)
+
+    async def run():
+        client = _client(handler, keys=("k1", "k2"))
+        try:
+            await client.complete(
+                [{"role": "user", "content": "hi"}], api_key="visitor-key"
+            )
+        except Exception:
+            pass
+        else:  # pragma: no cover
+            raise AssertionError("429 重试耗尽后应当抛错")
+
+    asyncio.run(run())
+    assert seen and all(h == "Bearer visitor-key" for h in seen)
+
+
+def test_stream_fails_over_before_first_delta(monkeypatch):
+    seen = []
+
+    def handler(request):
+        auth = request.headers.get("authorization", "")
+        seen.append(auth)
+        if auth == "Bearer k1":
+            return httpx.Response(429, text="rate limited")
+        return httpx.Response(200, content=_sse(
+            {"choices": [{"delta": {"content": "ok"}}]}
+        ) + b"data: [DONE]\n\n")
+
+    monkeypatch.setattr("llm._retry_delay", lambda *a, **kw: 0.0)
+
+    async def run():
+        client = _client(handler, keys=("k1", "k2"))
+        events = [e async for e in client.stream([{"role": "user", "content": "hi"}])]
+        assert [e["text"] for e in events if e["type"] == "delta"] == ["ok"]
+
+    asyncio.run(run())
+    assert seen == ["Bearer k1", "Bearer k2"]
+
+
 def test_stream_assembles_tool_call_fragments():
     body = b"".join([
         _sse({"choices": [{"delta": {"tool_calls": [

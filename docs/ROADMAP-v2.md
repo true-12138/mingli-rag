@@ -20,9 +20,9 @@
 
 ### 性能验收（k6）
 
-- [ ] **200 个 SSE 连接**保持 10 分钟，连接建立错误率 < 1%
-- [ ] **20 条并发回答**：首 token P95 ≤ 3s；完成 P95 ≤ 60s；错误率 ≤ 1%
-- [ ] 超出容量：返回 429 + `Retry-After`，不出现进程崩溃/内存持续上涨
+- [ ] **200 个 SSE 连接**保持 10 分钟，连接建立错误率 < 1%（连接挂在 `GET /v1/events`，只收心跳，不触发回答）
+- [ ] **20 条并发回答**：首 token P95 ≤ 3s；完成 P95 ≤ 60s；错误率 ≤ 1%（全局 20 槽，多 worker 共享）
+- [ ] 超出容量：第 21 条回答返回 429 + `Retry-After`，不排队、不崩溃、RSS 不上涨
 - [ ] 检索接口：≥ 100 QPS，P95 ≤ 200ms（不含 LLM）
 - [ ] 连续压测 30 分钟后 RSS 稳定，无连接泄漏
 
@@ -51,19 +51,22 @@ Browser (React + SSE)
    Nginx / ALB  ──  TLS、静态资源、限流
         │
   FastAPI × N（无状态，async）
-        │            │              │
-   Redis          Postgres        LLM Gateway
-   - 会话/缓存     - 业务表         - 多 key 轮询
-   - 分布式限流    - pgvector       - per-key 并发池
-   - 队列/Stream   - 运行记录       - 重试/熔断
+        │               │                │
+   Redis           Postgres        LLM 网关
+   - 全局回答槽      - 业务表         - 多 key 轮询
+   - 每用户额度      - 连接池         - per-key 并发池
+   - 幂等/缓存       - 运行记录       - 跨 key failover/熔断
         │
-  Worker × M（arq）
-   - Agent 长任务
-   - 结果写 Redis Stream
+  Embedding 服务（独立进程）
+   - BGE-M3 常驻，微批编码
+   - worker 不再各载一份
         │
-  Embedding 服务（独立进程/容器）
-   - BGE-M3 批量编码，避免每 worker 各载一份
+  arq Worker（仅离线：记忆抽取、评测、长 Agent；不进在线 SSE 路径）
 ```
+
+> 在线回答**不排队**：槽满立刻 429 + `Retry-After`。SSE 要的是首 token 延迟，
+> 队列只会把 P95 推高、把内存吃满。200 个 SSE 连接与 20 个回答槽是两件事：
+> 连接通过轻量事件流 `GET /v1/events` 保持（只发心跳），不占回答槽。
 
 ### 关键决策
 
@@ -71,11 +74,11 @@ Browser (React + SSE)
 |---|---|---|
 | Web 框架 | 保留 FastAPI，改全异步 | 现有接口与测试可复用；SSE 需要 async |
 | HTTP 客户端 | `httpx.AsyncClient` | 原生 async 流式；替换同步 `requests` |
-| 队列 | arq（Redis） | 轻量、async、与 Redis 复用 |
-| 向量库 | pgvector | 与业务库同源，少一个组件；8,681 条足够 |
-| 限流 | Redis 令牌桶 + 每用户配额 | 多实例共享；进程内信号量必须废弃 |
-| Embedding | 独立 HTTP 服务 + 微批 | 4 worker 各载一份 BGE-M3 内存不可接受 |
-| LLM key | `DEEPSEEK_API_KEYS` 逗号分隔，轮询 | 单 key 并发上限是硬约束 |
+| 队列 | arq 仅用于离线任务 | 在线 SSE 不排队；排队会把首 token P95 推高 |
+| 向量库 | **保留进程内暴力检索，不引 pgvector ANN** | 8,681×1024 ≈ 35 MB，单次扫描毫秒级；pgvector 多一次网络往返，还会改评测口径。多实例需要共享时再上精确扫描，不上 HNSW |
+| 限流 | Redis 全局回答槽 + 每用户额度 | 多实例共享；进程内信号量在 4 worker 下会变成 4 倍上限 |
+| Embedding | 独立 HTTP 服务 + 微批 | 4 worker 各载一份 BGE-M3 内存不可接受；query 编码是检索侧真正的 CPU 瓶颈 |
+| LLM key | `DEEPSEEK_API_KEYS` 逗号分隔，轮询 + failover | 单 key 并发上限是硬约束；每题 5 次调用是**串行**的，峰值在途约 20–30，不是 100 |
 | 流式协议 | SSE（`text/event-stream`） | 浏览器原生、易调试；不用 WebSocket |
 
 ### SSE 事件契约
@@ -104,8 +107,8 @@ event: error     data: {"message":"...","request_id":"..."}
 | 11/08 | tool_loop / agent / rag 接入流式；SSE 端点 | 后端逐 token 流可用：`tool_loop.arun`、`rag/agent/agent_multi.answer_stream`、`/chat/stream`、`/v1/.../chat/stream`、`src/sse.py` |
 | 11/09 | React 对话页：流式、引用展开、会话列表 | **已完成**：`frontend/`（React 18 + Vite + TS），`npm run build` 通过；三种模式、刷新回放、移动端抽屉均实跑截图验收 |
 | 11/10 | D4 排盘 / 记忆页 | **已完成**：`src/api_fortune.py`（10 tests）、`/v1/memories` 列表/删除、`#/fortune` 与 `#/memory` 页面；1440 与 390 宽实跑截图验收（假 LLM + stub 检索，未用真实 key） |
-| 11/11 | Postgres/pgvector/Redis；arq 队列；分布式限流；embedding 服务 | 基础设施 |
-| 11/12 | 多 key 网关 + 语义缓存 + k6 首轮 | 200/20 拐点数据 |
+| 11/11 | **D5 并发底座**：Redis 全局回答槽/额度；Postgres 业务库；独立 embedding 服务；`/v1/events` 连接流；LLM 跨 key failover；k6 冒烟 | **代码完成**（`src/gate.py`、`embed_service.py`、`loadtest/`，186 tests）；真实 Redis/PG 与 100/10 数据待云上跑 |
+| 11/12 | 语义缓存 + k6 200/20 + 参数调优 | 200/20 拐点数据 |
 | 11/13 | 部署、鉴权、MCP client、正式压测 | 公网 + 报告 |
 | 11/14 | 修复压测问题、终评、README | 交付 |
 | 11/15 | 缓冲 | — |
@@ -120,9 +123,9 @@ event: error     data: {"message":"...","request_id":"..."}
 3. `rag.answer` / `tool_loop` / `agent_multi` 接入 `on_delta`
 4. SSE 端点 + 事件契约测试
 5. React 对话页（先接 SSE，再做样式）
-6. D4 页面
-7. Redis / Postgres / 队列 / embedding 服务
-8. 多 key 网关与压测
+6. D4 页面（已完成）
+7. **并发底座**：Redis 全局槽 + Postgres + embedding 服务 + `/v1/events`
+8. LLM 跨 key failover 与 k6 冒烟（先测 100/10，再上 200/20）
 9. 部署、鉴权、MCP client、文档
 
 ## 6. 风险
@@ -132,4 +135,7 @@ event: error     data: {"message":"...","request_id":"..."}
 | DeepSeek 单 key 并发上限 | 20 并发回答达不到 | 多 key；队列 + 429；压测先测单 key 拐点 |
 | 逐 token + `json_object` 增量解析 | 前端收到半个 JSON | 服务端增量提取 `answer`，只下发纯文本 delta |
 | 4 worker × BGE-M3 内存 | OOM | embedding 独立服务；先测单进程常驻内存 |
+| 进程内信号量在 4 worker 下放大上限 | 实际并发是 4×20，压测数据失真 | Redis 全局槽；`/health` 报告当前是 redis 还是 local |
+| 200 连接与 20 回答混在一个端点 | 第 21 个连接就 429，连接测试必挂 | `GET /v1/events` 只保持连接；回答走独立 20 槽 |
+| pgvector 改变检索结果 | 评测口径漂移，还得重跑全部基线 | 本轮不引 pgvector；要共享索引再上精确扫描并重跑评测 |
 | 3 周内范围蔓延 | 延期 | 以本文验收表为准，新需求进 v3 |

@@ -7,9 +7,22 @@ services:
     environment:
       # 从宿主机环境或同目录 .env 读取；.env 不进仓库
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_API_KEYS: ${DEEPSEEK_API_KEYS:-}
       MINGLI_API_TOKEN: ${MINGLI_API_TOKEN:-}
-      MINGLI_MAX_CONCURRENCY: ${MINGLI_MAX_CONCURRENCY:-4}
+      MINGLI_ANSWER_SLOTS: ${MINGLI_ANSWER_SLOTS:-20}
       MINGLI_TRACE_CACHE: ${MINGLI_TRACE_CACHE:-200}
+      # D5 并发底座：业务库 / 全局闸门 / 远程 embedding
+      MINGLI_DB_URL: postgresql+psycopg://mingli:${POSTGRES_PASSWORD:-mingli}@postgres:5432/mingli
+      MINGLI_REDIS_URL: redis://redis:6379/0
+      MINGLI_EMBED_URL: http://embed:8100
+      MINGLI_EMBED_TOKEN: ${MINGLI_EMBED_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      embed:
+        condition: service_started
     volumes:
       # BGE-M3 权重只下载一次，容器重建不重下
       - hf_cache:/root/.cache/huggingface
@@ -21,5 +34,48 @@ services:
       start_period: 60s
       retries: 3
 
+  embed:
+    build: .
+    image: mingli-rag-api:local
+    command: ["uvicorn", "embed_service:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8100"]
+    environment:
+      MINGLI_EMBED_TOKEN: ${MINGLI_EMBED_TOKEN:-}
+      MINGLI_EMBED_MAX_BATCH: ${MINGLI_EMBED_MAX_BATCH:-32}
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=3).status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 120s
+      retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mingli
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mingli}
+      POSTGRES_DB: mingli
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mingli -d mingli"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
 volumes:
   hf_cache:
+  pgdata:

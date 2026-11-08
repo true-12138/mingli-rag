@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fortune import draw_tarot, natal_chart, paipan_bazi
 from fortune import interpret
-from guards import _require_token, _slot
+from guards import _quota, _require_token, _slot
 
 logger = logging.getLogger("mingli.api.fortune")
 
@@ -160,7 +160,8 @@ def post_tarot(req: TarotRequest) -> dict[str, Any]:
 def read_fortune(
     req: ReadRequest,
     x_deepseek_key: str | None = Header(default=None),
-    _: None = Depends(_slot),
+    _: None = Depends(_quota),
+    __: None = Depends(_slot),
 ) -> dict[str, Any]:
     """解读一张已经算好的盘。
 

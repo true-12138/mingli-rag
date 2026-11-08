@@ -10,11 +10,14 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import api
+import gate
 
 
 @pytest.fixture()
 def client(monkeypatch):
     monkeypatch.delenv("MINGLI_API_TOKEN", raising=False)
+    monkeypatch.delenv("MINGLI_REDIS_URL", raising=False)
+    gate.reset_for_tests()
     return TestClient(api.app)
 
 
@@ -192,15 +195,19 @@ def test_upstream_error_maps_to_502(client, monkeypatch):
 
 def test_concurrency_limit_returns_429(client):
     # 占满所有槽位，再发一个请求：必须在进模型之前被 429 挡住
-    for _ in range(api.MAX_CONCURRENCY):
-        assert api._SLOTS.acquire(blocking=False)
+    g = gate.get_gate()
+    tokens = []
     try:
+        for _ in range(api.MAX_CONCURRENCY):
+            token = g.try_acquire("answer", gate.answer_limit(), gate.ANSWER_SLOT_TTL)
+            assert token
+            tokens.append(token)
         r = client.post("/chat", json={"question": "q"})
         assert r.status_code == 429
         assert r.headers["retry-after"] == "2"
     finally:
-        for _ in range(api.MAX_CONCURRENCY):
-            api._SLOTS.release()
+        for token in tokens:
+            g.release("answer", token)
 
 
 def _parse_sse(text):
@@ -263,17 +270,40 @@ def test_chat_stream_error_event(client, monkeypatch):
 
 def test_chat_stream_rejects_when_stream_slots_full(client):
     """流式回答槽位满了要立刻 429，而不是把连接挂在那里排队。"""
-    import asyncio
-
-    g = api._stream_slot.__globals__
-    original = g.get("_stream_slots")
-    g["_stream_slots"] = asyncio.Semaphore(0)  # locked() 为 True
+    g = gate.get_gate()
+    tokens = []
     try:
+        for _ in range(api.MAX_CONCURRENCY):
+            token = g.try_acquire("answer", gate.answer_limit(), gate.ANSWER_SLOT_TTL)
+            assert token
+            tokens.append(token)
         r = client.post("/chat/stream", json={"question": "q"})
         assert r.status_code == 429
         assert r.headers["retry-after"] == "3"
     finally:
-        g["_stream_slots"] = original
+        for token in tokens:
+            g.release("answer", token)
+
+
+def test_events_stream_greets_then_stops_on_disconnect(client, monkeypatch):
+    """`/v1/events` 是连接保持流：只发 hello + 心跳，不占回答槽。"""
+    import asyncio
+
+    class FakeRequest:
+        async def is_disconnected(self):
+            return True
+
+    async def first_frame():
+        response = await api.events(FakeRequest(), None)
+        iterator = response.body_iterator
+        try:
+            return await iterator.__anext__()
+        finally:
+            await iterator.aclose()
+
+    frame = asyncio.run(first_frame())
+    assert frame.startswith("event: hello\n")
+    assert "keep-alive" not in frame
 
 
 def test_chunks_lookup_returns_titles_and_text(client):

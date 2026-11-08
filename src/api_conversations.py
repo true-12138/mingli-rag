@@ -36,7 +36,7 @@ import usage
 from db import repo
 from db.base import get_session
 from db.models import Conversation
-from guards import _require_token, _slot, _stream_slot
+from guards import _quota, _require_token, _slot, _stream_slot
 from observability import METRICS
 from sse import SSE_HEADERS, sse_frame, sse_source
 
@@ -465,7 +465,8 @@ def chat_in_conversation(
     x_deepseek_key: str | None = Header(default=None),
     anonymous_id: str = Depends(current_anonymous_id),
     session: Session = Depends(get_session),
-    __: None = Depends(_slot),
+    __: None = Depends(_quota),
+    ___: None = Depends(_slot),
 ) -> dict[str, Any]:
     user = repo.get_or_create_user(session, anonymous_id)
     conv = _get_owned(session, conversation_id, user.id)
@@ -593,7 +594,8 @@ async def chat_in_conversation_stream(
     x_deepseek_key: str | None = Header(default=None),
     anonymous_id: str = Depends(current_anonymous_id),
     session: Session = Depends(get_session),
-    __: None = Depends(_stream_slot),
+    __: None = Depends(_quota),
+    ___: None = Depends(_stream_slot),
 ) -> StreamingResponse:
     """会话内的流式回答：SSE 事件契约与 `/chat/stream` 完全一致。
 
