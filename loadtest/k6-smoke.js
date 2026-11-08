@@ -16,6 +16,23 @@ const VUS = Number(__ENV.VUS || 10);
 const DURATION = __ENV.DURATION || "2m";
 const MODE = __ENV.MODE || "rag";
 
+// 固定问同一句会被语义缓存全部命中，压测就变成测缓存而不是测模型。
+// 默认用题目池轮换；正式测并发回答时再显式 NO_CACHE=1。
+const QUESTIONS = [
+  "羊刃分几种？",
+  "正官和七杀有什么区别？",
+  "什么是食神制杀？",
+  "伤官见官为什么不好？",
+  "日主强弱怎么判断？",
+  "什么是天乙贵人？",
+  "三合局和半合局有什么区别？",
+  "财星入库是什么意思？",
+  "印绶格适合什么职业？",
+  "如何看大运流年？",
+  "孤辰寡宿怎么查？",
+  "什么是身杀两停？",
+];
+
 const ttfb = new Trend("answer_ttfb_ms", true);
 const answerOk = new Rate("answer_ok");
 
@@ -38,11 +55,13 @@ export default function () {
   const headers = { "Content-Type": "application/json" };
   if (__ENV.TOKEN) headers.Authorization = "Bearer " + __ENV.TOKEN;
   headers["X-Anonymous-Id"] = "k6-" + __VU;
+  if (__ENV.NO_CACHE === "1") headers["X-No-Cache"] = "1";
 
+  const question = QUESTIONS[(__VU * 7 + __ITER) % QUESTIONS.length];
   const res = http.post(
     `${BASE}/chat/stream`,
     JSON.stringify({
-      question: "羊刃分几种？",
+      question,
       mode: MODE,
       top_k: 5,
     }),

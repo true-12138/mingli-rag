@@ -108,7 +108,7 @@ event: error     data: {"message":"...","request_id":"..."}
 | 11/09 | React 对话页：流式、引用展开、会话列表 | **已完成**：`frontend/`（React 18 + Vite + TS），`npm run build` 通过；三种模式、刷新回放、移动端抽屉均实跑截图验收 |
 | 11/10 | D4 排盘 / 记忆页 | **已完成**：`src/api_fortune.py`（10 tests）、`/v1/memories` 列表/删除、`#/fortune` 与 `#/memory` 页面；1440 与 390 宽实跑截图验收（假 LLM + stub 检索，未用真实 key） |
 | 11/11 | **D5 并发底座**：Redis 全局回答槽/额度；Postgres 业务库；独立 embedding 服务；`/v1/events` 连接流；LLM 跨 key failover；k6 冒烟 | **代码完成**（`src/gate.py`、`embed_service.py`、`loadtest/`，186 tests）；真实 Redis/PG 与 100/10 数据待云上跑 |
-| 11/12 | 语义缓存 + k6 200/20 + 参数调优 | 200/20 拐点数据 |
+| 11/12 | 语义缓存 + k6 200/20 + 参数调优 | **语义缓存代码完成**（`src/semcache.py`，精确层 Redis 共享 + 语义层进程内，单测 15 条）；200/20 数据待云上跑 |
 | 11/13 | 部署、鉴权、MCP client、正式压测 | 公网 + 报告 |
 | 11/14 | 修复压测问题、终评、README | 交付 |
 | 11/15 | 缓冲 | — |

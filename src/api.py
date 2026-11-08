@@ -46,16 +46,17 @@ import gate
 import llm
 import rag
 import retrieval
+import semcache
 import sse
 import usage
 from db.base import db_info
 from guards import (
     MAX_CONCURRENCY,
     STREAM_CONCURRENCY,
-    _quota,
     _require_token,
     _slot,
     _stream_slot,
+    check_quota,
     gate_info,
 )
 from observability import (
@@ -214,6 +215,24 @@ def _api_key(x_deepseek_key: str | None) -> str | None:
     return (x_deepseek_key or "").strip() or None
 
 
+def _cache_allowed(
+    req: ChatRequest,
+    history: list[dict[str, str]],
+    api_key: str | None,
+    x_no_cache: str | None,
+) -> bool:
+    """语义缓存只接单轮 RAG。
+
+    - agent / multi 的答案带工具轨迹与步数，不能按问题复用；
+    - 有历史时同一句问题的含义可能不同；
+    - 访客自带 key 不缓存，避免拿别人的结果冒充自己 key 的输出；
+    - `X-No-Cache: 1` 给压测和调试留后门。
+    """
+    if (x_no_cache or "").strip().lower() not in ("", "0", "false", "no"):
+        return False
+    return req.mode == "rag" and not history and api_key is None
+
+
 # ---------- 接口 ----------
 
 @app.get("/")
@@ -262,6 +281,7 @@ def health() -> dict[str, Any]:
         "max_concurrency": MAX_CONCURRENCY,
         "stream_concurrency": STREAM_CONCURRENCY,
         "concurrency_gate": gate_info(),
+        "semantic_cache": semcache.info(),
         "database": db_info(),
         "llm_keys": llm.default_client().key_count(),
         "streaming": True,
@@ -317,6 +337,7 @@ def metrics() -> str:
     """Prometheus 文本格式。只暴露计数和直方图，不含任何用户内容。"""
     lines = METRICS.render().rstrip("\n").split("\n")
     lines += gate.render_metrics()
+    lines += semcache.render_metrics()
     return "\n".join(lines) + "\n"
 
 
@@ -392,15 +413,40 @@ def retrieve(req: RetrieveRequest, _: None = Depends(_require_token)) -> dict[st
 def chat(
     req: ChatRequest,
     x_deepseek_key: str | None = Header(default=None),
+    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
+    x_no_cache: str | None = Header(default=None, alias="X-No-Cache"),
     _: None = Depends(_require_token),
-    __: None = Depends(_quota),
-    ___: None = Depends(_slot),
+    __: None = Depends(_slot),
 ) -> dict[str, Any]:
     started = time.perf_counter()
     trace_id = uuid.uuid4().hex
     history = _history_payload(req.history)
     key = _api_key(x_deepseek_key)
     usage.reset()
+
+    cache_ok = _cache_allowed(req, history, key, x_no_cache)
+    cached: dict[str, Any] | None = None
+    query_vec = None
+    if cache_ok:
+        cached, query_vec = semcache.lookup(req.question, req.mode, req.top_k)
+    if cached is not None:
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        out = dict(cached)
+        out.update({
+            "trace_id": trace_id,
+            "mode": req.mode,
+            "question": req.question,
+            "elapsed_ms": round(elapsed_ms, 1),
+            "usage": usage.snapshot(),
+        })
+        _remember(trace_id, req.mode, req.question, elapsed_ms, out)
+        logger.info(
+            "chat cache_hit kind=%s similarity=%s elapsed_ms=%.0f trace_id=%s",
+            out.get("cache_kind"), out.get("cache_similarity"), elapsed_ms, trace_id,
+        )
+        return out
+
+    check_quota(x_anonymous_id, x_deepseek_key)
 
     try:
         if req.mode == "rag":
@@ -438,6 +484,10 @@ def chat(
         "elapsed_ms": round(elapsed_ms, 1),
         "usage": tokens,
     })
+    if cache_ok:
+        semcache.remember(
+            req.question, req.mode, req.top_k, result, query_vec=query_vec
+        )
     _remember(trace_id, req.mode, req.question, elapsed_ms, out)
     logger.info(
         "chat mode=%s elapsed_ms=%.0f llm_calls=%s tokens=%s can_answer=%s trace_id=%s",
@@ -467,9 +517,10 @@ _sse_frame = sse.sse_frame
 async def chat_stream(
     req: ChatRequest,
     x_deepseek_key: str | None = Header(default=None),
+    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
+    x_no_cache: str | None = Header(default=None, alias="X-No-Cache"),
     _: None = Depends(_require_token),
-    __: None = Depends(_quota),
-    ___: None = Depends(_stream_slot),
+    __: None = Depends(_stream_slot),
 ) -> StreamingResponse:
     """和 `/chat` 同样的入参，按 SSE 逐 token 返回。"""
     started = time.perf_counter()
@@ -478,6 +529,47 @@ async def chat_stream(
     key = _api_key(x_deepseek_key)
     queue: "asyncio.Queue[str | None]" = asyncio.Queue()
     client = llm.default_client()
+
+    cache_ok = _cache_allowed(req, history, key, x_no_cache)
+    cached: dict[str, Any] | None = None
+    query_vec = None
+    if cache_ok:
+        # 编码可能走本地 BGE-M3 或远端 embedding 服务，别占事件循环
+        cached, query_vec = await asyncio.to_thread(
+            semcache.lookup, req.question, req.mode, req.top_k
+        )
+    if cached is not None:
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        out = dict(cached)
+        out.update({
+            "trace_id": trace_id,
+            "mode": req.mode,
+            "question": req.question,
+            "elapsed_ms": round(elapsed_ms, 1),
+            "usage": {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "cached_tokens": 0,
+                "llm_calls": 0,
+            },
+        })
+        _remember(trace_id, req.mode, req.question, elapsed_ms, out)
+        logger.info(
+            "chat_stream cache_hit kind=%s similarity=%s elapsed_ms=%.0f trace_id=%s",
+            out.get("cache_kind"), out.get("cache_similarity"), elapsed_ms, trace_id,
+        )
+
+        async def cached_source():
+            yield _sse_frame("delta", {"text": out.get("answer", "")})
+            yield _sse_frame("done", out)
+
+        return StreamingResponse(
+            cached_source(), media_type="text/event-stream", headers=sse.SSE_HEADERS
+        )
+
+    # 缓存未命中才扣额度：命中缓存不消耗 LLM 次数
+    check_quota(x_anonymous_id, x_deepseek_key)
 
     def push(event: str, data: dict[str, Any]) -> None:
         queue.put_nowait(_sse_frame(event, data))
@@ -519,6 +611,15 @@ async def chat_stream(
             tokens = out.get("usage")
             if tokens:
                 METRICS.observe_llm(tokens)
+            if cache_ok:
+                await asyncio.to_thread(
+                    semcache.remember,
+                    req.question,
+                    req.mode,
+                    req.top_k,
+                    result,
+                    query_vec,
+                )
             _remember(trace_id, req.mode, req.question, elapsed_ms, out)
             logger.info(
                 "chat_stream mode=%s elapsed_ms=%.0f llm_calls=%s can_answer=%s trace_id=%s",

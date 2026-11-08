@@ -62,11 +62,15 @@ async def _stream_slot() -> Any:
             pass
 
 
-def _quota(
-    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
-    x_deepseek_key: str | None = Header(default=None, alias="X-DeepSeek-Key"),
+def check_quota(
+    x_anonymous_id: str | None = None, x_deepseek_key: str | None = None
 ) -> None:
-    """每用户每日 LLM 次数。默认关闭；访客自带 key 不计数。"""
+    """每用户每日 LLM 次数。默认关闭；访客自带 key 不计数。
+
+    单独抽成普通函数，是因为缓存命中不该扣额度：依赖 `_quota` 在进入处理函数
+    前就执行，拿不到「是否命中缓存」的结果。`/chat` 两个端点在缓存 miss 后
+    才调用这里。
+    """
     if x_deepseek_key or gate.quota_limit() <= 0:
         return
     anon = (x_anonymous_id or "demo").strip()[:64] or "demo"
@@ -83,6 +87,13 @@ def _quota(
                 "X-Quota-Used": str(used),
             },
         )
+
+
+def _quota(
+    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
+    x_deepseek_key: str | None = Header(default=None, alias="X-DeepSeek-Key"),
+) -> None:
+    check_quota(x_anonymous_id, x_deepseek_key)
 
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:

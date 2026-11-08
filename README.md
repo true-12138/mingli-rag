@@ -374,6 +374,7 @@ pass_rate = 0.0
 | 13 | 只做了 MCP server，**没有 MCP client**；HTTP transport 无鉴权 | 只能被宿主调用，Agent 不能动态挂载第三方 server；公网暴露有风险 | 补 client + 工具白名单/鉴权 |
 | 14 | D4 排盘/记忆页的浏览器验收用的是**假 LLM + stub 检索**，没有真实 key | 盘面计算、接口契约、页面交互是真跑的；「解读」的文本质量与真实延迟没在浏览器里验过 | 有 key 后在 CloudStudio 走一遍 `#/fortune` 解读并截图 |
 | 15 | D5 并发底座的本地验证：Redis 用 fakeredis 测 Lua 语义，Postgres 只验证 URL/连接池配置，embedding 服务用假编码器测微批；本机没有 Redis/PG 服务 | 单测覆盖逻辑，但**没跑过真实 Redis 多 worker 共享 20 槽、Postgres 写竞争、真实 BGE-M3 微批吞吐**；200/20 数字尚未产生 | 在 CloudStudio / 部署机 `docker compose up` 后跑 `loadtest/`，把 `/health` 的 `backend` 和压测结果贴回 README |
+| 16 | 语义缓存不是全局向量检索：Redis 普通镜像无 RediSearch，语义层索引只在各进程内 | 多 worker 下精确命中共享，**语义命中各进程各自学习**；新扩容的进程冷启动 | 需要全局语义命中时换 Redis Stack / 独立向量库，并重跑检索评测确认口径 |
 
 > 关于"没做完"的部分：微调、换 LangChain/LlamaIndex 重写、向量库仍然**不做**；reranker 已接入但默认关闭、尚未打过 bigram 基线，RAGAS 忠实度排进 v2。多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
@@ -494,11 +495,44 @@ MINGLI_WORKERS=4 python src/api.py
 
 ```bash
 python loadtest/hold_sse.py --connections 200 --duration 600
-VUS=10 DURATION=2m k6 run loadtest/k6-smoke.js   # 先 10，再 20
+NO_CACHE=1 VUS=10 DURATION=2m k6 run loadtest/k6-smoke.js   # 先 10，再 20
 ```
 
 200 连接测试挂在 `/v1/events`，不是 `/chat/stream`——后者每条连接都会触发一次模型
 调用，200 条就是 200 条并发回答，和验收口径冲突。细节见 [`loadtest/README.md`](loadtest/README.md)。
+
+### 6.1.2 语义缓存（D6）
+
+回答层缓存，只接 **单轮 RAG**。命中时直接返回 `done`（流式会先补一个整段
+`delta`），`usage` 全为 0、`cached: true`，`cache_kind` 标明 `exact` 还是
+`semantic`。缓存命中**不占每用户额度**，也不打 LLM。
+
+| 层 | 匹配方式 | 存储 | 多 worker |
+|---|---|---|---|
+| 精确 | 问题 NFKC + 小写 + 压空白 + 去尾标点后哈希，key 含 `mode` 与 `top_k` | Redis `SETEX`（默认 24h）；Redis 不可用时进程内 LRU | 共享 |
+| 语义 | 问题向量余弦 ≥ 阈值，只和同 `mode`/`top_k` 的条目比 | 各进程内有界 LRU（最大 1000 条） | 各自学习 |
+
+Redis 普通镜像没有 RediSearch，向量索引不放进 Redis；答案正文仍以 Redis 为准。
+精确命中跨 worker 共享，语义命中在进程内生效——扩容后新进程需要重新学习，
+这是明确的取舍，不是「全局语义索引」。
+
+开关与调参：
+
+```bash
+export MINGLI_CACHE_ENABLED=1        # 0 关闭
+export MINGLI_CACHE_SEMANTIC=1       # 0 只保留精确层
+export MINGLI_CACHE_THRESHOLD=0.95   # 越高越保守
+export MINGLI_CACHE_TTL=86400
+export MINGLI_CACHE_MAX_ENTRIES=1000
+```
+
+压测和调试用请求头 `X-No-Cache: 1` 绕过缓存；`/metrics` 的
+`mingli_semcache_hits_total{kind="exact|semantic"}`、`mingli_semcache_misses_total`、
+`mingli_semcache_backend` 可直接观察命中率。**正式测 20 并发回答必须传
+`NO_CACHE=1`**，否则重复题命中缓存，TTFB 不能代表模型并发能力。
+
+不缓存的情况：`agent` / `multi` 模式、带 `history` 的请求、访客自带
+`X-DeepSeek-Key`、`can_answer` 为 `null` 或 `invalid_output` 的结果。
 
 ### 6.2 React 对话页（`frontend/`）
 

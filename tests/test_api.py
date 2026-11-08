@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 import requests
 from fastapi.testclient import TestClient
@@ -11,6 +12,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import api
 import gate
+import semcache
+
+
+class _FakeEncoder:
+    """按字符码累加的确定性向量，避免单测加载 BGE-M3。"""
+
+    def encode(self, text, normalize_embeddings=True):
+        vec = np.zeros(16, dtype=np.float32)
+        for ch in str(text):
+            vec[ord(ch) % 16] += 1.0
+        norm = float(np.linalg.norm(vec)) or 1.0
+        return vec / norm
 
 
 @pytest.fixture()
@@ -18,7 +31,10 @@ def client(monkeypatch):
     monkeypatch.delenv("MINGLI_API_TOKEN", raising=False)
     monkeypatch.delenv("MINGLI_REDIS_URL", raising=False)
     gate.reset_for_tests()
-    return TestClient(api.app)
+    semcache.reset_for_tests()
+    semcache.set_encoder(_FakeEncoder())
+    yield TestClient(api.app)
+    semcache.reset_for_tests()
 
 
 def _rag_result():
@@ -320,3 +336,110 @@ def test_chunks_lookup_returns_titles_and_text(client):
 
 def test_chunks_lookup_rejects_empty_ids(client):
     assert client.post("/chunks", json={"ids": []}).status_code == 422
+
+
+# ---------- 语义缓存 ----------
+
+
+def test_chat_cache_hit_skips_llm(client, monkeypatch):
+    calls = []
+
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        calls.append(question)
+        return _rag_result()
+
+    monkeypatch.setattr(api.rag, "answer", fake_answer)
+    payload = {"question": "羊刃分几种？", "mode": "rag", "top_k": 5}
+
+    first = client.post("/chat", json=payload)
+    second = client.post("/chat", json=payload)
+    assert first.status_code == second.status_code == 200
+    assert calls == ["羊刃分几种？"]  # 第二次没打模型
+    body = second.json()
+    assert body["cached"] is True
+    assert body["cache_kind"] == "exact"
+    assert body["answer"] == "测试回答 [1]"
+    assert body["usage"]["total_tokens"] == 0
+    assert body["elapsed_ms"] < 1000
+
+    metrics = client.get("/metrics").text
+    assert 'mingli_semcache_hits_total{kind="exact"} 1' in metrics
+
+
+def test_chat_no_cache_header_bypasses(client, monkeypatch):
+    calls = []
+
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        calls.append(question)
+        return _rag_result()
+
+    monkeypatch.setattr(api.rag, "answer", fake_answer)
+    payload = {"question": "羊刃分几种？", "mode": "rag"}
+    headers = {"X-No-Cache": "1"}
+
+    client.post("/chat", json=payload, headers=headers)
+    client.post("/chat", json=payload, headers=headers)
+    assert calls == ["羊刃分几种？", "羊刃分几种？"]
+
+
+def test_chat_with_history_is_not_cached(client, monkeypatch):
+    calls = []
+
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        calls.append(question)
+        return _rag_result()
+
+    monkeypatch.setattr(api.rag, "answer", fake_answer)
+    payload = {
+        "question": "羊刃分几种？",
+        "mode": "rag",
+        "history": [{"role": "user", "content": "什么是羊刃？"}],
+    }
+    client.post("/chat", json=payload)
+    client.post("/chat", json=payload)
+    assert len(calls) == 2
+
+
+def test_cache_hit_does_not_consume_quota(client, monkeypatch):
+    monkeypatch.setenv("MINGLI_USER_DAILY_LIMIT", "1")
+    gate.reset_for_tests()
+    calls = []
+
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None):
+        calls.append(question)
+        return _rag_result()
+
+    monkeypatch.setattr(api.rag, "answer", fake_answer)
+
+    assert client.post("/chat", json={"question": "q1", "mode": "rag"}).status_code == 200
+    # 同一问题命中缓存：额度已用完也不该 429
+    assert client.post("/chat", json={"question": "q1", "mode": "rag"}).status_code == 200
+    # 新问题要打模型，额度 1 已用尽
+    blocked = client.post("/chat", json={"question": "q2", "mode": "rag"})
+    assert blocked.status_code == 429
+    assert blocked.headers["retry-after"] == "3600"
+    assert calls == ["q1"]
+
+
+def test_chat_stream_cache_hit_returns_delta_and_done(client, monkeypatch):
+    calls = []
+
+    async def fake_stream(question, top_k=5, api_key=None, history=None,
+                          on_delta=None, on_step=None, client=None):
+        calls.append(question)
+        on_delta("测试回答")
+        return dict(_rag_result(), usage={"total_tokens": 12})
+
+    monkeypatch.setattr(api.rag, "answer_stream", fake_stream)
+    payload = {"question": "羊刃分几种？", "mode": "rag"}
+
+    with client.stream("POST", "/chat/stream", json=payload) as r:
+        _parse_sse("".join(r.iter_text()))
+    with client.stream("POST", "/chat/stream", json=payload) as r:
+        frames = _parse_sse("".join(r.iter_text()))
+
+    assert calls == ["羊刃分几种？"]
+    assert [f[0] for f in frames] == ["delta", "done"]
+    assert frames[0][1]["text"] == "测试回答 [1]"
+    assert frames[1][1]["cached"] is True
+    assert frames[1][1]["usage"]["total_tokens"] == 0

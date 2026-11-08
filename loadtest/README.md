@@ -28,9 +28,13 @@ python loadtest/hold_sse.py --connections 200 --duration 600 \
 
 ```bash
 k6 run loadtest/k6-smoke.js                       # 10 并发 / 2 分钟
-VUS=20 DURATION=5m k6 run loadtest/k6-smoke.js    # 20 并发 / 5 分钟
-TOKEN=xxx BASE=https://your-host VUS=20 k6 run loadtest/k6-smoke.js
+NO_CACHE=1 VUS=20 DURATION=5m k6 run loadtest/k6-smoke.js    # 20 并发 / 5 分钟
+TOKEN=xxx BASE=https://your-host NO_CACHE=1 VUS=20 k6 run loadtest/k6-smoke.js
 ```
+
+脚本默认在 12 道题里轮换，避免固定一问被语义缓存全部命中。**正式测「20
+条并发回答」时加 `NO_CACHE=1`**，否则重复题会走缓存，TTFB 很好看但不代表
+模型并发能力；缓存收益单独看 `/metrics` 的 `mingli_semcache_hits_total`。
 
 先跑 10 并发拿到基线，再上 20。看三个数：
 
@@ -38,8 +42,9 @@ TOKEN=xxx BASE=https://your-host VUS=20 k6 run loadtest/k6-smoke.js
 - `http_req_failed`（阈值 1%）；
 - 第 21 条并发是否拿到 `429` 且带 `Retry-After`。
 
-连接池/槽位状态看 `/health` 的 `concurrency_gate`，实时指标看 `/metrics` 的
-`mingli_answer_slots_active`、`mingli_gate_acquire_total`。
+连接池/槽位状态看 `/health` 的 `concurrency_gate` 与 `semantic_cache`；
+实时指标看 `/metrics` 的 `mingli_answer_slots_active`、
+`mingli_gate_acquire_total`、`mingli_semcache_hits_total`。
 
 ## 本地
 
