@@ -2,7 +2,8 @@
 
 一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
 
-[公开 Demo](https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/)（CloudStudio 单机，实例运行期间可用） ·
+[演示（录屏）](#演示) ·
+[公开 Demo](https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/)（CloudStudio 单机，**工作区运行期间**可用，停止后失效） ·
 [HTTP API 文档](#61-http-apiv14) ·
 [检索评测明细](eval/results_8681_tuned.csv) ·
 [拒答评测明细](eval/refusal_results.csv) ·
@@ -16,6 +17,38 @@
 >
 > **项目边界**
 > 提示词明确禁止把古代概念套到现代生活（科举 ≠ 考研、田宅 ≠ 商品房、官星 ≠ 考公），检索不到依据就拒答。这条边界本身就是评测项之一（10 条语料外问题）。
+
+---
+
+## 演示
+
+录屏对象是部署后的实例（Nginx 同源 + `/api/` 反代），**真实模型调用，没有 mock、没有预填回答**。
+下面是压缩过的 GIF；原始 mp4（1440×900）在 [`docs/demo/`](docs/demo/)，说明见
+[`docs/demo/README.md`](docs/demo/README.md)。
+
+**古籍问答：检索 → 逐字作答 → 引用可展开 → 多书对照**
+
+[![古籍问答演示](docs/demo/demo-chat.gif)](docs/demo/demo-chat.mp4)
+
+**查证后回答：Agent 自己决定查什么，工具调用与命中条数实时可见**
+
+[![Agent 演示](docs/demo/demo-agent.gif)](docs/demo/demo-agent.mp4)
+
+**排盘：八字 → 星盘 → 塔罗。盘面全是确定性计算，不经过模型**
+
+[![排盘演示](docs/demo/demo-fortune.gif)](docs/demo/demo-fortune.mp4)
+
+**排盘解读：模型只看算好的盘面说话，不重算、不改盘**
+
+[![解读演示](docs/demo/demo-reading.gif)](docs/demo/demo-reading.mp4)
+
+**多轮追问与长期记忆：说一次「回答尽量简短，先说结论」，下一轮就按它答；记忆页可查可删**
+
+[![记忆演示](docs/demo/demo-memory.gif)](docs/demo/demo-memory.mp4)
+
+> 等待段做过提速：问答那段 18 秒的回答有约 16 秒停在「检索古籍…」（4 倍速）、解读那段 9 秒等模型
+> 也压到约 4 秒；正文逐字出现、工具轨迹出现的那几秒保持接近实时。
+> 画面里的耗时、调用次数都是界面自己统计的，没有改。
 
 ---
 
@@ -580,6 +613,8 @@ export MINGLI_CACHE_MAX_ENTRIES=1000
 
 独立的 Vite + React 18 + TypeScript 单页，对接上面的 `/v1` 接口：回答逐 token 出现；RAG 正文里的 `[n]` 可点，展开对应原文；多 Agent 的 `stage` 显示当前阶段与工具轨迹；会话列表支持新建 / 切换 / 删除，刷新后按 `runs` + `citation_map` 原样恢复。
 
+**长什么样**：见文首[演示](#演示)——五段录屏（问答 / Agent / 排盘 / 解读 / 多轮记忆）与十一张节点截图，原始 mp4 在 [`docs/demo/`](docs/demo/)。
+
 ```bash
 cd frontend
 npm install
@@ -628,8 +663,9 @@ Redis / embed；`alembic upgrade head` 在容器启动时执行。镜像不打�
      `$host`、`$remote_addr` 一起替换成空串，`nginx -t` 报 `invalid number of arguments`。
   2. 业务库版本号停在 head 但 `conversations` 缺 `summary_upto_id`（旧库被 stamp 过）。最省事的
      修法不是补列，而是备份后删库重跑 `alembic upgrade head`，顺带消掉其他潜在漂移。
-- **注意**：CloudStudio 是开发沙箱，工作区关闭或空闲回收后地址就失效。要「发出去随时能打开」，
-  需要一台常驻云服务器，完整步骤见 [`deploy/VPS.md`](deploy/VPS.md)。
+- **注意**：CloudStudio 是开发沙箱，工作区关闭或空闲回收后地址就失效；要临时发给别人看，
+  可以 `cloudflared tunnel --url http://127.0.0.1:80` 拿一个 `*.trycloudflare.com` 地址（随进程变化）。
+  要「发出去随时能打开」，需要一台常驻云服务器，完整步骤见 [`deploy/VPS.md`](deploy/VPS.md)。
 
 **密钥**：只从环境变量 / `.env` 读取，`.env` 已在 `.gitignore` 里，仓库不含任何 key。
 
@@ -858,6 +894,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── chunks/index_report.json # build_index.py 产出的校验报告
 │   └── embeddings.npy         # 8,681 × 1024
 ├── docs/
+│   ├── demo/                  # 五段录屏 mp4 + GIF + 十一张节点截图
 │   ├── corpus_pipeline.md     # 语料工程说明（原 README）
 │   ├── daily_dev_journal.md   # 开发日志与踩坑
 │   └── eval_questions_seed.md
@@ -898,6 +935,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 - **D6.5 检索吞吐与内存（已完成，11/08）**：`rank_bm25` 的 `get_scores` 每词扫全库、吃满 GIL（1 线程 31.9 QPS = 8 线程 31.2），换成倒排索引 `src/bm25_fast.py`（打分与 `BM25Okapi` 对齐，有对照测试）；`api.py` 在 numpy 导入前压 BLAS 线程。`/retrieve` 16 并发 130.5 QPS / P95 176.7ms；30 分钟 soak RSS +0.05%
 - **D7 部署与鉴权（已完成，11/08）**：CloudStudio 单机公网跑通——宿主机 Nginx 同源提供前端、`/api/` 反代、服务端注入 Bearer token；直连 API 401、经 Nginx 200、`/metrics` 404；浏览器真实提问逐 token 流式。MCP client 挂载外部 server 见 §6.3
 - **v1.9（已完成，11/08）**：把「重启后要手工拉三个进程」收成 `scripts/serve.sh up/status/down`（Redis → API 绑回环 → Nginx → 四条验收）；公开入口切到 CloudStudio，撤下 ModelScope 创空间
+- **演示素材（11/09）**：`docs/demo/` 放五段真实调用录屏（问答 26 s / Agent 19 s / 排盘 17 s / 解读 17 s / 多轮记忆 21 s）+ 十一张节点截图，README 顶部内嵌 GIF；用无头 Chrome + CDP 脚本抓帧、`ffmpeg` 合成，说明见 `docs/demo/README.md`
 - **下一步**：D7 终评文档对齐（评测表标注 `code_commit`、压测报告与最终代码一致）、重启后一键拉起服务的脚本、必要时把 SQLite 记忆库换成独立服务
 - **v2（12 月）**：reranker、评测扩到 80 条 + RAGAS 忠实度、把 SQLite 账本换成带权限的独立服务
 - **明确不做**：微调、框架重写、向量库（8,681 条暴力检索足够，面试时能解释"为什么不用 HNSW"比接了更像工程判断）
