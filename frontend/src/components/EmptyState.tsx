@@ -14,7 +14,7 @@ export function EmptyState({ onPick }: { onPick: (question: string) => void }) {
       </div>
       <h1 className="empty__title">回到原书里找答案</h1>
       <p className="empty__lead">
-        四十五部命理古籍、八千余节正文。回答逐字生成，每一处引用都能展开看原文。
+        四十五部古籍文献（含术数类史料）、八千余节正文。回答逐字生成，每一处引用都能展开看原文。
       </p>
 
       <div className="empty__asks">
@@ -26,7 +26,7 @@ export function EmptyState({ onPick }: { onPick: (question: string) => void }) {
         ))}
       </div>
 
-      <p className="empty__foot">也可以直接贴一段断语，让书里的话来对。</p>
+      <p className="empty__foot">也可以直接贴一段原文，让书里的话来对。</p>
     </div>
   );
 }

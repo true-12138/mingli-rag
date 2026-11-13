@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>问占 · 古籍问答 Agent</title>
+<title>问古 · 古籍问答 Agent</title>
 <meta name="description" content="一个只回答古籍原文里写了什么的检索增强 Agent：45 部古籍、8,681 个检索块、强制引用与无依据拒答。">
 <meta name="theme-color" content="#f4f1e9">
 <meta property="og:type" content="website">
-<meta property="og:title" content="问占 · 古籍问答 Agent">
+<meta property="og:title" content="问古 · 古籍问答 Agent">
 <meta property="og:description" content="每一句结论都能指回原文；指不到，就说不知道。">
 <meta property="og:url" content="https://thetrue.cn/">
 <meta property="og:image" content="https://thetrue.cn/demo/05-answer.png">
@@ -442,9 +442,9 @@ button{font:inherit}
 
 <header class="masthead">
   <div class="wrap masthead__in">
-    <a class="brand" href="#top" aria-label="问占 · 回到卷首">
+    <a class="brand" href="#top" aria-label="问古 · 回到卷首">
       <span class="seal seal--sm" aria-hidden="true">问</span>
-      <span class="brand__name">问占</span>
+      <span class="brand__name">问古</span>
       <span class="brand__sub">古籍问答 Agent</span>
     </a>
     <nav class="topnav" aria-label="页面导航">
@@ -478,22 +478,22 @@ button{font:inherit}
     <div class="wrap hero__grid">
       <div class="hero__copy">
         <p class="eyebrow">检索增强生成 · 工具调用 · 多轮记忆</p>
-        <h1 class="hero__title">问占<span class="hero__dot" aria-hidden="true"></span></h1>
+        <h1 class="hero__title">问古<span class="hero__dot" aria-hidden="true"></span></h1>
         <p class="hero__sub">古籍问答 Agent</p>
-        <p class="hero__lede">45 部命理古籍，8,681 个检索块，约 340 万字。每一句结论都要指回原文某一段；指不到，就说不知道。</p>
+        <p class="hero__lede">45 部古籍文献（含术数类史料），8,681 个检索块，约 340 万字。每一句结论都要指回原文某一段；指不到，就说不知道。</p>
         <div class="hero__actions">
           <a class="btn btn--solid" href="#dialogue">看五段录屏</a>
           <a class="btn btn--ghost" href="https://github.com/true-12138/mingli-rag" target="_blank" rel="noopener">读源码 ↗</a>
         </div>
         <p class="hero__demo-note">
-          在线实例：<a href="https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/" target="_blank" rel="noopener">CloudStudio ↗</a>（工作区运行期间可用，停止后失效）
+          在线 Demo：<a href="https://thetrue.cn/" target="_blank" rel="noopener">thetrue.cn ↗</a>
         </p>
       </div>
 
       <figure class="plate hero__plate">
         <span class="plate__tab">图版 一</span>
-        <img src="demo/05-answer.png" alt="问占对话界面：回答《进神和退神怎么分？》，正文标注两处引用，底部显示 18.5 秒、1 次模型调用、2 处引用" width="1440" height="900" fetchpriority="high">
-        <span class="seal" aria-hidden="true">占</span>
+        <img src="demo/05-answer.png" alt="问古对话界面：回答《进神和退神怎么分？》，正文标注两处引用，底部显示 18.5 秒、1 次模型调用、2 处引用" width="1440" height="900" fetchpriority="high">
+        <span class="seal" aria-hidden="true">古</span>
         <figcaption>真实调用截图 ·「进神和退神怎么分？」18.5 秒，1 次模型调用，2 处引用，原文来自《五行精纪》与《三命通会》。</figcaption>
       </figure>
     </div>
@@ -558,7 +558,7 @@ button{font:inherit}
       </div>
 
       <p class="pull">
-        10 条语料外问题（考研、考公、买房、整容、彩票……），10/10 全部拒答，没有一条被「算」成命理问题。
+        10 条语料外问题（考研、考公、买房、整容、彩票……），10/10 全部拒答，没有一条被误判为可回答的问题。
         <small>2026-11-07 · 30 条人工评测集 · 10 条语料外 + 20 条可答</small>
       </p>
     </div>
@@ -714,7 +714,7 @@ button{font:inherit}
           <ul class="fortune-list">
             <li><b>八字</b><span>四柱、藏干、十神、纳音、五行计数与大运。按节气定月，按东八区换算时辰。</span></li>
             <li><b>星盘</b><span>整宫制轮盘，上升 / 天顶、十行星落座与宫位、元素与三分类。经纬度可精确到出生地。</span></li>
-            <li><b>塔罗</b><span>过去 / 现在 / 未来三张，逆位标注；seed 可复现，同一 seed 永远同一副牌。</span></li>
+            <li><b>塔罗</b><span>背景 / 当下 / 可留意的方向三张，逆位标注；seed 可复现，同一 seed 永远同一副牌。</span></li>
           </ul>
           <p style="margin-top:26px">同样是输入，永远是同一个盘面。模型看到的是算好的结果，它不能改数字，也不能自己「感觉」一个上升星座。</p>
           <p class="note" style="margin-top:22px">解读是一次单独的模型调用，不流式返回。等待约 9 秒，录屏里压缩到 4 秒——这是录制时唯一的时间轴处理。</p>
@@ -723,7 +723,7 @@ button{font:inherit}
         <figure class="plate">
           <span class="plate__tab">图版 三</span>
           <img src="demo/12-astro-chart.png" alt="星盘页：整宫制轮盘，显示上升巨蟹 18 度、天顶白羊 11 度，以及十颗行星的落座与宫位" width="1440" height="900" loading="lazy">
-          <figcaption>整宫制星盘 · 1990-05-17 09:30 · 广州（23.13N, 113.26E）。上升、天顶、十颗行星与主要相位全部由代码计算。</figcaption>
+          <figcaption>整宫制星盘 · 示例星盘 · 日期、时间与出生地均为虚构（示例坐标 23.13N, 113.26E）。上升、天顶、十颗行星与主要相位全部由代码计算。</figcaption>
         </figure>
       </div>
     </div>
@@ -857,7 +857,7 @@ button{font:inherit}
 
       <div class="footer">
         <p>
-          本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；排盘是确定性的历法 / 天文计算；解读属于文化娱乐内容，不是预测，也不构成医疗、法律、投资或人生决策建议。提示词明确禁止把古代概念套到现代生活（科举 ≠ 考研、田宅 ≠ 商品房、官星 ≠ 考公），检索不到依据就拒答。
+          本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；排盘是确定性的历法 / 天文计算。以上为传统文化视角的说明，仅供文化研究与娱乐参考，不是预测，不构成医疗、法律、投资或人生决策建议。提示词明确禁止把古代概念套到现代生活（科举 ≠ 考研、田宅 ≠ 商品房、官星 ≠ 考公），检索不到依据就拒答。
         </p>
         <span class="seal" aria-hidden="true">问</span>
       </div>

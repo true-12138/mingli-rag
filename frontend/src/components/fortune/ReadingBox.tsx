@@ -59,11 +59,14 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
           }}
         />
         <button type="button" className="btn btn--solid" onClick={run} disabled={busy}>
-          {busy ? "解读中…" : "解读此盘"}
+          {busy ? "解读中…" : "查看文化视角说明"}
         </button>
       </div>
       <p className="reading__hint">
         盘面由程序算出，解读由模型组织语言；它只解释上面的盘面，不重算、不补星体。
+      </p>
+      <p className="reading__hint">
+        以下内容为传统文化视角的说明，仅供文化研究与娱乐参考，不构成任何决策建议。
       </p>
 
       {error && (

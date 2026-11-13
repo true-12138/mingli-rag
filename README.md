@@ -1,11 +1,11 @@
-# 命理古籍 RAG Agent · v1.9
+# 古籍文献 RAG Agent · v1.9
 
 **一个「只回答古籍原文里写了什么」的检索增强 Agent。**
 检索不到依据，它说不知道——而不是编一段听起来像古文的回答。
 
 [项目主页](https://thetrue.cn/) ·
 [五段录屏](docs/demo/) ·
-[在线 Demo](https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/)（CloudStudio 单机，**工作区运行期间**可用，停止后失效） ·
+在线 Demo：https://thetrue.cn/ ·
 [HTTP API 文档](#61-http-apiv14) ·
 [检索评测明细](eval/baselines.md) ·
 [Agent A/B 报告](eval/REPORT.md) ·
@@ -19,7 +19,7 @@
 | 并发 | 200 条 SSE 连接 + 20 条并发回答同窗；错误率 **0.41%**；TTFB P95 **1.01s**；206 项测试 |
 
 > **免责声明**
-> 本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；**排盘是确定性的历法/天文计算**；解读属于文化娱乐内容，不是预测，也不构成医疗、法律、投资或人生决策建议。
+> 本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；**排盘是确定性的历法/天文计算**；以上为传统文化视角的说明，仅供文化研究与娱乐参考，不是预测，不构成医疗、法律、投资或人生决策建议。
 >
 > **项目边界**
 > 提示词明确禁止把古代概念套到现代生活（科举 ≠ 考研、田宅 ≠ 商品房、官星 ≠ 考公），检索不到依据就拒答。这条边界本身就是评测项之一（10 条语料外问题）。
@@ -203,7 +203,7 @@ Key 与额度：服务端配了 `DEEPSEEK_API_KEY` 就走服务端 Key，否则�
 
 | 指标 | 结果 | 说明 |
 |---|---|---|
-| 语料外拒答率 | **10/10** | 全部拒答，没有一条被"算"成命理问题 |
+| 语料外拒答率 | **10/10** | 全部拒答，没有一条被误判为可回答的问题 |
 | 可答题误拒 | 1/20 | q01（见 4.1） |
 | 回答中至少一条引用命中 gold | 15/19 | 78.9%；剩下 4 条答了但没有引到标注块 |
 | 首条引用即命中 gold | 11/19 | 57.9%——引用能对上，但排序不对 |
@@ -488,7 +488,7 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `DELETE` | `/v1/memories/{id}` | 删除一条长期记忆；不存在或不属于本人返回 404 |
 | `POST` | `/v1/fortune/bazi` | 八字：四柱、五行、大运（纯计算，不调模型） |
 | `POST` | `/v1/fortune/astro` | 本命盘：行星黄经、整宫制宫位、相位（`ephem`） |
-| `POST` | `/v1/fortune/tarot` | 抽牌；不传 `seed` 时服务端定一个并返回，客户端回传即可复现 |
+| `POST` | `/v1/fortune/tarot` | 生成牌面；不传 `seed` 时服务端定一个并返回，客户端回传即可复现 |
 | `POST` | `/v1/fortune/read` | 解读：服务端用 `params` 重算盘面后再调模型，不信任前端传来的盘 |
 | `POST` | `/chunks` | 按 chunk_id 批量取书名与原文（引用展开用，最多 20 条） |
 
@@ -725,7 +725,7 @@ python scripts/demo_closed_loop.py
 | `fetch_chunk` | 按 `chunk_id` 取完整原文，可带前后邻居 |
 | `list_books` | 45 本书及各自 chunk 数 |
 | `search_terms` | 术语表查询 |
-| `draw_bazi` / `draw_astro` / `draw_tarot` | 排八字 / 星盘 / 抽塔罗，纯计算、可复现 |
+| `draw_bazi` / `draw_astro` / `draw_tarot` | 排八字 / 星盘 / 生成塔罗牌面，纯计算、可复现 |
 
 ```bash
 python src/mcp_server.py                    # stdio（宿主用）
@@ -739,9 +739,9 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 {
   "mcpServers": {
     "mingli-rag": {
-      "command": "D:\\anaconda\\python.exe",
-      "args": ["D:\\demo\\src\\mcp_server.py"],
-      "env": { "MINGLI_DATA_DIR": "D:\\demo\\data" }
+      "command": "python",
+      "args": ["${workspaceFolder}/src/mcp_server.py"],
+      "env": { "MINGLI_DATA_DIR": "${workspaceFolder}/data" }
     }
   }
 }
@@ -898,12 +898,12 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── chunks/punct.jsonl     # 标点组（2,830 行，chunk_id 1..2830）
 │   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681）
 │   ├── chunks/index_report.json # build_index.py 产出的校验报告
-│   └── embeddings.npy         # 8,681 × 1024
+│   ├── embeddings.npy         # 8,681 × 1024
+│   └── eval/eval_questions_seed.md # 30 条评测问题种子
 ├── docs/
 │   ├── demo/                  # 五段录屏 mp4 + GIF + 十一张节点截图
 │   ├── corpus_pipeline.md     # 语料工程说明（原 README）
-│   ├── daily_dev_journal.md   # 开发日志与踩坑
-│   └── eval_questions_seed.md
+│   └── daily_dev_journal.md   # 开发日志与踩坑
 ├── ATTRIBUTION.md             # 语料来源与许可证
 └── PLAN.md                    # 2026-10-20 冲刺计划（已过时，历史存档）
 ```
@@ -976,7 +976,7 @@ v1 只解决"古籍里写了什么"，用户拿不到自己的盘——那是资
 |---|---|---|---|
 | `bazi.py` | `lunar_python` | 节气定月、立春换年 | 干支/藏干/十神/纳音/大运/起运全由历法库给，自己实现节气一定会差一天，整个盘就废了 |
 | `astro.py` | `pyephem` | 地心视黄经 + **整宫制** | 上升/天顶用当地恒星时 + 球面三角自己算，不依赖星历；行星用 ephem 的地心视黄经 |
-| `tarot.py` | 无 | 78 张（22 大 + 56 小） | 抽牌支持 `seed`：固定种子结果可复现，否则测试没法写，"再抽一次"也会变成刷结果 |
+| `tarot.py` | 无 | 78 张（22 大 + 56 小） | 生成牌面支持 `seed`：固定种子结果可复现，否则测试没法写，"再抽一次"也会变成刷结果 |
 
 宫位选择**整宫制**（上升星座即第一宫）是有意的：Placidus 需要解三次方程，且不同宫制会给出不同结果。整宫制规则最简单、可验证，也符合传统希腊占星的用法。
 
@@ -1005,7 +1005,7 @@ Agent 侧把三个排盘函数注册成了工具（`draw_bazi` / `draw_astro` / 
 - 性别只影响大运顺逆，不影响四柱
 - 1995-08-20 太阳必须落在狮子座末段
 - 同一输入两次计算必须完全相同
-- 同一 seed 两次抽牌必须同牌同正逆位
+- 同一 seed 两次生成牌面必须同牌同正逆位
 - 12 宫必须覆盖 12 个星座，第一宫必须等于上升星座
 
 "解得准不准"不在测试范围内——吉凶没有客观答案，写进测试只会变成自我安慰。

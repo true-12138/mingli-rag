@@ -12,10 +12,7 @@ Evidence-grounded RAG/Agent over 340万字 classical Chinese texts: hybrid retri
 
 ## Homepage
 
-https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/
-
-这是 CloudStudio 实例的运行期地址，实例停机后不可用；长期演示要换固定域名时，这里和
-README 顶部链接一起改。
+https://thetrue.cn/
 
 ## License
 

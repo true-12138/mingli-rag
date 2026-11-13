@@ -249,7 +249,7 @@ function stepLabel(step: StepEvent): string {
     case "draw_astro":
       return "排星盘";
     case "draw_tarot":
-      return "抽牌";
+      return "生成牌面";
     default:
       return step.tool;
   }

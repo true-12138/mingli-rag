@@ -30,10 +30,10 @@ venv文件夹一般被git忽略，不会被Git追踪。安装包属于运行环�
 需求：日志要能提交、保存到GitHub，不能只存在容器本地（容器重启就丢）。
 方案：遵循工程规范，放在docs/daily_dev_journal.md，专门存放项目文档、开发日志、踩坑记录。D2需要的问题清单后续也放在docs目录。
 问题 5：D盘推了代码，但GitHub上找不到新增的脚本？
-现象：在D盘终端执行 git push origin main 提示 Everything up-to-date（一切最新），但去GitHub网页上死活看不到 _scripts 下新增的脚本。
+现象：在项目根目录的终端执行 git push origin main 提示 Everything up-to-date（一切最新），但去GitHub网页上死活看不到 _scripts 下新增的脚本。
 原因：分支错位。AI在D盘工作时建了一个名叫 corpus-tooling 的平行分支，你的新代码实际提交在这个分支里。而你推向了 main（主分支），自然找不到。
 解决：
-  1. 在D盘终端确认分支：git status。
+  1. 在项目根目录的终端确认分支：git status。
   2. 推送正确分支：git push origin corpus-tooling。
   3. 去GitHub网页，点击左上角默认的 main 下拉框，切换到 corpus-tooling 分支，就能看到了。
 
@@ -41,8 +41,8 @@ venv文件夹一般被git忽略，不会被Git追踪。安装包属于运行环�
 现象：在云端终端执行 git fetch origin，爆红报错：fatal: Authentication failed for 'https://github.com/...'，并提示 Missing or invalid credentials。
 原因：GitHub 早已禁用账号密码验证。云端（Cloud Studio）访问 GitHub 需要专用的 Personal Access Token (PAT) 作为密码。
 解决：
-  1. 生成Token：去 GitHub 网页生成 Token。注意！要进入账号的个人设置（右上角头像 -> Settings -> Developer settings -> Personal access tokens），不要去仓库（Repository）的 Settings 里找。勾选 repo 权限，生成后复制 ghp_ 开头的字符串。
-  2. 云端配置：在云端终端执行 git remote set-url origin https://你的GitHub用户名:刚才复制的ghp_密码@github.com/true-12138/mingli-rag.git。
+  1. 生成Token：去 GitHub 网页生成 Token。注意！要进入账号的个人设置（右上角头像 -> Settings -> Developer settings -> Personal access tokens），不要去仓库（Repository）的 Settings 里找。勾选 repo 权限。Token 只放在环境变量里（例如 GITHUB_TOKEN=...），不要写进 remote URL，也不要写进文档或提交到仓库。
+  2. 云端配置：优先用 SSH key 或 git credential helper 认证。示例 remote 用 https://github.com/true-12138/mingli-rag.git，不要把 token 拼进 URL。
   3. 再次执行 git fetch origin，成功连接。
 
 问题 7：云端执行切换分支命令各种翻车

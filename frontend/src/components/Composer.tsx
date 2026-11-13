@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Mode } from "../api";
 
 const MODES: { value: Mode; label: string; placeholder: string }[] = [
-  { value: "rag", label: "原文直答", placeholder: "问一个概念，或贴一句断语，比如「天乙贵人怎么查」" },
+  { value: "rag", label: "原文直答", placeholder: "问一个概念，或贴一句原文，比如「天乙贵人怎么查」" },
   { value: "agent", label: "查证后回答", placeholder: "让 Agent 自己翻书，比如「七杀有制和无制差在哪」" },
   { value: "multi", label: "多书对照", placeholder: "想比较哪几部书，比如「三命通会和滴天髓怎么论格局」" },
 ];
@@ -93,7 +93,7 @@ export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Prop
           )}
         </div>
 
-        <p className="composer__hint">Enter 发送 · Shift + Enter 换行 · 回答仅供参考，请以原文为准</p>
+        <p className="composer__hint">Enter 发送 · Shift + Enter 换行 · 仅供文化研究与娱乐参考 · 回答请以原文为准</p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-// 塔罗：选牌阵 → 抽牌 → 可选解读。
+// 塔罗：选牌阵 → 生成牌面 → 可选解读。
 // 服务端会返回具体 seed，解读时原样带回，保证「看到的牌」和「解读的牌」是同一组。
 import { useState } from "react";
 
@@ -27,7 +27,7 @@ export function TarotPanel() {
       setChart(await drawTarot(input));
       setLastInput(input);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "抽牌失败了，请再试一次");
+      setError(err instanceof ApiError ? err.message : "生成牌面失败了，请再试一次");
     } finally {
       setBusy(false);
     }
@@ -62,11 +62,11 @@ export function TarotPanel() {
           </div>
         </div>
         <button className="btn btn--solid f-submit" type="submit" disabled={busy}>
-          {busy ? "抽牌中…" : chart ? "重新抽牌" : "抽牌"}
+          {busy ? "生成中…" : chart ? "重新生成牌面" : "生成牌面"}
         </button>
       </form>
       <p className="f-hint">
-        抽牌用服务端 seed，同一 seed 永远同一组牌——抽完才解读，解读的就是你眼前这组。
+        生成牌面用服务端 seed，同一 seed 永远同一组牌——生成后才解读，解读的就是你眼前这组。
       </p>
 
       {error && (
@@ -78,9 +78,9 @@ export function TarotPanel() {
       {!chart && !error && (
         <div className="chart-empty">
           <span className="chart-empty__seal" aria-hidden="true">
-            卜
+            牌
           </span>
-          <p>选一个牌阵抽牌。这里不做「抽到满意为止」——想重抽就整组重来。</p>
+          <p>选一个牌阵生成牌面。这里不做「抽到满意为止」——想重新生成就整组重来。</p>
         </div>
       )}
 

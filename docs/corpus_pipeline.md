@@ -38,7 +38,8 @@
 │   │   ├── unpunct.jsonl      #   无标点组：5,851 行，同上
 │   │   └── unpunct_report.json
 │   ├── stats/                 # 语料统计（corpus_info、category_stats、clean_log）
-│   └── _meta/                 # 书目清单、排除表、殆知阁 URL、标点扫描
+│   ├── _meta/                 # 书目清单、排除表、殆知阁 URL、标点扫描
+│   └── eval/                  # 评测问题种子（eval_questions_seed.md）
 ├── src/
 │   ├── chunk_meta.py          # 标点组结构解析与 meta 生成
 │   ├── chunk_punct.py         # 标点组入口
@@ -48,8 +49,7 @@
 │   └── legacy/                # 早期 /workspace 语料流水线（不在 v1 关键路径上）
 ├── vendor/oss/                # 第三方源码包（tgz + 原始 py/ts；解压目录已移除，可按需重解）
 ├── docs/
-│   ├── daily_dev_journal.md
-│   └── eval_questions_seed.md # 30 条评测问题的种子（10 条已写答案）
+│   └── daily_dev_journal.md
 └── notebooks/
     └── 01-analyse-corpus.ipynb
 ```
@@ -170,7 +170,7 @@ node src/acquire/extract-iztro.js /tmp/iztro/package data/terminology
 | `02-oss-code/` | `vendor/oss/`（解压目录已删除，tgz 保留） |
 | `src/extract-*.js`、`parse-bazi-terms.js`、`py_to_text.py`、`fetch-daizhige.js` | `src/acquire/` |
 | `src/classify.py`、`clean.py`、`scan_corpus*.py`、`prepare-corpus.sh` | `src/legacy/` |
-| `docs/问题清单.md` | `docs/eval_questions_seed.md` |
+| `docs/问题清单.md` | `data/eval/eval_questions_seed.md` |
 
 ---
 

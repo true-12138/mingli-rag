@@ -11,7 +11,7 @@ import type { FortuneKind } from "../api";
 const TABS: { key: FortuneKind; label: string; hint: string }[] = [
   { key: "bazi", label: "八字", hint: "四柱 · 大运" },
   { key: "astro", label: "星盘", hint: "本命 · 整宫制" },
-  { key: "tarot", label: "塔罗", hint: "可复现抽牌" },
+  { key: "tarot", label: "塔罗", hint: "可复现生成牌面" },
 ];
 
 export function FortunePage({ onOpenDrawer }: { onOpenDrawer: () => void }) {

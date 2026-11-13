@@ -14,7 +14,7 @@ services:
       MINGLI_ANSWER_SLOTS: ${MINGLI_ANSWER_SLOTS:-20}
       MINGLI_TRACE_CACHE: ${MINGLI_TRACE_CACHE:-200}
       # D5 并发底座：业务库 / 全局闸门 / 远程 embedding
-      MINGLI_DB_URL: postgresql+psycopg://mingli:${POSTGRES_PASSWORD:-mingli}@postgres:5432/mingli
+      MINGLI_DB_URL: postgresql+psycopg://mingli:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/mingli
       MINGLI_REDIS_URL: redis://redis:6379/0
       MINGLI_EMBED_URL: http://embed:8100
       MINGLI_EMBED_TOKEN: ${MINGLI_EMBED_TOKEN:-}
@@ -74,7 +74,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: mingli
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mingli}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: mingli
     volumes:
       - pgdata:/var/lib/postgresql/data
