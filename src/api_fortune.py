@@ -163,6 +163,11 @@ def post_intake(req: IntakeRequest) -> dict[str, Any]:
             "fields": detail.get("fields") or [],
             "message": detail.get("message") or "出生时间不合法，请检查年月日。",
         }
+    # 塔罗的 seed 是在排盘时才固定下来的，回填到 params 里：调用方把
+    # intake 返回的 params 原样传给 /read 才能抽到同一组牌。不回填的话
+    # 客户端照文档办也会重新随机一次，牌面和解读对不上。
+    if req.kind == "tarot" and isinstance(chart.get("seed"), int):
+        collected["params"]["seed"] = chart["seed"]
     return {**collected, "chart": chart}
 
 

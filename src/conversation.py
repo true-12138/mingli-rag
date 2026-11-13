@@ -85,7 +85,12 @@ def memory_block(memories):
             key = getattr(m, "key", "")
             value = getattr(m, "value", "")
         kind_label = "偏好" if kind == "preference" else "事实"
-        lines.append("- [{}] {}: {}".format(kind_label, key, str(value)[:200]))
+        text = str(value)
+        # 截断必须留标记：模型看到「…」才知道这里的信息不完整，
+        # 否则会把半句话当成用户的原话。
+        if len(text) > 200:
+            text = text[:199] + "…"
+        lines.append("- [{}] {}: {}".format(kind_label, key, text))
     return "\n".join(lines)
 
 

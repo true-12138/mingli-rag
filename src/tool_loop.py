@@ -62,6 +62,19 @@ def _permission_denied(name, args, allow_side_effects):
 
 
 
+def _invoke(name, args):
+    """调工具；工具自己抛异常也要变成一条 observation，不能把整个循环带走。"""
+    try:
+        return tools.call(name, **(args or {}))
+    except Exception as exc:  # noqa: BLE001 - 工具是外部实现/外部 server，失败要回给模型
+        return {
+            "ok": False,
+            "tool": name,
+            "args": args,
+            "error": "工具执行异常（{}）：{}".format(type(exc).__name__, exc),
+        }
+
+
 def _clean_call(call, idx):
     """只保留 OpenAI 协议字段，避免把厂商私有字段回灌给下一轮。"""
     fn = call.get("function") or {}
@@ -160,7 +173,7 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
                         result = denied
                         err = "denied"
                     else:
-                        result = tools.call(name, **args)
+                        result = _invoke(name, args)
             messages.append({
                 "role": "tool",
                 "tool_call_id": call["id"],
@@ -249,7 +262,7 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                         result = denied
                         err = "denied"
                     else:
-                        result = await asyncio.to_thread(tools.call, name, **(args or {}))
+                        result = await asyncio.to_thread(_invoke, name, args)
             messages.append({
                 "role": "tool",
                 "tool_call_id": call["id"],

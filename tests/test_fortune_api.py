@@ -75,7 +75,7 @@ def test_tarot_seed_is_returned_and_reproducible(client):
     assert r.status_code == 200, r.text
     chart = r.json()
     assert chart["seed"] is not None
-    assert [c["position"] for c in chart["cards"]] == ["过去", "现在", "未来"]
+    assert [c["position"] for c in chart["cards"]] == ["背景", "当下", "可留意的方向"]
 
     again = client.post(
         "/v1/fortune/tarot", json={"spread": "three", "seed": chart["seed"]}
@@ -231,6 +231,16 @@ def test_intake_tarot_needs_nothing(client):
     # seed 在这一步就固定下来，之后解读必须用这一组牌
     assert body["chart"]["seed"] is not None
     assert len(body["chart"]["cards"]) == 3
+
+
+def test_intake_tarot_params_carry_the_seed_so_reuse_reproduces_cards(client):
+    """intake 返回的 params 必须能原样喂回去：客户端照文档办事就该拿到同一组牌。"""
+    first = client.post("/v1/fortune/intake", json={"kind": "tarot", "params": {}}).json()
+    assert first["params"]["seed"] == first["chart"]["seed"]
+
+    again = client.post("/v1/fortune/intake",
+                        json={"kind": "tarot", "params": first["params"]}).json()
+    assert again["chart"]["cards"] == first["chart"]["cards"]
 
 
 def test_read_with_incomplete_params_returns_structured_400(client):
