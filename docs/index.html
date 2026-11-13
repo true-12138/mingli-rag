@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>问占 · 古籍问答 Agent</title>
+<meta name="description" content="一个只回答古籍原文里写了什么的检索增强 Agent：45 部古籍、8,681 个检索块、强制引用与无依据拒答。">
+<meta name="theme-color" content="#f4f1e9">
+<meta property="og:type" content="website">
+<meta property="og:title" content="问占 · 古籍问答 Agent">
+<meta property="og:description" content="每一句结论都能指回原文；指不到，就说不知道。">
+<meta property="og:url" content="https://thetrue.cn/">
+<meta property="og:image" content="https://thetrue.cn/demo/05-answer.png">
+<link rel="canonical" href="https://thetrue.cn/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='5' fill='%2396322a'/%3E%3Ctext x='32' y='46' font-size='42' text-anchor='middle' fill='%23fbf7ef' font-family='serif'%3E问%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --paper:#f4f1e9;
+  --paper-2:#faf7ef;
+  --panel:#fdfbf6;
+  --ink:#1d1a17;
+  --ink-soft:#3a352e;
+  --muted:#6f6759;
+  --faint:#9b9284;
+  --rule:#ddd4c3;
+  --rule-strong:#c9bda8;
+  --cinnabar:#96322a;
+  --cinnabar-deep:#7c2a24;
+  --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"SFMono-Regular","Cascadia Mono",Consolas,"Liberation Mono",monospace;
+  --num:Georgia,"Times New Roman",serif;
+  --wrap:1180px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{
+  margin:0;
+  background-color:var(--paper);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:16px;
+  line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+::selection{background:rgba(150,50,42,.18)}
+a{color:inherit}
+img{max-width:100%}
+h1,h2,h3,p,figure,blockquote,dl,dd,ol,ul{margin:0}
+button{font:inherit}
+:focus-visible{outline:2px solid rgba(150,50,42,.55);outline-offset:3px}
+
+.wrap{width:min(var(--wrap),calc(100% - 48px));margin-inline:auto}
+.sans{font-family:var(--sans)}
+.mono{font-family:var(--mono)}
+
+/* ---------- 页眉 ---------- */
+.masthead{
+  position:sticky;top:0;z-index:50;
+  background:rgba(244,241,233,.88);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.masthead__in{display:flex;align-items:center;gap:26px;height:64px}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;flex:none}
+.seal{
+  width:44px;height:44px;display:grid;place-items:center;flex:none;
+  background:var(--cinnabar);color:#fbf7ef;border-radius:2px;
+  font-family:var(--serif);font-size:25px;line-height:1;
+  transform:rotate(-3deg);
+  box-shadow:0 1px 0 rgba(29,26,23,.16),inset 0 0 0 1px rgba(251,247,239,.14);
+}
+.seal--sm{width:30px;height:30px;font-size:17px;transform:rotate(-2deg)}
+.brand__name{font-size:17px;font-weight:600;letter-spacing:.16em}
+.brand__sub{font-family:var(--sans);font-size:11px;color:var(--muted);letter-spacing:.12em}
+.topnav{display:flex;gap:22px;margin-left:auto}
+.topnav a{
+  font-family:var(--sans);font-size:13px;color:var(--muted);text-decoration:none;
+  letter-spacing:.06em;padding:4px 0;border-bottom:1px solid transparent;
+  transition:color .15s,border-color .15s;
+}
+.topnav a:hover{color:var(--cinnabar);border-bottom-color:var(--cinnabar)}
+.topnav__gh{
+  flex:none;font-family:var(--mono);font-size:12px;text-decoration:none;
+  border:1px solid var(--rule-strong);padding:7px 13px;border-radius:2px;
+  color:var(--ink-soft);transition:background .15s,border-color .15s;
+}
+.topnav__gh:hover{background:var(--panel);border-color:var(--ink)}
+
+/* ---------- 左侧卷次 ---------- */
+.rail{
+  position:fixed;left:max(14px,calc(50vw - 700px));top:50%;
+  transform:translateY(-50%);z-index:40;
+  display:flex;flex-direction:column;gap:13px;
+}
+.rail a{
+  display:flex;align-items:center;gap:9px;text-decoration:none;
+  font-family:var(--sans);font-size:11px;letter-spacing:.14em;color:var(--faint);
+  transition:color .2s;
+}
+.rail a::before{content:"";width:14px;height:1px;background:var(--rule-strong);transition:width .2s,background .2s}
+.rail a:hover{color:var(--ink-soft)}
+.rail a.active{color:var(--cinnabar)}
+.rail a.active::before{width:26px;background:var(--cinnabar)}
+@media(max-width:1320px){.rail{display:none}}
+
+/* ---------- 首屏 ---------- */
+.hero{position:relative;overflow:hidden;padding:70px 0 56px}
+.hero__rules{position:absolute;inset:0;pointer-events:none;opacity:.8;display:flex;justify-content:flex-end;gap:96px;padding-right:8vw}
+.hero__rules i{display:block;width:1px;height:100%;background:linear-gradient(to bottom,transparent,rgba(29,26,23,.09) 22%,rgba(29,26,23,.09) 70%,transparent)}
+.hero__grid{
+  position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);
+  gap:52px;align-items:end;
+}
+.eyebrow{
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;color:var(--cinnabar);
+  display:flex;align-items:center;gap:10px;margin-bottom:26px;
+}
+.eyebrow::before{content:"";width:30px;height:1px;background:var(--cinnabar)}
+.hero__title{
+  font-size:clamp(72px,10vw,150px);line-height:1;letter-spacing:.02em;
+  font-weight:500;white-space:nowrap;
+}
+.hero__dot{
+  display:inline-block;width:.34em;height:.34em;margin-left:.14em;
+  background:var(--cinnabar);vertical-align:.08em;transform:rotate(1.5deg);
+  box-shadow:inset 0 0 0 1px rgba(251,247,239,.18);
+}
+.hero__sub{
+  margin-top:22px;font-size:clamp(18px,2vw,24px);letter-spacing:.18em;color:var(--ink-soft);
+}
+.hero__lede{margin-top:22px;max-width:30em;color:var(--ink-soft);font-size:16.5px;line-height:1.9}
+.hero__actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:32px}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;text-decoration:none;
+  font-family:var(--sans);font-size:13.5px;letter-spacing:.08em;
+  padding:11px 20px;border-radius:2px;border:1px solid var(--cinnabar);
+  transition:background .18s,color .18s,border-color .18s,transform .18s;
+}
+.btn--solid{background:var(--cinnabar);color:#fbf7ef}
+.btn--solid:hover{background:var(--cinnabar-deep);border-color:var(--cinnabar-deep)}
+.btn--ghost{color:var(--cinnabar);border-color:var(--rule-strong);background:transparent}
+.btn--ghost:hover{border-color:var(--cinnabar);background:rgba(150,50,42,.045)}
+.hero__demo-note{
+  margin-top:14px;font-family:var(--sans);font-size:11.5px;color:var(--muted);letter-spacing:.02em;
+}
+.hero__demo-note a{color:var(--muted);text-underline-offset:3px}
+
+.plate{
+  position:relative;background:var(--panel);border:1px solid var(--rule-strong);
+  padding:9px;box-shadow:0 14px 34px -30px rgba(29,26,23,.38);
+}
+.plate img{display:block;width:100%;height:auto;border:1px solid var(--rule);background:var(--paper-2)}
+.plate figcaption{
+  font-family:var(--sans);font-size:11.5px;line-height:1.7;color:var(--muted);
+  padding:10px 4px 2px;
+}
+.plate__tab{
+  position:absolute;top:-1px;left:-1px;transform:translateY(-100%);
+  background:var(--cinnabar);color:#fbf7ef;font-family:var(--mono);
+  font-size:11px;letter-spacing:.14em;padding:4px 9px;
+}
+.hero__plate{transform:rotate(-1.1deg);transform-origin:50% 100%;margin-bottom:4px}
+.hero__plate .seal{
+  position:absolute;right:22px;bottom:54px;width:40px;height:40px;font-size:22px;
+  transform:rotate(3deg);opacity:.94;
+}
+.hero__stats{
+  position:relative;display:grid;grid-template-columns:repeat(3,1fr);
+  gap:0;border-top:1px solid var(--ink);margin-top:58px;
+}
+.hero__stats>div{padding:22px 26px 26px;border-right:1px solid var(--rule)}
+.hero__stats>div:first-child{padding-left:0}
+.hero__stats>div:last-child{border-right:0}
+.hero__stats dt{
+  font-family:var(--sans);font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:6px;
+}
+.hero__stats dd{font-family:var(--num);font-size:clamp(26px,3vw,38px);line-height:1.1;letter-spacing:.01em}
+.hero__stats dd small{font-family:var(--serif);font-size:14px;color:var(--muted);letter-spacing:.06em;margin-left:6px}
+.hero__margin{
+  position:absolute;right:calc(50% - 590px - 38px);top:120px;
+  writing-mode:vertical-rl;font-size:12px;letter-spacing:.42em;color:var(--faint);
+}
+@media(max-width:1320px){.hero__margin{display:none}}
+
+/* ---------- 通用章节 ---------- */
+.section{padding:104px 0;border-top:1px solid var(--rule);position:relative}
+.sec-head{display:grid;grid-template-columns:150px minmax(0,1fr);gap:36px;margin-bottom:56px}
+.sec-no{
+  font-family:var(--sans);font-size:12px;letter-spacing:.28em;color:var(--cinnabar);
+  padding-top:14px;border-top:1px solid var(--cinnabar);height:fit-content;
+}
+.sec-title{font-size:clamp(34px,4.3vw,56px);line-height:1.16;font-weight:500;letter-spacing:.01em}
+.sec-lede{margin-top:18px;max-width:42em;color:var(--ink-soft);font-size:16px;line-height:1.95}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.split--7-5{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.split--5-7{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+.split__copy p{color:var(--ink-soft);line-height:1.95}
+.split__copy p+p{margin-top:16px}
+
+.quote{
+  border-left:2px solid var(--cinnabar);padding:6px 0 6px 22px;
+  font-size:clamp(19px,2.1vw,25px);line-height:1.75;color:var(--ink);
+}
+.quote p+p{margin-top:12px}
+.quote__cite{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+.chip{
+  font-family:var(--sans);font-size:11.5px;color:var(--cinnabar);
+  border:1px solid rgba(150,50,42,.35);padding:2px 8px;border-radius:1px;
+  background:rgba(150,50,42,.04);
+}
+.note{
+  font-family:var(--sans);font-size:13px;line-height:1.85;color:var(--muted);
+  border-left:1px solid var(--rule-strong);padding-left:16px;
+}
+.note strong{color:var(--ink-soft);font-weight:600}
+
+/* 凡例 */
+.rules{border-top:1px solid var(--ink);margin-top:44px}
+.rule-row{
+  display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1.1fr);
+  gap:28px;padding:26px 0;border-bottom:1px solid var(--rule);align-items:baseline;
+}
+.rule-row__no{font-family:var(--num);font-size:30px;color:var(--cinnabar);line-height:1}
+.rule-row h3{font-size:20px;font-weight:600;letter-spacing:.02em}
+.rule-row p{font-family:var(--sans);font-size:13.5px;line-height:1.9;color:var(--muted)}
+
+/* 流程图 */
+.flow{border:1px solid var(--rule-strong);background:rgba(253,251,246,.55);padding:26px 28px}
+.flow__row{display:grid;grid-template-columns:64px minmax(0,1fr);gap:20px;align-items:center}
+.flow__row+.flow__row{margin-top:20px;padding-top:20px;border-top:1px dashed var(--rule-strong)}
+.flow__label{
+  font-family:var(--sans);font-size:11px;letter-spacing:.2em;color:var(--cinnabar);
+}
+.flow__track{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.node{
+  font-family:var(--sans);font-size:12.5px;line-height:1.5;color:var(--ink-soft);
+  border:1px solid var(--rule-strong);background:var(--panel);padding:7px 11px;border-radius:1px;
+}
+.node--accent{border-color:rgba(150,50,42,.45);color:var(--cinnabar);background:rgba(150,50,42,.04)}
+.arrow{font-family:var(--mono);font-size:12px;color:var(--faint)}
+.flow__foot{margin-top:18px;font-family:var(--sans);font-size:11.5px;color:var(--muted)}
+
+/* 表格 */
+.ledger{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ledger caption{
+  text-align:left;font-family:var(--sans);font-size:11.5px;letter-spacing:.12em;
+  color:var(--muted);padding-bottom:10px;
+}
+.ledger th{
+  font-family:var(--sans);font-size:10.5px;font-weight:500;letter-spacing:.08em;color:var(--muted);
+  text-align:right;padding:9px 12px;border-bottom:1px solid var(--ink);white-space:nowrap;
+}
+.ledger th:first-child,.ledger td:first-child{text-align:left}
+.ledger td{
+  padding:13px 12px;border-bottom:1px solid var(--rule);text-align:right;
+  font-family:var(--mono);font-size:13px;color:var(--ink-soft);white-space:nowrap;
+}
+.ledger td:first-child{font-family:var(--serif);font-size:14.5px;color:var(--ink)}
+.ledger tr.hl td{color:var(--cinnabar);font-weight:600}
+.ledger tr.hl td:first-child{color:var(--cinnabar)}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-note{font-family:var(--sans);font-size:11.5px;line-height:1.8;color:var(--muted);margin-top:12px}
+
+/* 数字列表 */
+.facts{list-style:none;padding:0;border-top:1px solid var(--ink)}
+.facts li{
+  display:flex;align-items:baseline;justify-content:space-between;gap:18px;
+  padding:13px 0;border-bottom:1px solid var(--rule);
+}
+.facts span{font-family:var(--sans);font-size:13px;color:var(--muted)}
+.facts b{font-family:var(--num);font-size:19px;font-weight:500;white-space:nowrap}
+.facts b small{font-family:var(--serif);font-size:12px;color:var(--muted);font-weight:400;margin-left:3px}
+
+/* 引用块 */
+.pull{
+  margin-top:40px;padding:26px 30px;background:var(--paper-2);
+  border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);
+  font-size:clamp(19px,2.2vw,26px);line-height:1.7;
+}
+.pull small{
+  display:block;margin-top:12px;font-family:var(--sans);font-size:12px;
+  letter-spacing:.08em;color:var(--muted);
+}
+
+/* 录屏图版 */
+.gifplate{margin:0}
+.gifplate img{width:100%;display:block;border:1px solid var(--rule)}
+.gifplate figcaption{padding-top:10px}
+.plate__link{
+  display:inline-flex;align-items:center;gap:7px;margin-top:10px;
+  font-family:var(--sans);font-size:12px;color:var(--cinnabar);text-decoration:none;
+  border-bottom:1px solid rgba(150,50,42,.35);padding-bottom:1px;
+}
+.plate__link:hover{border-bottom-color:var(--cinnabar)}
+
+/* Agent 轨迹 */
+.trace{list-style:none;padding:0;margin:26px 0 0;border-top:1px solid var(--ink)}
+.trace li{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--rule)}
+.trace span{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft)}
+.trace b{font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--cinnabar);white-space:nowrap}
+
+/* 排盘 */
+.fortune-list{list-style:none;padding:0;margin-top:30px}
+.fortune-list li{display:grid;grid-template-columns:86px 1fr;gap:18px;padding:17px 0;border-top:1px solid var(--rule)}
+.fortune-list li:last-child{border-bottom:1px solid var(--rule)}
+.fortune-list b{font-size:17px;font-weight:600;letter-spacing:.06em}
+.fortune-list span{font-family:var(--sans);font-size:13px;line-height:1.85;color:var(--muted)}
+
+/* 并发：深色章 */
+.section--dark{
+  background:var(--ink);color:var(--paper);border-top:1px solid var(--ink);
+  padding:100px 0;
+}
+.section--dark .sec-no{color:#d98a7f;border-top-color:#d98a7f}
+.section--dark .sec-title{color:var(--paper)}
+.section--dark .sec-lede{color:#cfc6b6}
+.section--dark .ledger th{color:#a89f8e;border-bottom-color:#6b6355}
+.section--dark .ledger td{color:#d8cfbf;border-bottom-color:#3b352d}
+.section--dark .ledger td:first-child{color:var(--paper)}
+.section--dark .ledger tr.hl td{color:#e29a8f}
+.section--dark .table-note{color:#a89f8e}
+.bignums{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid #6b6355;border-bottom:1px solid #3b352d;margin-bottom:44px}
+.bignums>div{padding:24px 22px 26px;border-right:1px solid #3b352d}
+.bignums>div:first-child{padding-left:0}
+.bignums>div:last-child{border-right:0}
+.bignums b{display:block;font-family:var(--num);font-size:clamp(30px,4vw,46px);font-weight:400;line-height:1.05;color:var(--paper)}
+.bignums b em{font-style:normal;font-size:.5em;color:#a89f8e}
+.bignums p{margin-top:7px;font-family:var(--sans);font-size:11.5px;letter-spacing:.06em;color:#a89f8e;line-height:1.7}
+.dark-note{
+  margin-top:30px;padding-top:20px;border-top:1px solid #3b352d;
+  font-family:var(--sans);font-size:12px;line-height:1.9;color:#a89f8e;max-width:52em;
+}
+.dark-note strong{color:#d8cfbf;font-weight:600}
+
+/* 局限清单 */
+.limits{list-style:none;padding:0;margin-top:10px;border-top:1px solid var(--ink)}
+.limits li{
+  display:grid;grid-template-columns:64px minmax(0,1fr);gap:28px;
+  padding:24px 0;border-bottom:1px solid var(--rule);
+}
+.limits b{font-family:var(--num);font-size:22px;font-weight:400;color:var(--cinnabar);line-height:1.4}
+.limits h3{font-size:17px;font-weight:600;letter-spacing:.02em;margin-bottom:5px}
+.limits p{font-family:var(--sans);font-size:13px;line-height:1.9;color:var(--muted)}
+
+/* 页脚 */
+.close{padding:96px 0 0;border-top:1px solid var(--rule)}
+.stackline{
+  font-family:var(--mono);font-size:12px;line-height:2.1;color:var(--muted);
+  border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);padding:20px 0;
+}
+.stackline b{color:var(--ink-soft);font-weight:500}
+.linkgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:8px;border-bottom:1px solid var(--rule)}
+.linkgrid a{
+  display:block;text-decoration:none;padding:22px 22px 24px 0;
+  border-top:1px solid var(--rule);transition:background .15s;
+}
+.linkgrid a:nth-child(3n+2),.linkgrid a:nth-child(3n+3){padding-left:22px;border-left:1px solid var(--rule)}
+.linkgrid a:hover{background:rgba(150,50,42,.035)}
+.linkgrid b{display:block;font-size:16px;font-weight:600;letter-spacing:.03em}
+.linkgrid span{display:block;margin-top:4px;font-family:var(--sans);font-size:12px;color:var(--muted)}
+.linkgrid em{display:block;margin-top:12px;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--cinnabar)}
+.footer{
+  display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;
+  padding:34px 0 46px;
+}
+.footer p{font-family:var(--sans);font-size:11px;line-height:1.9;color:var(--faint);max-width:44em}
+.footer .seal{width:38px;height:38px;font-size:21px;opacity:.9}
+
+/* 窄屏表格改为上下排 */
+@media(max-width:640px){
+  .ledger--stack thead{display:none}
+  .ledger--stack,.ledger--stack tbody{display:block}
+  .ledger--stack caption{display:block;width:100%;white-space:normal}
+  .ledger--stack tr{display:block;padding:13px 0;border-bottom:1px solid rgba(200,190,170,.22)}
+  .ledger--stack tr:last-child{border-bottom:0}
+  .ledger--stack td{
+    display:block;border:0;padding:1px 0;text-align:left;white-space:normal;
+    font-size:12px;line-height:1.75;
+  }
+  .ledger--stack td:first-child{font-size:13px;color:#a89f8e;margin-bottom:4px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
+
+/* 响应式 */
+@media(max-width:960px){
+  .wrap{width:min(var(--wrap),calc(100% - 36px))}
+  .hero{padding-top:44px}
+  .hero__grid{grid-template-columns:1fr;gap:42px;align-items:start}
+  .hero__title{font-size:clamp(76px,18vw,138px)}
+  .hero__lede{font-size:15.5px}
+  .hero__plate{transform:none;max-width:none}
+  .hero__stats{grid-template-columns:1fr;margin-top:44px}
+  .hero__stats>div{padding:16px 0;border-right:0;border-bottom:1px solid var(--rule)}
+  .hero__stats>div:last-child{border-bottom:0}
+  .sec-head{grid-template-columns:1fr;gap:16px;margin-bottom:40px}
+  .sec-no{padding-top:0;border-top:0;border-left:1px solid var(--cinnabar);padding-left:12px}
+  .split,.split--7-5,.split--5-7{grid-template-columns:1fr;gap:38px}
+  .split--5-7 .split__copy{order:2}
+  .section{padding:76px 0}
+  .bignums{grid-template-columns:1fr 1fr}
+  .bignums>div{padding:20px 18px;border-bottom:1px solid #3b352d}
+  .bignums>div:nth-child(2n){border-right:0}
+  .bignums>div:first-child{padding-left:18px}
+  .bignums>div:nth-last-child(-n+2){border-bottom:0}
+  .rule-row{grid-template-columns:44px 1fr;gap:16px}
+  .rule-row p{grid-column:2}
+  .flow__row{grid-template-columns:1fr;gap:10px}
+  .linkgrid{grid-template-columns:1fr 1fr}
+  .linkgrid a:nth-child(3n+2),.linkgrid a:nth-child(3n+3){padding-left:0;border-left:0}
+  .linkgrid a:nth-child(2n){padding-left:20px;border-left:1px solid var(--rule)}
+  .topnav{display:none}
+  .footer{grid-template-columns:1fr;gap:24px}
+}
+@media(max-width:560px){
+  .wrap{width:calc(100% - 32px)}
+  .brand__sub{display:none}
+  .topnav__gh{padding:6px 10px}
+  .hero__actions{flex-direction:column;align-items:stretch}
+  .btn{justify-content:center}
+  .hero__stats dd{font-size:30px}
+  .quote{font-size:19px}
+  .rule-row{grid-template-columns:1fr;gap:6px}
+  .rule-row p{grid-column:auto}
+  .limits li{grid-template-columns:40px 1fr;gap:16px}
+  .linkgrid{grid-template-columns:1fr}
+  .linkgrid a:nth-child(2n){padding-left:0;border-left:0}
+  .bignums{grid-template-columns:1fr}
+  .bignums>div{border-right:0;border-bottom:1px solid #3b352d}
+  .bignums>div:first-child{padding-left:0}
+  .bignums>div:last-child{border-bottom:0}
+  .section--dark{padding:72px 0}
+  .footer .seal{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap masthead__in">
+    <a class="brand" href="#top" aria-label="问占 · 回到卷首">
+      <span class="seal seal--sm" aria-hidden="true">问</span>
+      <span class="brand__name">问占</span>
+      <span class="brand__sub">古籍问答 Agent</span>
+    </a>
+    <nav class="topnav" aria-label="页面导航">
+      <a href="#thesis">题解</a>
+      <a href="#retrieval">检索</a>
+      <a href="#dialogue">对话</a>
+      <a href="#agent">查证</a>
+      <a href="#fortune">排盘</a>
+      <a href="#load">并发</a>
+    </nav>
+    <a class="topnav__gh" href="https://github.com/true-12138/mingli-rag" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<nav class="rail" aria-label="卷次">
+  <a href="#top" data-rail="top">卷首</a>
+  <a href="#thesis" data-rail="thesis">题解</a>
+  <a href="#retrieval" data-rail="retrieval">检索</a>
+  <a href="#dialogue" data-rail="dialogue">对话</a>
+  <a href="#agent" data-rail="agent">查证</a>
+  <a href="#fortune" data-rail="fortune">排盘</a>
+  <a href="#load" data-rail="load">并发</a>
+  <a href="#limits" data-rail="limits">卷末</a>
+</nav>
+
+<main>
+
+  <!-- 卷首 -->
+  <section class="hero" id="top">
+    <div class="hero__rules" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="wrap hero__grid">
+      <div class="hero__copy">
+        <p class="eyebrow">检索增强生成 · 工具调用 · 多轮记忆</p>
+        <h1 class="hero__title">问占<span class="hero__dot" aria-hidden="true"></span></h1>
+        <p class="hero__sub">古籍问答 Agent</p>
+        <p class="hero__lede">45 部命理古籍，8,681 个检索块，约 340 万字。每一句结论都要指回原文某一段；指不到，就说不知道。</p>
+        <div class="hero__actions">
+          <a class="btn btn--solid" href="#dialogue">看五段录屏</a>
+          <a class="btn btn--ghost" href="https://github.com/true-12138/mingli-rag" target="_blank" rel="noopener">读源码 ↗</a>
+        </div>
+        <p class="hero__demo-note">
+          在线实例：<a href="https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/" target="_blank" rel="noopener">CloudStudio ↗</a>（工作区运行期间可用，停止后失效）
+        </p>
+      </div>
+
+      <figure class="plate hero__plate">
+        <span class="plate__tab">图版 一</span>
+        <img src="demo/05-answer.png" alt="问占对话界面：回答《进神和退神怎么分？》，正文标注两处引用，底部显示 18.5 秒、1 次模型调用、2 处引用" width="1440" height="900" fetchpriority="high">
+        <span class="seal" aria-hidden="true">占</span>
+        <figcaption>真实调用截图 ·「进神和退神怎么分？」18.5 秒，1 次模型调用，2 处引用，原文来自《五行精纪》与《三命通会》。</figcaption>
+      </figure>
+    </div>
+
+    <div class="wrap">
+      <dl class="hero__stats">
+        <div>
+          <dt>入索引古籍</dt>
+          <dd>45<small>部</small></dd>
+        </div>
+        <div>
+          <dt>检索块 / 原文</dt>
+          <dd>8,681<small>块 · 约 340 万字</small></dd>
+        </div>
+        <div>
+          <dt>并发验收</dt>
+          <dd>200<small>条 SSE · 20 个回答</small></dd>
+        </div>
+      </dl>
+    </div>
+    <p class="hero__margin" aria-hidden="true">纸 · 墨 · 朱砂</p>
+  </section>
+
+  <!-- 题解 -->
+  <section class="section" id="thesis">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">题解</p>
+        <div>
+          <h2 class="sec-title">不编原文，是底线</h2>
+          <p class="sec-lede">古籍问答最要命的失败，不是答得浅，而是模型用现代常识补出一句听起来很像古籍的话。用户无法分辨，检索也就失去了意义。</p>
+        </div>
+      </header>
+
+      <div class="split split--5-7">
+        <div class="split__copy">
+          <p>所以这个项目的核心不是「答得好」，是「每句结论都能指回原文某一段」。</p>
+          <p>落到工程里，只有三件事。它们不是提示词里的口号，而是出口处的硬校验：30 条测试中，声称能答却零有效引用的输出为 0 条。</p>
+        </div>
+        <blockquote class="quote">
+          <p>「每句结论都能指回原文某一段；指不到，就说不知道。」</p>
+          <p class="quote__cite"><span class="chip">不是预测</span><span class="chip">不是现代生活类比</span><span class="chip">指不到就拒答</span></p>
+        </blockquote>
+      </div>
+
+      <div class="rules">
+        <div class="rule-row">
+          <span class="rule-row__no">01</span>
+          <h3>只取 Top-5</h3>
+          <p>只允许使用检索到的 5 个片段。提示词明确禁止调用预训练知识，片段之外的内容不进入答案。</p>
+        </div>
+        <div class="rule-row">
+          <span class="rule-row__no">02</span>
+          <h3>强制引用</h3>
+          <p>每条结论标 <span class="mono">[编号]</span>。编号越界、引用白名单外，或声称能答却零有效引用，直接判为不合规输出。</p>
+        </div>
+        <div class="rule-row">
+          <span class="rule-row__no">03</span>
+          <h3>无据拒答</h3>
+          <p>片段只是主题相近、却答不了问题时，返回固定拒答语（<span class="mono">can_answer=false</span>），不硬答。</p>
+        </div>
+      </div>
+
+      <p class="pull">
+        10 条语料外问题（考研、考公、买房、整容、彩票……），10/10 全部拒答，没有一条被「算」成命理问题。
+        <small>2026-11-07 · 30 条人工评测集 · 10 条语料外 + 20 条可答</small>
+      </p>
+    </div>
+  </section>
+
+  <!-- 卷一 · 检索 -->
+  <section class="section" id="retrieval">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">卷一 · 检索</p>
+        <div>
+          <h2 class="sec-title">两路召回，一种答案</h2>
+          <p class="sec-lede">BGE-M3 管语义，BM25 管字面。两类错误并不重叠——单跳释义上向量更强，干支术语上 BM25 更强，所以融合才比任何单路都好。</p>
+        </div>
+      </header>
+
+      <div class="flow">
+        <div class="flow__row">
+          <p class="flow__label">离线</p>
+          <div class="flow__track">
+            <span class="node">152 部清洗文本</span><span class="arrow">→</span>
+            <span class="node">45 部入索引</span><span class="arrow">→</span>
+            <span class="node">8,681 个检索块</span><span class="arrow">→</span>
+            <span class="node">BGE-M3 向量</span><span class="arrow">+</span>
+            <span class="node">BM25 倒排</span>
+          </div>
+        </div>
+        <div class="flow__row">
+          <p class="flow__label">在线</p>
+          <div class="flow__track">
+            <span class="node">问题</span><span class="arrow">→</span>
+            <span class="node node--accent">双路各取 40</span><span class="arrow">→</span>
+            <span class="node node--accent">RRF 融合</span><span class="arrow">→</span>
+            <span class="node">Top-5 上下文</span><span class="arrow">→</span>
+            <span class="node">生成 + 引用校验</span><span class="arrow">→</span>
+            <span class="node">回答 / 拒答</span>
+          </div>
+        </div>
+        <p class="flow__foot">8,681 × 1024 的向量索引约 35 MB，留在进程内做精确检索，不引 pgvector，省一次网络往返，也避免评测口径漂移。</p>
+      </div>
+
+      <div class="split" style="margin-top:56px">
+        <div class="table-wrap">
+          <table class="ledger">
+            <caption>检索评测 · 20 道可答题 · Top-k = 5</caption>
+            <thead>
+              <tr><th>策略</th><th>R@5 exact</th><th>R@5 line</th><th>MRR line</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>dense（BGE-M3）</td><td>52.5%</td><td>62.5%</td><td>48.7%</td></tr>
+              <tr><td>BM25（字二元组）</td><td>42.5%</td><td>52.5%</td><td>38.7%</td></tr>
+              <tr class="hl"><td>RRF 融合</td><td>70.0%</td><td>75.0%</td><td>61.8%</td></tr>
+            </tbody>
+          </table>
+          <p class="table-note">语料从 2,830 块扩到 8,681 块后，RRF 的 line R@5 一度掉到 70.0%。在 8,681 块上重扫 280 组参数，改成 rrf_k=10 / candidate_k=40 后回到 75.0%，逐题对比只多命中 1 题、没有回退。</p>
+        </div>
+        <div>
+          <p class="note"><strong>为什么不直接上向量库。</strong>8,681 条向量做暴力检索只要毫秒级，进程内就能算完。引入向量库会多一次网络往返、多一套索引一致性要维护，而评测集只有 20 道可答题——先把可解释的基线跑稳，再谈基础设施。</p>
+          <p class="note" style="margin-top:22px"><strong>为什么不是「混合一定更好」。</strong>RRF 只吃排名、不看分数：某一路排第 2 的强命中，可能被「两路都排第 20」的弱相关块挤出 Top-5。这是 v1.1 真实发生的失败，也是后来加深候选池的直接原因。</p>
+        </div>
+      </div>
+
+      <p class="pull">
+        混合检索的理由不是「两个都比一个强」，而是两类错误不重叠。
+        <small>单跳释义：dense 88% vs BM25 38% · 应用推理：dense 50% vs BM25 75%（RRF line Recall@5）</small>
+      </p>
+    </div>
+  </section>
+
+  <!-- 卷二 · 对话 -->
+  <section class="section" id="dialogue">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">卷二 · 对话</p>
+        <div>
+          <h2 class="sec-title">每一句，都有出处</h2>
+          <p class="sec-lede">回答逐字流出，引用可以展开到原文。多轮追问先改写成不依赖上文的独立问题，历史只用来消解指代，不拿来当证据。</p>
+        </div>
+      </header>
+
+      <div class="split split--7-5">
+        <figure class="gifplate">
+          <img src="demo/demo-chat.gif" alt="古籍问答录屏：提问后检索，随后逐字作答，再展开引用查看原文" width="900" height="563" loading="lazy">
+          <figcaption>
+            <p class="note" style="border:0;padding:0">录屏对象是部署后的实例，走真实接口，没有 mock、没有预填回答。等待段按 4 倍速压缩，正文逐字出现的部分接近实时。</p>
+            <a class="plate__link" href="demo/demo-chat.mp4">看原始录屏（mp4，26 秒）↗</a>
+          </figcaption>
+        </figure>
+
+        <div class="split__copy">
+          <ul class="facts">
+            <li><span>整条回答</span><b>18.5<small>秒</small></b></li>
+            <li><span>模型调用</span><b>1<small>次</small></b></li>
+            <li><span>引用</span><b>2<small>处，可展开</small></b></li>
+          </ul>
+          <blockquote class="quote" style="margin-top:30px">
+            <p>「进神与退神的分法，古籍中有两种主要说法。」</p>
+            <p class="quote__cite"><span class="chip">1 五行精纪</span><span class="chip">2 三命通会</span></p>
+          </blockquote>
+          <p style="margin-top:22px">引用不是装饰。点开每一条，看到的是检索命中的原块；引用编号必须落在本轮工具实际返回的 <span class="mono">chunk_id</span> 白名单里，越界即判不合规。</p>
+          <p>多轮场景下，每轮引用只来自本轮检索，历史里出现过的旧结论不能当本轮证据——换书追问时尤其重要。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卷三 · 查证 -->
+  <section class="section" id="agent">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">卷三 · 查证</p>
+        <div>
+          <h2 class="sec-title">让它自己翻书</h2>
+          <p class="sec-lede">固定单轮检索的瓶颈，是一个全局融合权重只能对题型取平均。v1.2 起改成 ReAct 工具调用：模型自己决定查什么、查哪本书、够不够。</p>
+        </div>
+      </header>
+
+      <div class="split split--5-7">
+        <div class="split__copy">
+          <p>「查证后回答」模式下，Agent 先检索「七杀」8 条，再检索「偏官」8 条，然后才成文。工具轨迹实时显示，结束后可以收起。</p>
+          <ul class="trace">
+            <li><span>Agent 检索「七杀」</span><b>8 条</b></li>
+            <li><span>Agent 检索「偏官」</span><b>8 条</b></li>
+            <li><span>成文 · 2 次模型调用</span><b>7.3 秒</b></li>
+            <li><span>引用</span><b>6 处</b></li>
+          </ul>
+          <p style="margin-top:22px">工具协议已从手写 JSON 换到原生 function calling，单/多 Agent 共用 6 步预算。工具实际返回过的 <span class="mono">chunk_id</span> 才能进引用；走满预算还没收口，就按「证据不足」拒答。</p>
+          <p class="table-note" style="margin-top:20px">30 题开发集：单 Agent 23/30，多 Agent 26/30。这是 development set，不是盲测集；26/30 不能外推成「换一批题也有 87%」。</p>
+        </div>
+
+        <figure class="plate">
+          <span class="plate__tab">图版 二</span>
+          <img src="demo/15-agent-trace.png" alt="查证后回答界面：Agent 检索七杀与偏官各 8 条，回答 7.3 秒、2 次模型调用、6 处引用" width="1440" height="900" loading="lazy">
+          <figcaption>「七杀有制和无制差在哪？」——先查证，再成文。引用 6 处，来自《渊海子平》《千里命稿》《神峰通考》《三命通会》。</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卷四 · 排盘 -->
+  <section class="section" id="fortune">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">卷四 · 排盘</p>
+        <div>
+          <h2 class="sec-title">先算盘，再解读</h2>
+          <p class="sec-lede">排盘是确定性的历法 / 天文计算，不经过模型。模型只解释已经算出来的盘面，不重算、不改盘。</p>
+        </div>
+      </header>
+
+      <div class="split split--5-7">
+        <div class="split__copy">
+          <ul class="fortune-list">
+            <li><b>八字</b><span>四柱、藏干、十神、纳音、五行计数与大运。按节气定月，按东八区换算时辰。</span></li>
+            <li><b>星盘</b><span>整宫制轮盘，上升 / 天顶、十行星落座与宫位、元素与三分类。经纬度可精确到出生地。</span></li>
+            <li><b>塔罗</b><span>过去 / 现在 / 未来三张，逆位标注；seed 可复现，同一 seed 永远同一副牌。</span></li>
+          </ul>
+          <p style="margin-top:26px">同样是输入，永远是同一个盘面。模型看到的是算好的结果，它不能改数字，也不能自己「感觉」一个上升星座。</p>
+          <p class="note" style="margin-top:22px">解读是一次单独的模型调用，不流式返回。等待约 9 秒，录屏里压缩到 4 秒——这是录制时唯一的时间轴处理。</p>
+        </div>
+
+        <figure class="plate">
+          <span class="plate__tab">图版 三</span>
+          <img src="demo/12-astro-chart.png" alt="星盘页：整宫制轮盘，显示上升巨蟹 18 度、天顶白羊 11 度，以及十颗行星的落座与宫位" width="1440" height="900" loading="lazy">
+          <figcaption>整宫制星盘 · 1990-05-17 09:30 · 广州（23.13N, 113.26E）。上升、天顶、十颗行星与主要相位全部由代码计算。</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 卷五 · 并发 -->
+  <section class="section section--dark" id="load">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">卷五 · 并发</p>
+        <div>
+          <h2 class="sec-title">200 条连接，20 个回答</h2>
+          <p class="sec-lede">连接与回答分开验收：<span class="mono">/v1/events</span> 只发心跳，不占回答槽；20 个回答由 Redis 全局槽控制，槽满立即 429，不排队。</p>
+        </div>
+      </header>
+
+      <div class="bignums">
+        <div><b>200<em>/200</em></b><p>SSE 连接保持 10 分钟 · 0 错误</p></div>
+        <div><b>480<em>/482</em></b><p>同期 20 并发回答 · 错误率 0.41%</p></div>
+        <div><b>1.01<em>s</em></b><p>首 token P95</p></div>
+        <div><b>4.30<em>s</em></b><p>整条回答 P95</p></div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="ledger ledger--stack">
+          <caption>并发验收 · 2026-11-08 · 2 worker + Redis · 同一次 10 分钟窗口</caption>
+          <thead>
+            <tr><th>验收项</th><th>结果</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>200 条 SSE 连接</td><td>200/200 · 7,800 次心跳 · 建连 P95 322 ms</td></tr>
+            <tr class="hl"><td>同期 20 并发回答</td><td>480/482 成功 · 错误率 0.41% · TTFB P95 1.01 s · 完成 P95 4.30 s</td></tr>
+            <tr><td>检索 16 并发</td><td>130.5 QPS · P95 176.7 ms · 0 错误</td></tr>
+            <tr><td>30 分钟 soak</td><td>RSS 5,096.0 → 5,098.3 MB（+0.05%）· 23,800 次心跳</td></tr>
+            <tr><td>21 并发（故意超卖）</td><td>112 × 200 + 6 × 429 · 服务未被拖垮</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="dark-note">
+        <strong>边界：</strong>测试机是 8 核 CloudStudio，回答压测带 <span class="mono">X-No-Cache: 1</span> 走真实模型；200 连接挂在只发心跳的 <span class="mono">/v1/events</span>，不是 200 条并发回答。那 2 条 429 来自本服务的全局闸门，不是模型报错；DeepSeek 上游曾出现瞬时限流，间隔后复测 0 错误。<strong>这不是 SLA，是一组可复现的验收数字。</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- 卷末 · 局限 -->
+  <section class="section" id="limits">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">卷末 · 局限</p>
+        <div>
+          <h2 class="sec-title">没做到的，也写下来</h2>
+          <p class="sec-lede">评测集是 development set，不是盲测集。下面这些结论都有边界；把它们一起放出来，比只挑好看的数字更接近真实。</p>
+        </div>
+      </header>
+
+      <ol class="limits">
+        <li>
+          <b>01</b>
+          <div>
+            <h3>30 条、单人标注</h3>
+            <p>1 道题就是 5 个百分点；跨书对比只有 3 道、多跳只有 1 道。26/30 只能读作「在这套题上迭代后的结果」，不能外推成换一批题也有 87%。</p>
+          </div>
+        </li>
+        <li>
+          <b>02</b>
+          <div>
+            <h3>评测只覆盖前 16 部标点古籍</h3>
+            <p>索引已收 45 部（16 部标点 + 29 部无标点），但 29 部无标点组还没有对应题目，真实覆盖率尚未测量。75.0% 只代表「问的书在库里」时的检索质量。</p>
+          </div>
+        </li>
+        <li>
+          <b>03</b>
+          <div>
+            <h3>只校验引用编号，不校验忠实度</h3>
+            <p>出口能拦住「零引用」「编号越界」，但拦不住「这段原文并不支持这句话」。4/19 题回答没有引用到标注块；RAGAS faithfulness 与人工抽检还没做。</p>
+          </div>
+        </li>
+        <li>
+          <b>04</b>
+          <div>
+            <h3>口语改写是最弱题型</h3>
+            <p>line Recall@5 只有 50%：「栋梁 / 花草」这类转述在古籍原文里没有字面对应，查询侧还没做术语映射。这不是模型大小的问题。</p>
+          </div>
+        </li>
+        <li>
+          <b>05</b>
+          <div>
+            <h3>多 Agent 不是免费的</h3>
+            <p>30 题上 26/30 优于单 Agent 的 23/30，但 P50 60.2 秒、每题 7.6 次调用；多轮场景反而 18/20，低于单 Agent 的 19/20。加角色没有带来额外收益。</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 附录 -->
+  <section class="close" id="stack">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="sec-no">附录</p>
+        <div>
+          <h2 class="sec-title">工程与入口</h2>
+        </div>
+      </header>
+
+      <p class="stackline">
+        <b>FastAPI</b> · SSE 逐 token · <b>Redis</b> 全局 20 槽 · <b>Postgres</b> 业务库 · <b>BGE-M3</b> 向量 · <b>BM25</b> 倒排 · <b>DeepSeek</b> function calling · <b>React</b> 前端 · Docker Compose · pytest（<b>206 passed / 2 skipped</b>）
+      </p>
+
+      <div class="linkgrid">
+        <a href="https://github.com/true-12138/mingli-rag" target="_blank" rel="noopener">
+          <b>源码仓库</b><span>README、架构、评测与部署说明</span><em>github.com/true-12138/mingli-rag ↗</em>
+        </a>
+        <a href="https://github.com/true-12138/mingli-rag/blob/main/eval/results_8681_tuned.csv" target="_blank" rel="noopener">
+          <b>检索评测明细</b><span>8,681 块上的逐题结果</span><em>eval/results_8681_tuned.csv ↗</em>
+        </a>
+        <a href="https://github.com/true-12138/mingli-rag/blob/main/eval/REPORT.md" target="_blank" rel="noopener">
+          <b>Agent A/B 报告</b><span>单 Agent 与多 Agent 的逐题对照</span><em>eval/REPORT.md ↗</em>
+        </a>
+        <a href="https://github.com/true-12138/mingli-rag/blob/main/eval/refusal_results.csv" target="_blank" rel="noopener">
+          <b>拒答评测</b><span>10 条语料外问题的原始回答</span><em>eval/refusal_results.csv ↗</em>
+        </a>
+        <a href="https://github.com/true-12138/mingli-rag/tree/main/loadtest" target="_blank" rel="noopener">
+          <b>压测脚本</b><span>200 连接与 20 并发的复现方法</span><em>loadtest/ ↗</em>
+        </a>
+        <a href="https://github.com/true-12138/mingli-rag/blob/main/deploy/VPS.md" target="_blank" rel="noopener">
+          <b>部署清单</b><span>Docker Compose、Nginx、HTTPS 与隧道</span><em>deploy/VPS.md ↗</em>
+        </a>
+      </div>
+
+      <div class="footer">
+        <p>
+          本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；排盘是确定性的历法 / 天文计算；解读属于文化娱乐内容，不是预测，也不构成医疗、法律、投资或人生决策建议。提示词明确禁止把古代概念套到现代生活（科举 ≠ 考研、田宅 ≠ 商品房、官星 ≠ 考公），检索不到依据就拒答。
+        </p>
+        <span class="seal" aria-hidden="true">问</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('[data-rail]'));
+  var sections = links.map(function (a) { return document.getElementById(a.getAttribute('data-rail')); }).filter(Boolean);
+  if ('IntersectionObserver' in window) {
+    var so = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('data-rail') === e.target.id); });
+        }
+      });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    sections.forEach(function (s) { so.observe(s); });
+  }
+})();
+</script>
+</body>
+</html>
