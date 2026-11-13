@@ -2,7 +2,14 @@
 // 这里展示的是模型按「用户明确说过」抽出来的内容，不是聊天记录本身。
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ApiError, deleteMemory, listMemories, type Memory } from "../api";
+import {
+  ApiError,
+  confirmMemory,
+  deleteMemory,
+  listMemories,
+  rejectMemory,
+  type Memory,
+} from "../api";
 import { MenuIcon } from "../components/icons";
 import { formatWhen } from "../format";
 
@@ -48,6 +55,24 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
     }
   };
 
+  const resolvePending = async (memory: Memory, accept: boolean) => {
+    try {
+      const next = accept
+        ? await confirmMemory(memory.id, memory.version)
+        : await rejectMemory(memory.id, memory.version);
+      setMemories((prev) => prev.map((item) => (item.id === next.id ? next : item)));
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "操作失败，请再试一次",
+      );
+      // 409：这条记忆已经在别的标签页变过了，重新读一次让用户看到最新状态
+      if (err instanceof ApiError && err.status === 409) void load();
+    }
+  };
+
+  const pendingCount = memories.filter((item) => item.status === "pending").length;
+
   return (
     <div className="page">
       <header className="page__head">
@@ -69,7 +94,9 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
           </div>
           <div className="page__aside">
             <span className="page__count">{memories.length}</span>
-            <span className="page__count-label">条记忆</span>
+            <span className="page__count-label">
+              条记忆{pendingCount > 0 ? ` · ${pendingCount} 条待确认` : ""}
+            </span>
           </div>
         </div>
       </header>
@@ -110,6 +137,30 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
                       <span className="mem__when">{formatWhen(memory.updated_at)}</span>
                     </div>
                     <p className="mem__value">{memory.value}</p>
+                    {memory.status === "pending" && memory.pending_value && (
+                      <div className="mem__pending">
+                        <p className="mem__pending-label">
+                          后来又说要改成（确认前仍按上面的值回答）：
+                        </p>
+                        <p className="mem__pending-value">{memory.pending_value}</p>
+                        <div className="mem__pending-actions">
+                          <button
+                            type="button"
+                            className="mem__btn mem__btn--accept"
+                            onClick={() => void resolvePending(memory, true)}
+                          >
+                            确认改
+                          </button>
+                          <button
+                            type="button"
+                            className="mem__btn"
+                            onClick={() => void resolvePending(memory, false)}
+                          >
+                            保持原样
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <button
                       type="button"
                       className={`mem__del${confirming ? " mem__del--armed" : ""}`}

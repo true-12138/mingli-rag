@@ -84,7 +84,18 @@ class MemoryOut(BaseModel):
     key: str
     value: str
     confidence: float
+    # active / pending；pending 表示 value 之外还有一个新值在等用户确认
+    status: str = "active"
+    pending_value: str | None = None
+    pending_confidence: float | None = None
+    version: int = 1
     updated_at: datetime
+
+
+class MemoryAction(BaseModel):
+    """确认/忽略时带上页面读到的版本；不一致就返回 409，不硬写。"""
+
+    version: int | None = Field(default=None, ge=1)
 
 
 class FeedbackCreate(BaseModel):
@@ -144,6 +155,8 @@ class ConversationChatResponse(BaseModel):
     usage: dict[str, Any] | None = None
     memories_used: int = 0
     memories_written: int = 0
+    # 本次写入里有多少条是「覆盖已有值」，正在等用户确认
+    memories_pending: int = 0
     user_message_id: int
     assistant_message_id: int
 
@@ -341,17 +354,82 @@ def list_memories(
 ) -> list[dict[str, Any]]:
     """列出当前匿名用户明确说过的长期偏好/事实。"""
     user = repo.get_or_create_user(session, anonymous_id)
-    return [
-        {
-            "id": m.id,
-            "kind": m.kind,
-            "key": m.key,
-            "value": m.value,
-            "confidence": m.confidence,
-            "updated_at": m.updated_at,
-        }
-        for m in repo.list_memories(session, user.id, limit=limit)
-    ]
+    return [_memory_out(m) for m in repo.list_memories(session, user.id, limit=limit)]
+
+
+@router.post("/memories/{memory_id}/confirm", response_model=MemoryOut)
+def confirm_memory(
+    memory_id: int,
+    req: MemoryAction | None = None,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """确认新值：pending_value 变成生效值。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    try:
+        memory = repo.confirm_memory(
+            session, user.id, memory_id,
+            expected_version=req.version if req else None,
+        )
+    except repo.MemoryConflict as exc:
+        raise _memory_conflict(exc) from exc
+    if memory is None:
+        raise HTTPException(status_code=404, detail="记忆不存在")
+    return _memory_out(memory)
+
+
+@router.post("/memories/{memory_id}/reject", response_model=MemoryOut)
+def reject_memory(
+    memory_id: int,
+    req: MemoryAction | None = None,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """忽略新值：继续用原来的生效值。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    try:
+        memory = repo.reject_memory(
+            session, user.id, memory_id,
+            expected_version=req.version if req else None,
+        )
+    except repo.MemoryConflict as exc:
+        raise _memory_conflict(exc) from exc
+    if memory is None:
+        raise HTTPException(status_code=404, detail="记忆不存在")
+    return _memory_out(memory)
+
+
+def _memory_out(memory) -> dict[str, Any]:
+    return {
+        "id": memory.id,
+        "kind": memory.kind,
+        "key": memory.key,
+        "value": memory.value,
+        "confidence": memory.confidence,
+        "status": repo.memory_status(memory),
+        "pending_value": memory.pending_value,
+        "pending_confidence": memory.pending_confidence,
+        "version": memory.version,
+        "updated_at": memory.updated_at,
+    }
+
+
+def _memory_conflict(exc: repo.MemoryConflict) -> HTTPException:
+    """409 + 库里的最新状态，前端据此刷新页面而不是弹一个无法处理的错误。"""
+    current = exc.current
+    # HTTPException.detail 会直接 json.dumps，datetime 要在这里先转成字符串
+    payload = (
+        MemoryOut(**_memory_out(current)).model_dump(mode="json")
+        if current is not None
+        else None
+    )
+    return HTTPException(
+        status_code=409,
+        detail={
+            "message": "记忆已被其他会话修改，请刷新后重试",
+            "current": payload,
+        },
+    )
 
 
 @router.delete("/memories/{memory_id}", status_code=204)
@@ -577,6 +655,7 @@ def _persist_turn(session: Session, conv: Conversation, user, req, result: dict,
         "usage": tokens,
         "memories_used": len(memories),
         "memories_written": len(written),
+        "memories_pending": sum(1 for m in written if getattr(m, "pending_value", None)),
         "user_message_id": user_msg.id,
         "assistant_message_id": assistant_msg.id,
     })

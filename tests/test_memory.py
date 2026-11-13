@@ -113,10 +113,112 @@ def test_upsert_memory_updates_in_place(session, user, conv):
         session, user.id, "preference", "preferred_book", "《穷通宝鉴》"
     )
     assert first.id == second.id
-    assert second.value == "《穷通宝鉴》"
+    # 覆盖已有值不直接生效：新值进 pending，等用户确认
+    assert second.value == "《三命通会》"
+    assert second.pending_value == "《穷通宝鉴》"
+    assert repo.memory_status(second) == "pending"
     assert session.query(UserMemory).count() == 1
     assert repo.upsert_memory(session, user.id, "bad", "k", "v") is None
     assert repo.upsert_memory(session, user.id, "fact", "k", "   ") is None
+
+
+def test_first_write_is_active_and_same_value_is_idempotent(session, user):
+    first = repo.upsert_memory(session, user.id, "preference", "style", "回答简短")
+    assert repo.memory_status(first) == "active"
+    assert first.version == 1
+
+    # 同一偏好被重复抽取：不制造待确认项，也不涨版本
+    again = repo.upsert_memory(session, user.id, "preference", "style", "回答简短")
+    assert repo.memory_status(again) == "active"
+    assert again.version == 1
+
+
+def test_confirm_and_reject_pending_value(session, user):
+    memory = repo.upsert_memory(session, user.id, "preference", "style", "回答简短")
+    repo.upsert_memory(session, user.id, "preference", "style", "回答详细")
+
+    confirmed = repo.confirm_memory(session, user.id, memory.id)
+    assert confirmed.value == "回答详细"
+    assert confirmed.pending_value is None
+    assert confirmed.version == 3
+
+    # 没有待确认项时，确认是幂等的
+    assert repo.confirm_memory(session, user.id, memory.id).value == "回答详细"
+
+    repo.upsert_memory(session, user.id, "preference", "style", "用古文腔")
+    rejected = repo.reject_memory(session, user.id, memory.id)
+    assert rejected.value == "回答详细"
+    assert rejected.pending_value is None
+    assert repo.memory_status(rejected) == "active"
+
+
+def test_stale_version_raises_conflict(session, user):
+    memory = repo.upsert_memory(session, user.id, "fact", "city", "杭州")
+    repo.upsert_memory(session, user.id, "fact", "city", "南京")  # version 2
+
+    with pytest.raises(repo.MemoryConflict) as excinfo:
+        repo.upsert_memory(
+            session, user.id, "fact", "city", "成都", expected_version=1
+        )
+    assert excinfo.value.current.value == "杭州"
+
+    with pytest.raises(repo.MemoryConflict):
+        repo.confirm_memory(session, user.id, memory.id, expected_version=1)
+    # 冲突没有写坏任何东西
+    session.expire_all()
+    fresh = repo.get_memory(session, user.id, memory.id)
+    assert fresh.value == "杭州" and fresh.pending_value == "南京"
+
+
+def test_concurrent_upserts_do_not_lose_updates(tmp_path):
+    """8 个线程同时覆盖同一条记忆：生效值不能被悄悄改掉，版本要能对上账。"""
+    import threading
+
+    engine = make_engine(
+        "sqlite:///" + str(tmp_path / "conc.db").replace("\\", "/")
+    )
+    Base.metadata.create_all(engine)
+    with Session(engine) as s:
+        u = User(anonymous_id="conc-user")
+        s.add(u)
+        s.commit()
+        s.refresh(u)
+        repo.upsert_memory(s, u.id, "fact", "city", "杭州")
+        user_id = u.id
+
+    values = ["城市%d" % i for i in range(8)]
+    errors = []
+
+    def worker(value):
+        try:
+            with Session(engine) as s:
+                repo.upsert_memory(s, user_id, "fact", "city", value)
+        except Exception as exc:  # noqa: BLE001 - 测试要把线程里的异常带回主线程
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker, args=(v,)) for v in values]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == []
+    with Session(engine) as s:
+        row = repo.list_memories(s, user_id)[0]
+        # 覆盖已有值只进 pending：已生效的「杭州」不能被并发写改掉
+        assert row.value == "杭州"
+        assert row.pending_value in values
+        # 1 次插入 + 8 次成功覆盖，没有丢更新时版本正好是 9
+        assert row.version == 9
+
+
+def test_confirm_only_own_memory(session, user):
+    mine = repo.upsert_memory(session, user.id, "fact", "city", "杭州")
+    other = User(anonymous_id="other-confirm")
+    session.add(other)
+    session.commit()
+    assert repo.confirm_memory(session, other.id, mine.id) is None
+    assert repo.reject_memory(session, other.id, mine.id) is None
 
 
 def test_list_and_delete_memory_only_own(session, user):

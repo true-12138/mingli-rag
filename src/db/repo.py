@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -360,10 +360,37 @@ def pending_negative_feedback(
 # ---------- 长期记忆 ----------
 
 MEMORY_KINDS = ("preference", "fact")
+MEMORY_UPDATE_RETRIES = 3
 
 
-def list_memories(session: Session, user_id: int, limit: int = 12) -> list[UserMemory]:
-    """按最近更新时间取用户的长期记忆。"""
+class MemoryConflict(Exception):
+    """乐观锁冲突：调用方持有的 version 已经不是库里最新的。
+
+    `current` 是冲突发生时库里的那一行，接口层用它告诉前端「现在是什么」。
+    """
+
+    def __init__(self, current: UserMemory | None = None):
+        super().__init__("memory version conflict")
+        self.current = current
+
+
+def memory_status(memory: UserMemory) -> str:
+    """对外暴露的状态由 pending_value 推导，避免 status 和值不一致。"""
+    return "pending" if memory.pending_value else "active"
+
+
+def _clamp_confidence(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def list_memories(
+    session: Session, user_id: int, limit: int = 12
+) -> list[UserMemory]:
+    """按最近更新时间取用户的长期记忆。
+
+    返回的行里 `value` 永远是已生效的值；`pending_value` 非空只表示
+    「有个新值在等确认」，不会进 prompt。所以这里不需要按状态过滤。
+    """
     return list(
         session.scalars(
             select(UserMemory)
@@ -371,6 +398,16 @@ def list_memories(session: Session, user_id: int, limit: int = 12) -> list[UserM
             .order_by(UserMemory.updated_at.desc())
             .limit(limit)
         ).all()
+    )
+
+
+def get_memory(session: Session, user_id: int, memory_id: int) -> UserMemory | None:
+    """按 ID 取记忆，同时校验归属。"""
+    return session.scalar(
+        select(UserMemory).where(
+            UserMemory.id == memory_id,
+            UserMemory.user_id == user_id,
+        )
     )
 
 
@@ -383,11 +420,21 @@ def upsert_memory(
     *,
     source_conversation_id: str | None = None,
     confidence: float = 0.5,
+    expected_version: int | None = None,
     commit: bool = True,
 ) -> UserMemory | None:
-    """同一 (user, kind, key) 只留一条；新值覆盖旧值。
+    """写入一条记忆；同一 (user, kind, key) 只留一条。
 
-    输入在写库前再校验一次：模型抽出来的字段不能直接信。
+    三条边界：
+    1. **首次写入直接生效**——没有旧值可覆盖，不需要确认，正常使用不受打扰。
+    2. **覆盖已有值不直接生效**——新值写进 `pending_value`，`value` 保持原样，
+       等用户确认。这样模型听错一句话不会当场改掉用户之前设定好的偏好。
+    3. **并发写不丢更新**——UPDATE 带 `WHERE version = 读到的版本`；rowcount=0
+       说明别人先改了，重新读一遍再判断（最多 3 次）。
+
+    `expected_version` 供接口层做显式的乐观锁校验：传了且和库里不一致就抛
+    `MemoryConflict`，不写入。
+
     返回 None 表示这条记忆不合法，被丢弃。
     """
     kind = (kind or "").strip()
@@ -395,44 +442,159 @@ def upsert_memory(
     value = (value or "").strip()[:500]
     if kind not in MEMORY_KINDS or not key or not value:
         return None
+    confidence = _clamp_confidence(confidence)
 
-    memory = session.scalar(
-        select(UserMemory).where(
-            UserMemory.user_id == user_id,
-            UserMemory.kind == kind,
-            UserMemory.key == key,
+    memory: UserMemory | None = None
+    for _ in range(MEMORY_UPDATE_RETRIES):
+        memory = session.scalar(
+            select(UserMemory).where(
+                UserMemory.user_id == user_id,
+                UserMemory.kind == kind,
+                UserMemory.key == key,
+            )
         )
-    )
+
+        if memory is None:
+            if expected_version is not None:
+                raise MemoryConflict(None)
+            # 用保存点包住 INSERT：两个请求同时首次写入时，唯一约束只让一个成功，
+            # 失败方回滚到保存点后重新读，转成「待确认」，不会拖垮整个事务
+            # （remember_from_turn 一轮可能写多条，前面几条不能跟着回滚）。
+            savepoint = session.begin_nested()
+            memory = UserMemory(
+                user_id=user_id,
+                kind=kind,
+                key=key,
+                value=value,
+                source_conversation_id=source_conversation_id,
+                confidence=confidence,
+                version=1,
+            )
+            session.add(memory)
+            try:
+                session.flush()
+            except IntegrityError:
+                savepoint.rollback()
+                continue
+            savepoint.commit()
+            if commit:
+                session.commit()
+                session.refresh(memory)
+            return memory
+
+        if expected_version is not None and memory.version != expected_version:
+            raise MemoryConflict(memory)
+
+        # 值没变：重复抽取同一偏好很常见，不制造一条待确认项。
+        if memory.value == value:
+            if commit:
+                session.commit()
+            return memory
+
+        current_version = int(memory.version or 1)
+        result = session.execute(
+            update(UserMemory)
+            .where(
+                UserMemory.id == memory.id,
+                UserMemory.version == current_version,
+            )
+            .values(
+                pending_value=value,
+                pending_confidence=confidence,
+                version=current_version + 1,
+                updated_at=utcnow(),
+            )
+            .execution_options(synchronize_session=False)
+        )
+        if result.rowcount:  # 抢到了这个版本
+            session.expire(memory)
+            if commit:
+                session.commit()
+                session.refresh(memory)
+            return memory
+        # 版本被别的写入抢先了：吹掉本地缓存，重新读最新状态再决定。
+        session.expire_all()
+
+    raise MemoryConflict(memory)
+
+
+def _transition_pending(
+    session: Session,
+    user_id: int,
+    memory_id: int,
+    *,
+    accept: bool,
+    expected_version: int | None = None,
+) -> UserMemory | None:
+    """确认或忽略一条待确认的新值；两个入口共用同一套版本校验。"""
+    memory = get_memory(session, user_id, memory_id)
     if memory is None:
-        memory = UserMemory(
-            user_id=user_id,
-            kind=kind,
-            key=key,
-            value=value,
-            source_conversation_id=source_conversation_id,
-            confidence=max(0.0, min(1.0, float(confidence))),
+        return None
+    if expected_version is not None and memory.version != expected_version:
+        raise MemoryConflict(memory)
+    # 没有待确认项：重复点击确认/忽略当作幂等成功，不报错。
+    if not memory.pending_value:
+        return memory
+
+    current_version = int(memory.version or 1)
+    values: dict = {
+        "pending_value": None,
+        "pending_confidence": None,
+        "version": current_version + 1,
+        "updated_at": utcnow(),
+    }
+    if accept:
+        values["value"] = memory.pending_value
+        values["confidence"] = (
+            memory.pending_confidence
+            if memory.pending_confidence is not None
+            else memory.confidence
         )
-        session.add(memory)
-    else:
-        memory.value = value
-        memory.source_conversation_id = source_conversation_id
-        memory.confidence = max(0.0, min(1.0, float(confidence)))
-        memory.updated_at = utcnow()
-    session.flush()
-    if commit:
-        session.commit()
-        session.refresh(memory)
+
+    result = session.execute(
+        update(UserMemory)
+        .where(UserMemory.id == memory.id, UserMemory.version == current_version)
+        .values(**values)
+        .execution_options(synchronize_session=False)
+    )
+    session.expire(memory)
+    if not result.rowcount:
+        # 页面上的确认按钮点下去时，记忆已经被另一个标签页改过：拒绝而不是硬写。
+        raise MemoryConflict(get_memory(session, user_id, memory_id))
+    session.commit()
+    session.refresh(memory)
     return memory
+
+
+def confirm_memory(
+    session: Session,
+    user_id: int,
+    memory_id: int,
+    *,
+    expected_version: int | None = None,
+) -> UserMemory | None:
+    """确认待确认的新值，把它变成生效值。会 commit。"""
+    return _transition_pending(
+        session, user_id, memory_id, accept=True, expected_version=expected_version
+    )
+
+
+def reject_memory(
+    session: Session,
+    user_id: int,
+    memory_id: int,
+    *,
+    expected_version: int | None = None,
+) -> UserMemory | None:
+    """忽略待确认的新值，继续用原来的生效值。会 commit。"""
+    return _transition_pending(
+        session, user_id, memory_id, accept=False, expected_version=expected_version
+    )
 
 
 def delete_memory(session: Session, user_id: int, memory_id: int) -> bool:
     """删除一条属于该用户的记忆；不存在或不属于他就返回 False。"""
-    memory = session.scalar(
-        select(UserMemory).where(
-            UserMemory.id == memory_id,
-            UserMemory.user_id == user_id,
-        )
-    )
+    memory = get_memory(session, user_id, memory_id)
     if memory is None:
         return False
     session.delete(memory)

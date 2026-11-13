@@ -238,7 +238,14 @@ class UserMemory(Base):
     它不是聊天记录，也不是证据库：
     - 只用于个性化（比如「以后优先查《三命通会》」）；
     - 回答里的 citations 仍然只能来自本轮工具返回的 chunk；
-    - 同一 (user_id, kind, key) 只保留一条，新值覆盖旧值。
+    - 同一 (user_id, kind, key) 只保留一条。
+
+    写入不是无条件覆盖：
+    - `version` 是乐观锁，每次成功写入 +1；并发写时后到的那个条件 UPDATE 失败，
+      不会悄悄覆盖别人刚写进去的值。
+    - 覆盖一个**已有值**时，新值先放在 `pending_value` 里等用户确认；
+      `value` 始终是当前生效的值，所以 prompt 永远只用到确认过的记忆。
+      首次写入没有可覆盖的值，直接生效。
     """
 
     __tablename__ = "user_memories"
@@ -260,6 +267,11 @@ class UserMemory(Base):
         nullable=True,
     )
     confidence = Column(Float, nullable=False, default=0.5)
+    # 乐观锁版本号：UPDATE 带上 WHERE version = 读到的版本，rowcount=0 就是有人先改了。
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    # 待确认的新值。非空时 value 仍是生效值，prompt 不会读到这里。
+    pending_value = Column(Text, nullable=True)
+    pending_confidence = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
     updated_at = Column(
         DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow

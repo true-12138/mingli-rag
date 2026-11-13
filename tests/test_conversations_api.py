@@ -322,6 +322,68 @@ def test_memory_endpoints_and_chat_injection(client, monkeypatch):
     assert client.get("/v1/memories", headers=headers).json() == []
 
 
+def test_memory_overwrite_requires_confirmation(client, monkeypatch):
+    """覆盖已有值不会直接生效：接口返回 pending，用户确认后才变成答案依据。"""
+    values = ["《三命通会》", "《穷通宝鉴》"]
+
+    def fake_remember(session, user_id, conversation_id, question, answer,
+                      api_key=None, counter=None):
+        return [repo.upsert_memory(
+            session, user_id, "preference", "preferred_book", values.pop(0),
+            source_conversation_id=conversation_id,
+        )]
+
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+        return _rag_result()
+
+    monkeypatch.setattr(api_conversations.memory, "remember_from_turn", fake_remember)
+    monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
+
+    headers = {"X-Anonymous-Id": "anon-pending"}
+    conv = _create(client, anon="anon-pending")
+    for _ in range(2):
+        r = client.post(
+            f"/v1/conversations/{conv['id']}/chat",
+            json={"question": "记住：以后优先查这本书"},
+            headers=headers,
+        )
+        assert r.status_code == 200, r.text
+    assert r.json()["memories_pending"] == 1
+
+    listed = client.get("/v1/memories", headers=headers).json()
+    assert len(listed) == 1
+    memory = listed[0]
+    assert memory["value"] == "《三命通会》"
+    assert memory["pending_value"] == "《穷通宝鉴》"
+    assert memory["status"] == "pending"
+
+    # 页面拿的是旧版本（version=1）：确认请求必须被拒，而不是硬写
+    stale = client.post(
+        f"/v1/memories/{memory['id']}/confirm",
+        json={"version": 1},
+        headers=headers,
+    )
+    assert stale.status_code == 409
+    assert stale.json()["detail"]["current"]["pending_value"] == "《穷通宝鉴》"
+
+    confirmed = client.post(
+        f"/v1/memories/{memory['id']}/confirm",
+        json={"version": memory["version"]},
+        headers=headers,
+    )
+    assert confirmed.status_code == 200, confirmed.text
+    assert confirmed.json()["value"] == "《穷通宝鉴》"
+    assert confirmed.json()["status"] == "active"
+    assert confirmed.json()["pending_value"] is None
+
+    # 没有待确认项时，忽略是幂等的
+    rejected = client.post(
+        f"/v1/memories/{memory['id']}/reject", json={}, headers=headers
+    )
+    assert rejected.status_code == 200
+    assert rejected.json()["value"] == "《穷通宝鉴》"
+
+
 def _parse_sse(text):
     """把 SSE 文本拆成 [(event, data)]，忽略心跳注释行。"""
     import json as _json

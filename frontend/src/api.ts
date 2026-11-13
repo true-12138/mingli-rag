@@ -43,6 +43,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     try {
       const body = await resp.json();
       if (typeof body?.detail === "string") detail = body.detail;
+      else if (typeof body?.detail?.message === "string") detail = body.detail.message;
       else if (Array.isArray(body?.detail)) detail = "参数不合法";
     } catch {
       /* 非 JSON 错误体，用默认文案 */
@@ -111,6 +112,11 @@ export interface Memory {
   key: string;
   value: string;
   confidence: number;
+  // pending：value 之外还有一个新值在等确认；value 始终是生效值
+  status: "active" | "pending";
+  pending_value: string | null;
+  pending_confidence: number | null;
+  version: number;
   updated_at: string;
 }
 
@@ -226,6 +232,22 @@ export function listMemories(): Promise<Memory[]> {
 
 export function deleteMemory(id: number): Promise<void> {
   return request<void>(`/v1/memories/${id}`, { method: "DELETE" });
+}
+
+// 带上页面读到的 version：记忆已经在别的标签页被改过时后端返回 409，
+// 前端刷新而不是假装确认成功。
+export function confirmMemory(id: number, version?: number): Promise<Memory> {
+  return request<Memory>(`/v1/memories/${id}/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ version: version ?? null }),
+  });
+}
+
+export function rejectMemory(id: number, version?: number): Promise<Memory> {
+  return request<Memory>(`/v1/memories/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ version: version ?? null }),
+  });
 }
 
 export function drawBazi(input: BaziInput): Promise<BaziChart> {
