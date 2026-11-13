@@ -98,6 +98,28 @@ class MemoryAction(BaseModel):
     version: int | None = Field(default=None, ge=1)
 
 
+class PendingActionOut(BaseModel):
+    """一条等用户确认的工具调用。args 直接返回对象，前端不必再解析字符串。"""
+
+    id: int
+    tool: str
+    args: Any = None
+    reason: str | None = None
+    status: str = "pending"
+    created_at: datetime
+
+
+class ActionApproveOut(BaseModel):
+    # 明文令牌只出现这一次；过期后需要重新确认。
+    token: str
+    expires_at: datetime
+
+
+class ActionStateOut(BaseModel):
+    id: int
+    status: str
+
+
 class FeedbackCreate(BaseModel):
     rating: Literal[1, -1]
     reason: str | None = Field(default=None, max_length=2000)
@@ -119,6 +141,8 @@ class ConversationChatRequest(BaseModel):
     mode: Literal["rag", "agent", "multi"] = "rag"
     top_k: int = Field(5, ge=1, le=10)
     max_steps: int = Field(6, ge=1, le=10)
+    # 用户确认动作后拿到的一次性令牌；本次运行只放行与令牌绑定的那一个工具调用。
+    approvals: list[str] = Field(default_factory=list, max_length=5)
 
     @field_validator("question")
     @classmethod
@@ -157,6 +181,8 @@ class ConversationChatResponse(BaseModel):
     memories_written: int = 0
     # 本次写入里有多少条是「覆盖已有值」，正在等用户确认
     memories_pending: int = 0
+    # 模型提议但被权限层拦下的工具调用，已落库并带 id；确认接口按 id 操作
+    pending_actions: list[PendingActionOut] = Field(default_factory=list)
     user_message_id: int
     assistant_message_id: int
 
@@ -432,6 +458,93 @@ def _memory_conflict(exc: repo.MemoryConflict) -> HTTPException:
     )
 
 
+def _action_out(action) -> dict[str, Any]:
+    return {
+        "id": action.id,
+        "tool": action.tool,
+        "args": _loads(action.args_json, {}),
+        "reason": action.reason,
+        "status": action.status,
+        # done 事件是裸 JSON，不走 Pydantic；统一成 ISO 字符串，同步/流式同构。
+        "created_at": action.created_at.isoformat() if action.created_at else None,
+    }
+
+
+def _action_conflict(exc: repo.ActionConflict) -> HTTPException:
+    """动作已经被确认/拒绝/执行过：409 + 当前状态，让前端停止重复点击。"""
+    current = exc.current
+    payload = (
+        PendingActionOut(**_action_out(current)).model_dump(mode="json")
+        if current is not None
+        else None
+    )
+    return HTTPException(
+        status_code=409,
+        detail={
+            "message": "该动作状态已变化，请刷新后重试",
+            "current": payload,
+        },
+    )
+
+
+def _approval_callback(session: Session, user_id: int, tokens: list[str]):
+    """把请求里的一次性令牌包成 tool_loop 需要的 `approve(name, args) -> bool`。
+
+    令牌是在工具真正被调用时按需消费的，而不是请求一进来就全部作废：
+    模型这次可能没提议那个工具，令牌应当留到下一次运行继续可用。
+    命中一个就消费一个，同一个令牌在本次运行里不会被第二次放行。
+    """
+    remaining = [t for t in tokens if isinstance(t, str) and t.strip()]
+
+    def approve(name, args) -> bool:
+        for token in list(remaining):
+            if repo.consume_grant(session, user_id, token, name, args or {}):
+                remaining.remove(token)
+                return True
+        return False
+
+    return approve
+
+
+def _persist_pending_actions(
+    session: Session, user_id: int, conversation_id: str, items: Any
+) -> list[dict[str, Any]]:
+    """把 agent 带回来的待确认调用落库，返回带 id 的响应列表。
+
+    落库是增强能力：失败只记 warning 并跳过这一条，不能让已经生成的回答失败。
+    同一轮里重复的调用会命中 `create_pending_action` 的幂等逻辑，按 id 去重后只返回一次。
+    """
+    out: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        tool = str(item.get("tool") or "").strip()
+        if not tool:
+            continue
+        try:
+            action = repo.create_pending_action(
+                session,
+                user_id,
+                tool,
+                item.get("args") or {},
+                conversation_id=conversation_id,
+                reason=item.get("reason"),
+            )
+        except Exception:  # noqa: BLE001 - 待确认项落库失败不应影响主回答
+            logger.warning(
+                "pending action 落库失败 user=%s tool=%s", user_id, tool, exc_info=True
+            )
+            with contextlib.suppress(Exception):
+                session.rollback()
+            continue
+        if action.id in seen:
+            continue
+        seen.add(action.id)
+        out.append(_action_out(action))
+    return out
+
+
 @router.delete("/memories/{memory_id}", status_code=204)
 def delete_memory(
     memory_id: int,
@@ -443,6 +556,52 @@ def delete_memory(
     if not repo.delete_memory(session, user.id, memory_id):
         raise HTTPException(status_code=404, detail="记忆不存在")
     return Response(status_code=204)
+
+
+@router.get("/actions", response_model=list[PendingActionOut])
+def list_actions(
+    limit: int = Query(default=20, ge=1, le=100),
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> list[dict[str, Any]]:
+    """列出当前用户仍在等待确认的工具调用，最新的在前。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    return [_action_out(a) for a in repo.list_pending_actions(session, user.id, limit=limit)]
+
+
+@router.post("/actions/{action_id}/approve", response_model=ActionApproveOut)
+def approve_action(
+    action_id: int,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """确认动作，返回一次性令牌；下一次 chat 请求把它放进 `approvals`。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    try:
+        approved = repo.approve_action(session, user.id, action_id)
+    except repo.ActionConflict as exc:
+        raise _action_conflict(exc) from exc
+    if approved is None:
+        raise HTTPException(status_code=404, detail="动作不存在")
+    action, token = approved
+    return {"token": token, "expires_at": action.expires_at}
+
+
+@router.post("/actions/{action_id}/reject", response_model=ActionStateOut)
+def reject_action(
+    action_id: int,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """拒绝动作；拒绝后不会再生成令牌，旧的令牌也无法重放。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    try:
+        action = repo.reject_action(session, user.id, action_id)
+    except repo.ActionConflict as exc:
+        raise _action_conflict(exc) from exc
+    if action is None:
+        raise HTTPException(status_code=404, detail="动作不存在")
+    return {"id": action.id, "status": action.status}
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetailOut)
@@ -567,6 +726,10 @@ def chat_in_conversation(
     # 先落一条 running 记录：即使模型调用中途失败，数据库里也能看到这次运行。
     run = repo.create_run(session, conv, trace_id, req.mode, req.question)
     usage.reset()
+    # 令牌只在模型真的调用被拦工具时消费；没提议就留到下一次运行。
+    approval = (
+        _approval_callback(session, user.id, req.approvals) if req.approvals else None
+    )
 
     try:
         if req.mode == "rag":
@@ -575,10 +738,16 @@ def chat_in_conversation(
                 memories=memories,
             )
         elif req.mode == "agent":
-            result = agent.agent_answer(
-                req.question, max_steps=req.max_steps, api_key=key, history=history,
-                memories=memories,
-            )
+            agent_kwargs: dict[str, Any] = {
+                "max_steps": req.max_steps,
+                "api_key": key,
+                "history": history,
+                "memories": memories,
+            }
+            # 没有令牌时不传 approvals，保持和测试/旧调用方的签名兼容。
+            if approval is not None:
+                agent_kwargs["approvals"] = approval
+            result = agent.agent_answer(req.question, **agent_kwargs)
         else:
             result = agent_multi.agent_answer(
                 req.question, max_steps=req.max_steps, api_key=key, history=history,
@@ -629,6 +798,11 @@ def _persist_turn(session: Session, conv: Conversation, user, req, result: dict,
     repo.add_tool_calls(session, run, result.get("trace"), commit=False)
     session.commit()
 
+    # 待确认动作单独落库：它有自己的生命周期，确认/拒绝可能在后续请求里发生。
+    persisted_actions = _persist_pending_actions(
+        session, user.id, conv.id, result.get("pending_actions")
+    )
+
     written = []
     try:
         written = memory.remember_from_turn(
@@ -656,6 +830,7 @@ def _persist_turn(session: Session, conv: Conversation, user, req, result: dict,
         "memories_used": len(memories),
         "memories_written": len(written),
         "memories_pending": sum(1 for m in written if getattr(m, "pending_value", None)),
+        "pending_actions": persisted_actions,
         "user_message_id": user_msg.id,
         "assistant_message_id": assistant_msg.id,
     })
@@ -707,6 +882,10 @@ async def chat_in_conversation_stream(
     )
     client = llm.default_client()
     queue: "asyncio.Queue[str | None]" = asyncio.Queue()
+    # 和同步路径一致：令牌在工具真正被调用时才消费。
+    approval = (
+        _approval_callback(session, user.id, req.approvals) if req.approvals else None
+    )
 
     def push(event: str, data: dict[str, Any]) -> None:
         queue.put_nowait(sse_frame(event, data))
@@ -728,10 +907,18 @@ async def chat_in_conversation_stream(
                     memories=memories, on_delta=on_delta, on_step=on_step, client=client,
                 )
             elif req.mode == "agent":
-                result = await agent.agent_answer_stream(
-                    req.question, max_steps=req.max_steps, api_key=key, history=history,
-                    memories=memories, on_delta=on_delta, on_step=on_step, client=client,
-                )
+                agent_kwargs: dict[str, Any] = {
+                    "max_steps": req.max_steps,
+                    "api_key": key,
+                    "history": history,
+                    "memories": memories,
+                    "on_delta": on_delta,
+                    "on_step": on_step,
+                    "client": client,
+                }
+                if approval is not None:
+                    agent_kwargs["approvals"] = approval
+                result = await agent.agent_answer_stream(req.question, **agent_kwargs)
             else:
                 result = await agent_multi.agent_answer_stream(
                     req.question, max_steps=req.max_steps, api_key=key, history=history,

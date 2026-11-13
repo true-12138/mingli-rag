@@ -344,6 +344,140 @@ def test_denied_side_effect_is_also_blocked_in_arun(mods):
     assert denial["requires_confirmation"] is True
 
 
+def test_approve_callback_allows_side_effect_with_exact_args(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ]},
+        {"content": '{"thought": "已执行"}'},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: (
+        executed.append((name, kw)) or {"ok": True, "result": {"deleted": 1}})
+    seen = []
+
+    def approve(name, args):
+        seen.append((name, args))
+        return True
+
+    content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], approve=approve,
+    )
+
+    assert seen == [("mcp__remote__delete_all", {"book": "全部"})]
+    assert executed == [("mcp__remote__delete_all", {"book": "全部"})]
+    assert used == 1
+    assert json.loads(messages[-1]["content"])["result"] == {"deleted": 1}
+    assert content == '{"thought": "已执行"}'
+
+
+def test_approve_callback_returning_false_keeps_tool_blocked(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ]},
+        {"content": '{"thought": "等确认"}'},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+
+    _content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], approve=lambda name, args: False,
+    )
+
+    assert executed == []
+    assert used == 1
+    denial = json.loads(messages[-1]["content"])
+    assert denial["requires_confirmation"] is True
+    assert denial["args"] == {"book": "全部"}
+
+
+def test_approve_callback_exception_fails_closed(mods):
+    """授权层异常不能变成静默放行，否则数据库抖动就会执行有副作用的工具。"""
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ]},
+        {"content": '{"thought": "等确认"}'},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+
+    def broken_approve(name, args):
+        raise RuntimeError("approval backend down")
+
+    _content, messages, _used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], approve=broken_approve,
+    )
+
+    assert executed == []
+    assert json.loads(messages[-1]["content"])["requires_confirmation"] is True
+
+
+def test_allow_side_effects_takes_priority_over_approve(mods):
+    """旧的整轮开关仍可独立放行，且不再需要调用授权回调。"""
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ]},
+        {"content": '{"thought": "已执行"}'},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+    approve_calls = []
+
+    def approve(name, args):
+        approve_calls.append(name)
+        return False
+
+    mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], allow_side_effects=True, approve=approve,
+    )
+
+    assert executed == ["mcp__remote__delete_all"]
+    assert approve_calls == []
+
+
+def test_arun_approve_callback_allows_side_effect(mods):
+    mod, _fake_rag, fake_tools = mods
+    api = FakeStreamAPI([
+        [_message(tool_calls=[
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ])],
+        [_delta('{"thought": "已执行"}'), _message('{"thought": "已执行"}')],
+    ])
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: (
+        executed.append((name, kw)) or {"ok": True, "result": {"deleted": 1}})
+
+    _content, messages, used = asyncio.run(mod.arun(
+        [{"role": "user", "content": "问"}], max_calls=2,
+        schemas=[{"type": "function"}], client=api,
+        approve=lambda name, args: args == {"book": "全部"},
+    ))
+
+    assert executed == [("mcp__remote__delete_all", {"book": "全部"})]
+    assert used == 1
+    assert json.loads(messages[-1]["content"])["result"] == {"deleted": 1}
+
+
 # --------------------------------------------------------------------------- #
 # token 预算
 # --------------------------------------------------------------------------- #

@@ -17,6 +17,7 @@ import {
   type Conversation,
   type DonePayload,
   type Mode,
+  type PendingAction,
   type RunSummary,
   type StageEvent,
   type StepEvent,
@@ -32,6 +33,7 @@ export interface Turn {
   status: TurnStatus;
   stages: StageEvent[];
   steps: StepEvent[];
+  actions: PendingAction[];
   citationIds: number[];
   citationMap: CitationRef[];
   canAnswer: boolean | null;
@@ -51,6 +53,7 @@ function emptyTurn(key: string, question: string, mode: Mode): Turn {
     status: "streaming",
     stages: [],
     steps: [],
+    actions: [],
     citationIds: [],
     citationMap: [],
     canAnswer: null,
@@ -71,6 +74,7 @@ function turnFromRun(run: RunSummary): Turn {
     status: run.status === "failed" ? "error" : "done",
     stages: [],
     steps: [],
+    actions: [],
     citationIds: run.citations_chunk_ids ?? [],
     citationMap: run.citation_map ?? [],
     canAnswer: run.can_answer,
@@ -175,7 +179,7 @@ export function useChat() {
   }, [activeId, hydrate]);
 
   const send = useCallback(
-    async (rawQuestion: string, mode: Mode) => {
+    async (rawQuestion: string, mode: Mode, approvals: string[] = []) => {
       const question = rawQuestion.trim();
       if (!question || streaming) return;
 
@@ -203,7 +207,12 @@ export function useChat() {
       try {
         await streamChat(
           conversationId,
-          { question, mode },
+          {
+            question,
+            mode,
+            // 只有用户确认过动作才带令牌；空数组不必发给后端。
+            ...(approvals.length > 0 ? { approvals } : {}),
+          },
           {
             onDelta: (text) =>
               patchTurn(key, (turn) => ({ ...turn, answer: turn.answer + text })),
@@ -217,6 +226,7 @@ export function useChat() {
                 // done.answer 是终稿：拒答归一化会改正文，delta 只是预览
                 answer: result.answer ?? turn.answer,
                 status: "done",
+                actions: result.pending_actions ?? [],
                 citationIds: result.citations_chunk_ids ?? [],
                 citationMap: result.citation_map ?? [],
                 canAnswer: result.can_answer,

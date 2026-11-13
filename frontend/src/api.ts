@@ -120,6 +120,27 @@ export interface Memory {
   updated_at: string;
 }
 
+// 模型提议、但被权限层拦下的有副作用工具调用。args 已是对象，不用再解析字符串。
+export interface PendingAction {
+  id: number;
+  tool: string;
+  args: unknown;
+  reason: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface ActionApprove {
+  // 一次性令牌只返回这一次，默认 10 分钟后过期；前端不要持久化。
+  token: string;
+  expires_at: string;
+}
+
+export interface ActionState {
+  id: number;
+  status: string;
+}
+
 // ---------- 排盘 ----------
 
 export type FortuneKind = "bazi" | "astro" | "tarot";
@@ -356,6 +377,21 @@ export function deleteConversation(id: string): Promise<void> {
   return request<void>(`/v1/conversations/${id}`, { method: "DELETE" });
 }
 
+// ---------- 待确认动作 ----------
+
+export function listPendingActions(limit = 20): Promise<PendingAction[]> {
+  return request<PendingAction[]>(`/v1/actions?limit=${limit}`);
+}
+
+// 确认后拿到一次性令牌；只有模型下次真的调用同一个工具时才会消费。
+export function approveAction(id: number): Promise<ActionApprove> {
+  return request<ActionApprove>(`/v1/actions/${id}/approve`, { method: "POST" });
+}
+
+export function rejectAction(id: number): Promise<ActionState> {
+  return request<ActionState>(`/v1/actions/${id}/reject`, { method: "POST" });
+}
+
 export function lookupChunks(ids: number[]): Promise<Chunk[]> {
   const unique = Array.from(new Set(ids.filter((id) => Number.isFinite(id))));
   if (unique.length === 0) return Promise.resolve([]);
@@ -391,6 +427,7 @@ export interface DonePayload extends Record<string, unknown> {
   elapsed_ms: number;
   llm_calls: number;
   mode: Mode;
+  pending_actions?: PendingAction[];
 }
 
 export interface StreamHandlers {
@@ -419,7 +456,14 @@ function parseFrame(raw: string): { event: string; data: unknown } | null {
 
 export async function streamChat(
   conversationId: string,
-  body: { question: string; mode: Mode; top_k?: number; max_steps?: number },
+  body: {
+    question: string;
+    mode: Mode;
+    top_k?: number;
+    max_steps?: number;
+    // 用户确认动作后拿到的一次性令牌；后端只在模型再次调用该工具时消费。
+    approvals?: string[];
+  },
   handlers: StreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {

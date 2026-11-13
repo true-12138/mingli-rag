@@ -428,7 +428,7 @@ cd mingli-rag
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-alembic upgrade head               # 首次运行：创建业务库 8 张表，可重复执行
+alembic upgrade head               # 首次运行：创建业务库 9 张表，可重复执行
 
 export DEEPSEEK_API_KEY=sk-xxxx    # PowerShell: $env:DEEPSEEK_API_KEY="sk-xxxx"
 streamlit run app.py
@@ -822,6 +822,34 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 
 **边界**：不做向量记忆、自动遗忘、跨用户共享；抽取/摘要失败静默跳过，不影响回答；这两步的 token 不计入当次 `runs` 记录。
 
+### 6.5 有副作用的工具怎么放行（v1.9）
+
+内置的 7 个工具全部只读，外部 MCP 工具默认按 `SIDE_EFFECT` 处理：模型可以提议调用，
+但权限层不会执行，只回一条 `requires_confirmation`。这条被拦下的调用会落库，
+前端把它渲染成一张「待确认」卡片，用户明确点「允许一次」才真正执行：
+
+```bash
+POST /v1/conversations/{id}/chat    # 响应里的 pending_actions（同步和 SSE done 都有）
+GET  /v1/actions                    # 仍在等待确认的调用
+POST /v1/actions/{id}/approve       # → {token, expires_at}，明文令牌只出现这一次
+POST /v1/actions/{id}/reject        # 拒绝后不可再确认
+```
+
+下一次 chat 请求把令牌放进 `approvals: ["act_…"]`；模型再次调用**同一工具、同一组参数**时
+才执行，执行的同时令牌作废。
+
+设计上收得很紧：
+
+- 令牌只存 sha256，绑定工具名 + 参数规范化摘要，默认 600 秒过期；
+- 消费用一条条件 UPDATE 把 `approved` 原子切到 `consumed`，并发重放只有一个能成功；
+- 授权校验本身出错一律按拒绝处理（fail-closed）；权限服务整体故障才是 fail-open，
+  两者边界不同；
+- 令牌过期但动作没执行过时，可以重新确认并换发新令牌；
+- 被拦下的调用只出现在 trace 和卡片里，不混进模型的回答正文。
+
+**边界**：没有「永久允许」白名单，换参数必须重新确认；无状态的 `/chat` 没有用户身份，
+不支持授权；多 Agent 路径不暴露有副作用工具。
+
 ---
 
 ## 7. 目录结构
@@ -843,7 +871,7 @@ DELETE /v1/memories/{id}      # 删除自己的某条记忆（别人的返回 40
 │   ├── mcp_client.py          # MCP client：挂载外部 server，工具进 function calling
 │   ├── guards.py              # Bearer 鉴权 + 并发信号量（线程版 + SSE 异步版）
 │   ├── observability.py       # request-id、JSON 日志、Prometheus 指标
-│   ├── db/                    # 业务库：base(连接) / models(8 张表) / repo(读写)
+│   ├── db/                    # 业务库：base(连接) / models(9 张表) / repo(读写)
 │   ├── memory.py              # 长期记忆：抽取/敏感信息过滤/会话摘要
 │   ├── app_theme.css          # 界面主题（纸色/墨色/朱砂；版式、对话、排盘卡片）
 │   ├── corpus.py              # 语料唯一入口：文件顺序、chunk_id 编号、字段契约

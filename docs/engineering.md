@@ -67,7 +67,7 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | `prepare()` 参数预处理失败 | 同样转 observation，不终止循环 | `{"ok": false, "error": "参数预处理失败：…"}` | — |
 | 一次返回多个 tool_calls、预算不够 | 前面的执行，后面的补 budget observation | 保证每个 `tool_call_id` 都有响应 | `test_budget_caps_multi_calls_…` |
 | 权限拒绝 | `side_effect` 工具默认不执行，但**占一步**，防止模型无限重试 | `{"ok": false, "requires_confirmation": true, "tier": "side_effect", "args": {...}}` | `test_side_effect_tool_is_denied_and_not_executed` |
-| 用户确认后重跑 | 同一次运行传 `allow_side_effects=True` 才执行 | 正常 result | `test_side_effect_tool_runs_after_user_confirmation` |
+| 用户确认后重跑 | 下一次运行带一次性令牌（`approvals`），且工具名、参数摘要完全匹配才执行；令牌在真正调用时消费 | 正常 result | `test_side_effect_tool_runs_after_user_confirmation`、`tests/test_approvals.py` |
 
 关键设计：**拒绝也计数**。如果拒绝不占步数，模型会在「调用 → 被拒 → 再调用」
 之间死循环；占一步后，最多 `MAX_STEPS` 次就会收口。
@@ -80,10 +80,18 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 - 外部 MCP 工具**默认 `SIDE_EFFECT`**，只有配置文件 `read_only` 里显式声明的才是 `READ`
   （`src/mcp_client.py:402-410`、`tier()` at `:424`）。
 - `deny` 里的工具连 schema 都不挂，模型根本不知道它存在（`visible_tools()`）。
-- 权限层自身抛异常时 **fail-open**（`src/tool_loop.py:50-51`），因为把「权限服务坏了」
+- 权限层自身抛异常时 **fail-open**（`src/tool_loop.py:57-60`），因为把「权限服务坏了」
   解释成「所有工具都不能用」会让整个服务不可用；真正的风险由工具自身的参数校验兜底。
-- 当前没有实现「前端 Action Card 确认后带 token 重放」的端到端链路：
-  `allow_side_effects` 是运行参数，不是持久化授权。这是已知限制，见 §6。
+  注意这和下面的授权回调相反：**授权层出错一律按拒绝处理**，不允许 fail-open
+  （`src/tool_loop.py:63-68`），否则数据库抖动会变成有副作用的工具被静默执行。
+- 被拦下的调用会以 `pending_actions` 返回并落库（`pending_actions` 表），
+  用户确认后走一次性令牌重放：先 `POST /v1/actions/{id}/approve` 拿到
+  `act_…` 令牌（库里只存 sha256，明文只出现一次），下一次 chat 把它放进
+  `approvals`；令牌绑定工具名 + 规范化参数摘要，TTL 600 秒，`consume_grant`
+  用条件 UPDATE 从 `approved` 原子切到 `consumed`，同一个令牌只能放行一次
+  （`src/db/repo.py:723-834`、`src/api_conversations.py:461-604`）。
+- `allow_side_effects=True` 仍保留为旧的一次性整轮开关（A/B 与测试用），
+  但它不是持久化授权，线上路径只走令牌。
 
 ### 3.4 检索与引用
 
@@ -94,6 +102,7 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | 历史里出现旧 chunk_id | 引用白名单只来自**本轮**检索，历史 chunk 不能混入 | `tests/test_conversation.py::test_answer_retrieves_with_standalone_and_isolates_citations` |
 | 检索后端异常 | 转 500 `检索失败`（非预期错误不吞） | `src/api.py:394-398` |
 | 证据不足 | 固定拒答文案「语料中没有足够的依据回答这个问题。」 | `src/rag.py:16` |
+| 语料更新后旧缓存 | 缓存上下文带语料指纹，索引一变 key 自然失配，本进程向量索引清空 | `tests/test_cache_invalidation.py` |
 
 ### 3.5 并发与配额
 
@@ -157,7 +166,7 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | 400 | 请求本身不合法 | 参数校验失败、MCP 配置错误、未知盘类型 |
 | 401 | 鉴权失败 | 配了 `MINGLI_API_TOKEN` 但没带或带错 |
 | 404 | 资源不存在 | trace 已淘汰 |
-| 409 | 并发冲突 | 记忆确认的 version 不一致 |
+| 409 | 并发冲突 | 记忆确认的 version 不一致；待确认动作已被确认/拒绝/执行 |
 | 429 | 限流 | 并发闸门满、额度用尽 |
 | 502 | 上游失败 | 模型厂商不可用、解读上游失败 |
 | 503 | 本服务暂时不可用 | 没配 Key、上游未配置 |
@@ -175,7 +184,7 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | `MAX_CHARS` | 1200 | `src/conversation.py:12` | 历史总字符超限，最旧的先丢 |
 | `MAX_MEMORIES` | 8 | `src/conversation.py:68` | 记忆块只带 8 条 |
 | `MAX_MEMORIES_PER_TURN` | 3 | `src/memory.py:24` | 单轮最多写 3 条 |
-| `MAX_VALUE_CHARS` | 200 | `src/memory.py:25` | 记忆值截断，末尾加 `…` |
+| `MAX_VALUE_CHARS` | 2000（写入）/ 200（进 prompt） | `src/memory.py:25`、`src/conversation.py` | 写入保留完整偏好；进 prompt 截断并加 `…` |
 | 并发槽位 | 20 | `src/gate.py:318-319` | 429 |
 | 单 Key 并发 | 32 | `src/llm.py:40` | 换 Key 或排队 |
 
@@ -190,19 +199,31 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 
 ## 6. 已知限制（不要假装没有）
 
-1. **没有 compaction 子系统。** 多轮上下文只有「保留最近 3 轮 / 1200 字」的硬裁剪，
-   被裁掉的信息不可恢复。长期记忆是另一条路径，不是压缩摘要。
-2. **记忆值截断到 200 字符**，超长偏好会丢后半段；这是有意的成本控制，
-   但意味着「用户说过的话」不一定被完整保留。
-3. **权限确认没有端到端重放。** `allow_side_effects` 是单次运行参数；
-   用户在前端确认后如何把授权传回下一次运行，尚未实现。
-4. **权限层 fail-open。** 权限服务自身故障时按放行处理，依赖工具参数校验兜底。
+1. **压缩只覆盖服务端会话，且按消息条数触发。** `/v1/conversations` 路径在
+   新增消息达到 8 条时，把较早消息压成摘要（`src/memory.py:154`），之后
+   prompt 里只带摘要 + 最近 4 条原文；摘要生成失败或还没到阈值时，退化为
+   「最近 3 轮 / 1200 字」的硬裁剪，被裁掉的部分不可恢复。无状态的 `/chat`
+   路径没有摘要，只有硬裁剪。长期记忆是另一条路径，不是压缩摘要。
+2. **记忆进 prompt 只带前 200 字符**（写入上限是 2000）。超长偏好的后半段
+   不会进入模型上下文，截断处有 `…` 标记；库里保留全文，可以在记忆页看到。
+   这是有意的上下文成本控制，不是数据丢失。
+3. **授权重放是严格匹配，宁可误拒。** 令牌绑定工具名和规范化参数摘要；
+   模型重放时只要参数有一个字段不同（哪怕只是格式变化），就会被拒绝，
+   用户需要重新确认。令牌默认 600 秒过期；过期但动作没被执行过时，可以再确认
+   一次换发新令牌（旧令牌作废），已经执行或已拒绝的则不能。
+   没有「记住这个工具永久允许」的白名单，这是有意的：每次副作用都经过用户。
+4. **权限层 fail-open，授权层 fail-closed。** 权限服务自身故障时按放行处理
+   （可用性优先，依赖工具参数校验兜底）；但用户授权校验出错时一律拒绝。
 5. **SSE 已下发的 token 无法撤回。** 上游中途失败时，用户会先看到半截回答，
    再收到 `error` 事件；前端应以 `done` 事件的 `answer` 为准。
 6. **单进程假设。** Redis 闸门是多进程安全的，但进程内 `LocalGate` 退化模式
    只在单进程下准确。
-7. **语义缓存可能返回旧答案。** 缓存键包含问题、模式、top_k；语料更新后
-   需要手动清理或换前缀。
+7. **语义缓存有最多 30 秒的失效滞后。** 缓存键包含问题、模式、top_k 和
+   语料指纹（`all_records.pkl` / `embeddings.npy` / `chunks/` 的轻量 stat 摘要），
+   索引变化后旧条目自动失配，不需要手动清 Redis。指纹本身按
+   `MINGLI_CACHE_FINGERPRINT_TTL`（默认 30s）缓存，所以更新后最坏 30 秒内
+   仍可能命中旧答案；`chunks/` 只取目录 mtime 和条目数，原地改写单个文件
+   检测不到。需要立即生效可设 TTL=0 或固定 `MINGLI_CACHE_FINGERPRINT`。
 
 ## 7. 内容与合规边界
 
@@ -232,6 +253,8 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | 多轮与历史边界 | `tests/test_conversation.py` |
 | 记忆并发 | `tests/test_memory.py`、`tests/test_conversations_api.py` |
 | 并发闸门 | `tests/test_gate.py` |
+| 语义缓存与失效 | `tests/test_semcache.py`、`tests/test_cache_invalidation.py` |
+| 授权确认与重放 | `tests/test_approvals.py` |
 | MCP | `tests/test_mcp_client.py`、`tests/test_mcp_server.py` |
 | 排盘与追问 | `tests/test_fortune.py`、`tests/test_fortune_api.py` |
 

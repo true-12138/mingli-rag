@@ -86,6 +86,7 @@ def memory_block(memories):
             value = getattr(m, "value", "")
         kind_label = "偏好" if kind == "preference" else "事实"
         text = str(value)
+        # 库里存得下 2000 字符，但进 prompt 只带前 200：记忆是背景信息，不是原文。
         # 截断必须留标记：模型看到「…」才知道这里的信息不完整，
         # 否则会把半句话当成用户的原话。
         if len(text) > 200:

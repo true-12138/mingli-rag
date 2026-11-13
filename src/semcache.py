@@ -18,6 +18,17 @@
 缓存条目只保留答案与引用，不保留 usage / trace。命中时由调用方把
 `usage` 置零、标记 `cached=true`，指标里能区分「缓存命中的快」与
 「模型变快」。
+
+**随语料/索引自动失效**：缓存 key 的上下文里带一个语料指纹
+（`all_records.pkl` / `embeddings.npy` / `chunks/` 的轻量 stat 摘要）。
+索引一变，精确层 key 自然不同，Redis 里的旧条目只会自然过期，不需要
+扫描删除；本进程的语义向量索引也会被清空。代价是指纹最多滞后
+`MINGLI_CACHE_FINGERPRINT_TTL` 秒（默认 30）才刷新——这段时间里宁可
+继续用旧索引，也不能让每次请求都去 stat 一遍磁盘。
+
+精度优先于命中率：指纹算不出来时统一退化成 `"unknown"`，缓存照常
+工作；所有实例都算不出来时大家仍然共享同一个 `"unknown"` 命名空间，
+只是失去了「语料一变就失效」的保护。
 """
 from __future__ import annotations
 
@@ -29,6 +40,7 @@ import threading
 import time
 import unicodedata
 from collections import OrderedDict
+from pathlib import Path
 from typing import Any, Callable
 
 import numpy as np
@@ -43,6 +55,9 @@ SEMANTIC = os.environ.get("MINGLI_CACHE_SEMANTIC", "1") != "0"
 THRESHOLD = float(os.environ.get("MINGLI_CACHE_THRESHOLD", "0.95"))
 TTL = float(os.environ.get("MINGLI_CACHE_TTL", "86400"))
 MAX_ENTRIES = int(os.environ.get("MINGLI_CACHE_MAX_ENTRIES", "1000"))
+# 指纹最多滞后这么久才刷新：既能让语料更新尽快生效，又避免每个请求都
+# stat 一遍索引文件。
+FINGERPRINT_TTL = float(os.environ.get("MINGLI_CACHE_FINGERPRINT_TTL", "30"))
 
 # 只缓存能独立复用的字段；trace_id / elapsed_ms / usage 每次重新生成。
 _CACHE_FIELDS = (
@@ -84,6 +99,82 @@ def _encode(text: str) -> np.ndarray:
     return vec
 
 
+# ---------- 语料指纹（索引变化 → 缓存自动失效） ----------
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+_fingerprint_lock = threading.Lock()
+_fingerprint_cache: "tuple[float, str] | None" = None
+_fingerprint_provider: "Callable[[], str] | None" = None
+
+
+def set_fingerprint_provider(provider: "Callable[[], str] | None") -> None:
+    """测试 / 自定义部署注入指纹来源；传 None 恢复默认的文件 stat。"""
+    global _fingerprint_provider, _fingerprint_cache
+    with _fingerprint_lock:
+        _fingerprint_provider = provider
+        # 换 provider 必须立刻生效，不能沿用旧指纹的 TTL 缓存。
+        _fingerprint_cache = None
+
+
+def _data_dir() -> Path:
+    """与 corpus.data_dir() 保持一致，但不导入它以免触发语料加载。"""
+    return Path(os.environ.get("MINGLI_DATA_DIR", _REPO_ROOT / "data"))
+
+
+def _default_fingerprint() -> str:
+    """对索引产物做轻量摘要。
+
+    大文件只取 (相对路径, size, mtime_ns)；`chunks/` 可能有上万个小文件，
+    逐个 stat 太贵，只取目录 mtime 和条目数——重建语料时目录必然被重写，
+    足以触发失效。
+    """
+    data = _data_dir()
+    parts: "list[tuple[str, int, int]]" = []
+    for name in ("all_records.pkl", "embeddings.npy"):
+        st = (data / name).stat()
+        parts.append((name, int(st.st_size), int(st.st_mtime_ns)))
+    chunks = data / "chunks"
+    cst = chunks.stat()
+    with os.scandir(chunks) as it:
+        count = sum(1 for _ in it)
+    parts.append(("chunks", count, int(cst.st_mtime_ns)))
+
+    payload = json.dumps(parts, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def corpus_fingerprint() -> str:
+    """返回当前语料/索引指纹。
+
+    优先级：环境变量（固定部署 / 测试） > 注入的 provider > 默认文件 stat。
+    结果在 `FINGERPRINT_TTL` 内复用；任何 OSError 都退化为 `"unknown"`，
+    缓存不能因为指纹算不出来而报错。
+    """
+    global _fingerprint_cache
+    pinned = os.environ.get("MINGLI_CACHE_FINGERPRINT", "").strip()
+    if pinned:
+        return pinned
+
+    now = time.time()
+    with _fingerprint_lock:
+        cached = _fingerprint_cache
+        if cached is not None and cached[0] > now:
+            return cached[1]
+        provider = _fingerprint_provider
+
+    try:
+        value = provider() if provider is not None else _default_fingerprint()
+    except OSError as exc:
+        logger.warning("语料指纹计算失败，退化为 unknown：%s", exc)
+        value = "unknown"
+
+    value = str(value or "unknown")
+    with _fingerprint_lock:
+        _fingerprint_cache = (time.time() + FINGERPRINT_TTL, value)
+    return value
+
+
 # ---------- 规范化与 key ----------
 
 
@@ -93,15 +184,22 @@ def normalize_question(question: str) -> str:
     return text.rstrip("？?。.!！；;，,、 ")
 
 
-def _context(mode: str, top_k: int) -> str:
-    return "{}|{}".format(mode, int(top_k))
+def _context(mode: str, top_k: int, fingerprint: "str | None" = None) -> str:
+    """缓存上下文带上语料指纹：索引一变，key 自然换一套。"""
+    fp = corpus_fingerprint() if fingerprint is None else fingerprint
+    return "{}|{}|{}".format(mode, int(top_k), fp)
+
+
+def _key_for(question: str, mode: str, context: str) -> str:
+    digest = hashlib.sha256(
+        "{}|{}".format(context, normalize_question(question)).encode("utf-8")
+    ).hexdigest()
+    return "{}-{}".format(mode, digest[:32])
 
 
 def cache_key(question: str, mode: str, top_k: int) -> str:
-    digest = hashlib.sha256(
-        "{}|{}".format(_context(mode, top_k), normalize_question(question)).encode("utf-8")
-    ).hexdigest()
-    return "{}-{}".format(mode, digest[:32])
+    # 签名保持不变；指纹在内部取，保证调用方无感。
+    return _key_for(question, mode, _context(mode, top_k))
 
 
 # ---------- 存储 ----------
@@ -149,6 +247,8 @@ class SemanticCache:
         self._local = _LocalStore(MAX_ENTRIES)
         # key -> (context, expires, vector)
         self._vectors: "OrderedDict[str, tuple[str, float, np.ndarray]]" = OrderedDict()
+        # 当前向量索引是按哪个语料指纹建立的；None 表示本进程还没建过索引。
+        self._index_fingerprint: "str | None" = None
         self._redis: Any = None
         self._redis_broken = False
         self._counts = {"exact": 0, "semantic": 0, "miss": 0, "store": 0, "error": 0}
@@ -207,6 +307,28 @@ class SemanticCache:
                 self._record_error(exc)
 
     # --- 索引 ---
+
+    def _sync_fingerprint(self, fingerprint: str) -> None:
+        """语料指纹变了就清空本进程语义索引。
+
+        精度优先：旧向量哪怕余弦相似度再高，也是旧语料的答案。精确层靠
+        key 里的指纹自然隔离；这里只处理本进程的向量索引，避免拿旧答案
+        冒充新语料。
+        """
+        with self._lock:
+            if self._index_fingerprint == fingerprint:
+                return
+            previous = self._index_fingerprint
+            self._index_fingerprint = fingerprint
+            stale = bool(self._vectors)
+            if stale:
+                self._vectors.clear()
+        if previous is not None and stale:
+            logger.info(
+                "语料指纹由 %s 变为 %s，清空本进程语义索引",
+                previous[:16],
+                fingerprint[:16],
+            )
 
     def _index(self, key: str, context: str, vector: np.ndarray) -> None:
         with self._lock:
@@ -271,8 +393,10 @@ class SemanticCache:
         if not ENABLED or mode != "rag" or not normalize_question(question):
             return None, None
 
-        context = _context(mode, top_k)
-        key = cache_key(question, mode, top_k)
+        fingerprint = corpus_fingerprint()
+        self._sync_fingerprint(fingerprint)
+        context = _context(mode, top_k, fingerprint)
+        key = _key_for(question, mode, context)
 
         raw = self._get(key)
         if raw is not None:
@@ -319,7 +443,10 @@ class SemanticCache:
         if not str(payload.get("answer") or "").strip():
             return False
 
-        key = cache_key(question, mode, top_k)
+        fingerprint = corpus_fingerprint()
+        self._sync_fingerprint(fingerprint)
+        context = _context(mode, top_k, fingerprint)
+        key = _key_for(question, mode, context)
         entry = {
             "question": str(question)[:200],
             "payload": payload,
@@ -335,7 +462,7 @@ class SemanticCache:
                 except Exception as exc:  # noqa: BLE001
                     self._record_error(exc)
             if vector is not None:
-                self._index(key, _context(mode, top_k), vector)
+                self._index(key, context, vector)
 
         self._record("store")
         return True
@@ -371,6 +498,8 @@ class SemanticCache:
             "semantic": SEMANTIC,
             "threshold": THRESHOLD,
             "ttl_s": TTL,
+            "fingerprint": corpus_fingerprint()[:16],
+            "fingerprint_ttl_s": FINGERPRINT_TTL,
             "entries": entries,
             "max_entries": MAX_ENTRIES,
         }
@@ -450,10 +579,16 @@ def reset_for_tests() -> None:
     global _cache, _ENCODER
     _cache = None
     _ENCODER = None
+    # 指纹缓存和注入的 provider 也要清掉，避免测试之间串指纹。
+    global _fingerprint_cache, _fingerprint_provider
+    with _fingerprint_lock:
+        _fingerprint_cache = None
+        _fingerprint_provider = None
     # 配置可能在测试里被 monkeypatch，这里一起还原到环境默认
-    global ENABLED, SEMANTIC, THRESHOLD, TTL, MAX_ENTRIES
+    global ENABLED, SEMANTIC, THRESHOLD, TTL, MAX_ENTRIES, FINGERPRINT_TTL
     ENABLED = os.environ.get("MINGLI_CACHE_ENABLED", "1") != "0"
     SEMANTIC = os.environ.get("MINGLI_CACHE_SEMANTIC", "1") != "0"
     THRESHOLD = float(os.environ.get("MINGLI_CACHE_THRESHOLD", "0.95"))
     TTL = float(os.environ.get("MINGLI_CACHE_TTL", "86400"))
     MAX_ENTRIES = int(os.environ.get("MINGLI_CACHE_MAX_ENTRIES", "1000"))
+    FINGERPRINT_TTL = float(os.environ.get("MINGLI_CACHE_FINGERPRINT_TTL", "30"))

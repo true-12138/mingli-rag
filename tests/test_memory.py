@@ -299,3 +299,43 @@ def test_agent_injects_memory_into_first_prompt(monkeypatch):
     )
     assert "长期记忆" in seen["user"]
     assert "1992-11-15" in seen["user"]
+
+
+def test_long_preference_is_stored_in_full_but_prompt_keeps_first_200(session, user, conv):
+    """存储上限（2000）和 prompt 上限（200）是两回事：库里不丢，进 prompt 时压缩。"""
+    long_value = "以后优先查《三命通会》，其次《穷通宝鉴》。" * 20
+    saved = repo.upsert_memory(
+        session, user.id, "preference", "reading_order", long_value,
+        source_conversation_id=conv.id,
+    )
+    # 旧实现写入就砍到 500/200，后半句在库里也找不回来
+    assert saved.value == long_value
+    assert len(saved.value) > 400
+
+    block = conversation.memory_block([saved])
+    line = next(item for item in block.splitlines() if item.startswith("- "))
+    value_part = line.split(": ", 1)[1]
+    assert len(value_part) == 200
+    assert value_part.endswith("…")
+    # 截断的是尾巴，不是开头：模型仍能看到偏好开头
+    assert long_value[:199] in block
+
+
+def test_extract_keeps_values_longer_than_prompt_budget(monkeypatch):
+    """抽取器不能把 200 当作拒绝线：长偏好先存下来，展示时再压缩。"""
+    import json
+
+    value = "甲" * 500
+    payload = {"memories": [{"kind": "preference", "key": "style", "value": value}]}
+    monkeypatch.setattr(rag, "_chat", lambda *a, **k: json.dumps(payload))
+    got = memory.extract_memories("记住我的偏好", "好")
+    assert [g["value"] for g in got] == [value]
+
+
+def test_extract_rejects_value_beyond_storage_limit():
+    assert memory._valid_item(
+        {"kind": "fact", "key": "kk", "value": "甲" * memory.MAX_VALUE_CHARS}
+    ) is not None
+    assert memory._valid_item(
+        {"kind": "fact", "key": "kk", "value": "甲" * (memory.MAX_VALUE_CHARS + 1)}
+    ) is None

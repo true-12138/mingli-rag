@@ -10,8 +10,11 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import secrets
 import uuid
+from datetime import timedelta, timezone
 
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -21,6 +24,7 @@ from .models import (
     Conversation,
     Feedback,
     Message,
+    PendingAction,
     Run,
     ToolCall,
     User,
@@ -439,7 +443,8 @@ def upsert_memory(
     """
     kind = (kind or "").strip()
     key = (key or "").strip()[:50]
-    value = (value or "").strip()[:500]
+    # 和 memory.MAX_VALUE_CHARS 对齐：写入保留完整偏好，prompt 侧再压缩。
+    value = (value or "").strip()[:2000]
     if kind not in MEMORY_KINDS or not key or not value:
         return None
     confidence = _clamp_confidence(confidence)
@@ -598,6 +603,263 @@ def delete_memory(session: Session, user_id: int, memory_id: int) -> bool:
     if memory is None:
         return False
     session.delete(memory)
+    session.commit()
+    return True
+
+
+# ---------- 工具授权（PendingAction） ----------
+
+class ActionConflict(Exception):
+    """动作已经不在 pending 状态，不能再确认/拒绝。
+
+    `current` 是冲突时库里的那一行，接口层用它把最新状态返回给前端。
+    """
+
+    def __init__(self, current: PendingAction | None = None):
+        super().__init__("pending action state conflict")
+        self.current = current
+
+
+def _canonical_args(args) -> str:
+    """参数规范化：键排序、无多余空格，保证同一组参数永远同一个摘要。
+
+    不能用普通的 `json.dumps` 直接算哈希——Python 字典的顺序、空格都会变，
+    同一组参数换个键顺序就成了另一个哈希，令牌会莫名其妙失效。
+    """
+    return json.dumps(
+        args if args is not None else {},
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
+def _args_hash(args) -> str:
+    return hashlib.sha256(_canonical_args(args).encode("utf-8")).hexdigest()
+
+
+def _token_hash(token: str) -> str:
+    return hashlib.sha256((token or "").encode("utf-8")).hexdigest()
+
+
+def _is_expired(expires_at, now) -> bool:
+    """比较过期时间；SQLite 读出来是 naive datetime，统一按 UTC 解释。
+
+    直接拿 naive 和 aware 比会抛 TypeError，而这条路径恰好是「用户点确认」，
+    不能因为数据库方言不同就 500。
+    """
+    if expires_at is None:
+        return False
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return expires_at <= now
+
+
+def create_pending_action(
+    session: Session,
+    user_id: int,
+    tool: str,
+    args,
+    *,
+    conversation_id: str | None = None,
+    reason: str | None = None,
+) -> PendingAction:
+    """把一次「需要用户确认」的调用落库；同一用户同一工具同一参数只留一条 pending。
+
+    幂等是必要的：模型在一轮里可能反复尝试同一个被拒的工具，前端也会重复提交，
+    每轮都插入新行会让待确认列表迅速膨胀、用户还要点很多次同样的确认。
+
+    会 commit。
+    """
+    tool = (str(tool) or "").strip()[:200]
+    args_json = _canonical_args(args)
+    args_hash = _args_hash(args)
+
+    existing = session.scalar(
+        select(PendingAction)
+        .where(
+            PendingAction.user_id == user_id,
+            PendingAction.tool == tool,
+            PendingAction.args_hash == args_hash,
+            PendingAction.status == "pending",
+        )
+        .order_by(PendingAction.id.desc())
+        .limit(1)
+    )
+    if existing is not None:
+        return existing
+
+    action = PendingAction(
+        user_id=user_id,
+        conversation_id=conversation_id,
+        tool=tool,
+        args_json=args_json,
+        args_hash=args_hash,
+        reason=reason,
+        status="pending",
+    )
+    session.add(action)
+    session.commit()
+    session.refresh(action)
+    return action
+
+
+def list_pending_actions(
+    session: Session, user_id: int, limit: int = 20
+) -> list[PendingAction]:
+    """按创建时间倒序列出仍在等用户确认的动作。"""
+    return list(
+        session.scalars(
+            select(PendingAction)
+            .where(
+                PendingAction.user_id == user_id,
+                PendingAction.status == "pending",
+            )
+            .order_by(PendingAction.created_at.desc(), PendingAction.id.desc())
+            .limit(limit)
+        ).all()
+    )
+
+
+def get_pending_action(
+    session: Session, user_id: int, action_id: int
+) -> PendingAction | None:
+    """按 ID 取动作，同时校验归属；别人的动作一律当作不存在。"""
+    return session.scalar(
+        select(PendingAction).where(
+            PendingAction.id == action_id,
+            PendingAction.user_id == user_id,
+        )
+    )
+
+
+def approve_action(
+    session: Session, user_id: int, action_id: int, ttl_seconds: int = 600
+) -> tuple[PendingAction, str] | None:
+    """确认一个待执行动作，返库里的行和**一次性明文令牌**。
+
+    明文令牌只在这里出现一次：库里只存 sha256，之后再也取不回来。
+    状态切换用条件 UPDATE（`WHERE status='pending'`），并发点两次确认时
+    只有一次能拿到令牌，另一次按 `ActionConflict` 处理。
+
+    `ttl_seconds` 控制令牌有效期；过期后重放会被 `consume_grant` 拒绝。
+    **令牌过期但动作还没被执行时，允许重新确认并换发新令牌**：否则用户点了
+    「允许」却因为去接了杯水而失败，只能等模型下一轮重新提议，等于确认按钮坏了。
+    已消费或已拒绝的动作仍然只能得到 409。
+
+    会 commit。
+    """
+    action = get_pending_action(session, user_id, action_id)
+    if action is None:
+        return None
+
+    now = utcnow()
+    reissue = _is_expired(action.expires_at, now)
+    if action.status != "pending" and not (action.status == "approved" and reissue):
+        raise ActionConflict(action)
+
+    token = "act_" + secrets.token_urlsafe(24)
+    if action.status == "approved":
+        # 重发只针对「已确认、未使用、已过期」的那一行，条件写进 UPDATE 里防止
+        # 和并发消费撞车：令牌刚好在点确认的瞬间被重放成功时，这里不会覆盖它。
+        where = (
+            PendingAction.id == action_id,
+            PendingAction.user_id == user_id,
+            PendingAction.status == "approved",
+            PendingAction.expires_at.is_not(None),
+            PendingAction.expires_at <= now,
+        )
+    else:
+        where = (
+            PendingAction.id == action_id,
+            PendingAction.user_id == user_id,
+            PendingAction.status == "pending",
+        )
+    result = session.execute(
+        update(PendingAction)
+        .where(*where)
+        .values(
+            status="approved",
+            token_hash=_token_hash(token),
+            expires_at=now + timedelta(seconds=ttl_seconds),
+            approved_at=now,
+        )
+        .execution_options(synchronize_session=False)
+    )
+    if not result.rowcount:
+        # 另一个请求先点了确认：把库里最新的状态带出去，而不是覆盖它。
+        session.expire_all()
+        raise ActionConflict(get_pending_action(session, user_id, action_id))
+    session.commit()
+    session.refresh(action)
+    return action, token
+
+
+def reject_action(
+    session: Session, user_id: int, action_id: int
+) -> PendingAction | None:
+    """拒绝一个待执行动作。只有 pending 能拒绝，已确认/已执行的一律冲突。
+
+    会 commit。
+    """
+    action = get_pending_action(session, user_id, action_id)
+    if action is None:
+        return None
+    if action.status != "pending":
+        raise ActionConflict(action)
+
+    result = session.execute(
+        update(PendingAction)
+        .where(
+            PendingAction.id == action_id,
+            PendingAction.user_id == user_id,
+            PendingAction.status == "pending",
+        )
+        .values(status="rejected")
+        .execution_options(synchronize_session=False)
+    )
+    if not result.rowcount:
+        session.expire_all()
+        raise ActionConflict(get_pending_action(session, user_id, action_id))
+    session.commit()
+    session.refresh(action)
+    return action
+
+
+def consume_grant(
+    session: Session, user_id: int, token: str, tool: str, args
+) -> bool:
+    """用一次性令牌换一次工具执行权；成功返回 True，否则 False。
+
+    三个条件必须同时满足，任何一条不满足都不放行：
+    1. 令牌存在、属于该用户、状态仍是 approved、且没过期；
+    2. 工具名和确认时完全一致；
+    3. 参数的 canonical 摘要和确认时完全一致。
+
+    实现上用一条条件 UPDATE 把 approved 改成 consumed，靠 `rowcount` 判断
+    是否抢到。两个请求同时拿同一个令牌重放时，数据库只会让一条 UPDATE 命中，
+    所以不需要额外的行锁。会 commit（仅成功时）。
+    """
+    if not token:
+        return False
+    result = session.execute(
+        update(PendingAction)
+        .where(
+            PendingAction.user_id == user_id,
+            PendingAction.token_hash == _token_hash(token),
+            PendingAction.status == "approved",
+            PendingAction.tool == (str(tool) or "").strip()[:200],
+            PendingAction.args_hash == _args_hash(args),
+            PendingAction.expires_at.is_not(None),
+            PendingAction.expires_at > utcnow(),
+        )
+        .values(status="consumed")
+        .execution_options(synchronize_session=False)
+    )
+    if not result.rowcount:
+        # 没抢到：令牌不存在/已用过/已过期/参数对不上。不 commit，
+        # 也不 rollback，避免把调用方同一事务里其他已做的修改一起回滚。
+        return False
     session.commit()
     return True
 

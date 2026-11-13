@@ -280,6 +280,36 @@ class UserMemory(Base):
     user = relationship("User", back_populates="memories")
 
 
+class PendingAction(Base):
+    """模型提议、但还没获得用户授权的有副作用工具调用。
+
+    这张表是「确认」这一动作的持久化载体：模型在运行中只能拿到
+    `requires_confirmation`，真正执行要等用户对某一行点确认，拿走一个
+    一次性令牌，并在下一次运行时带回来。
+
+    `args_hash` 存参数的 canonical JSON 摘要，令牌只对「同一工具 + 同一组参数」
+    有效；`token_hash` 只存令牌的 sha256，数据库泄露也拿不到可用的明文令牌。
+    """
+
+    __tablename__ = "pending_actions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    conversation_id = Column(String(32), nullable=True)
+    tool = Column(String(200), nullable=False)
+    args_json = Column(Text, nullable=False, default="{}")
+    args_hash = Column(String(64), nullable=False, index=True)
+    reason = Column(Text, nullable=True)
+    # pending / approved / rejected / consumed
+    status = Column(String(20), nullable=False, default="pending", index=True)
+    token_hash = Column(String(64), nullable=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, index=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+
+
 class QuotaLedger(Base):
     """按天累计的额度/成本账本。
 

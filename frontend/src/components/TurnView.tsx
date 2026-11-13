@@ -1,8 +1,9 @@
 // 一轮问答：问 → 进度 / 正文 → 出处。
 import { useEffect, useRef, useState } from "react";
 
-import type { Chunk, StepEvent } from "../api";
+import type { Chunk, Mode, StepEvent } from "../api";
 import type { Turn } from "../useChat";
+import { ActionCard } from "./ActionCard";
 import { AnswerBody } from "./AnswerBody";
 import { Sources } from "./Sources";
 
@@ -10,7 +11,10 @@ interface Props {
   turn: Turn;
   chunks: Record<number, Chunk>;
   streaming: boolean;
+  /** 全局是否正在生成某条回答；用于拦住并发的「让助手继续」。 */
+  busy: boolean;
   onAsk: (question: string) => void;
+  onContinue: (question: string, mode: Mode, approvals: string[]) => void;
 }
 
 interface Focus {
@@ -18,7 +22,7 @@ interface Focus {
   nonce: number;
 }
 
-export function TurnView({ turn, chunks, streaming, onAsk }: Props) {
+export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: Props) {
   const [focus, setFocus] = useState<Focus | null>(null);
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<number | null>(null);
@@ -78,6 +82,21 @@ export function TurnView({ turn, chunks, streaming, onAsk }: Props) {
             streaming &&
             turn.steps.length === 0 &&
             turn.stages.length === 0 && <p className="note note--pending">正在翻书…</p>
+          )}
+
+          {turn.actions.length > 0 && (
+            <div className="actions">
+              {turn.actions.map((action) => (
+                <ActionCard
+                  key={action.id}
+                  action={action}
+                  question={turn.question}
+                  mode={turn.mode}
+                  busy={busy}
+                  onContinue={onContinue}
+                />
+              ))}
+            </div>
           )}
 
           {turn.status === "error" && (

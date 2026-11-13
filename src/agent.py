@@ -225,12 +225,18 @@ def step_event(agent_name, name, args, result):
     }
 
 
-def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
-    """原生 function calling 版：模型直接返回 tool_calls，不再自己拼 JSON 动作。"""
+def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=None,
+                           memories=None, approvals=None):
+    """原生 function calling 版：模型直接返回 tool_calls，不再自己拼 JSON 动作。
+
+    `approvals(name, args) -> bool` 是接口层解析一次性令牌后构造的授权回调；
+    它为 True 时 tool_loop 才执行对应的 side_effect 工具。
+    """
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
     trace, seen = [], set()
+    pending_actions = []
     hist = history_block(history)
     mem = memory_block(memories)
     user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
@@ -239,6 +245,16 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
         {"role": "system", "content": FUNCTION_SYSTEM_PROMPT},
         {"role": "user", "content": user_text},
     ]
+
+    def record(name, args, result):
+        _record_call(trace, seen, name, args, result)
+        # 被权限层拦下的调用要单独带回接口层落库，不能混进最终回答文本。
+        if isinstance(result, dict) and result.get("requires_confirmation"):
+            pending_actions.append({
+                "tool": name,
+                "args": args,
+                "reason": result.get("error"),
+            })
 
     data = None
     raw = ""
@@ -249,8 +265,9 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
             max_calls=max(0, max_steps - len(trace)),
             max_tokens=MAX_TOKENS or None,
             schemas=tool_schema.all_schemas(),
-            on_call=lambda name, args, result: _record_call(trace, seen, name, args, result),
+            on_call=record,
             counter=counter,
+            approve=approvals,
         )
         try:
             data = _parse_json(raw)
@@ -301,13 +318,15 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
     out["history_turns"] = len(history)
     out["llm_calls"] = counter["llm_calls"]
     out["tool_mode"] = "function"
+    out["pending_actions"] = pending_actions
     # 本次运行实际花掉的模型 token（含追问改写与重跑），便于成本核算与预算调优
     out["tokens_used"] = counter.get("tokens_used", 0)
     return out
 
 
 async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, history=None,
-                              memories=None, on_delta=None, on_step=None, client=None):
+                              memories=None, on_delta=None, on_step=None, client=None,
+                              approvals=None):
     """单 Agent 的流式版：正文逐 token 通过 `on_delta` 下发，返回结构与 `agent_answer` 一致。
 
     和同步版的差异只有三处：
@@ -325,6 +344,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     standalone = await arewrite_question(question, history, api_key=api_key,
                                          counter=counter, client=client)
     trace, seen = [], set()
+    pending_actions = []
     hist = history_block(history)
     mem = memory_block(memories)
     user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
@@ -342,6 +362,13 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
 
     def record(name, args, result):
         _record_call(trace, seen, name, args, result)
+        # 待确认动作既要在 trace 里留痕，也要单独带回接口层落库。
+        if isinstance(result, dict) and result.get("requires_confirmation"):
+            pending_actions.append({
+                "tool": name,
+                "args": args,
+                "reason": result.get("error"),
+            })
         if on_step is not None:
             on_step(step_event("agent", name, args, result))
 
@@ -359,6 +386,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
             on_delta=emit if (on_delta is not None and not streamed["any"]) else None,
             counter=counter,
             client=client,
+            approve=approvals,
         )
         try:
             data = _parse_json(raw)
@@ -409,6 +437,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     out["history_turns"] = len(history)
     out["llm_calls"] = counter["llm_calls"]
     out["tool_mode"] = "function"
+    out["pending_actions"] = pending_actions
     # 本次运行实际花掉的模型 token（含追问改写与重跑），便于成本核算与预算调优
     out["tokens_used"] = counter.get("tokens_used", 0)
     # 流式路径不用全局 usage 累加器：并发请求会互相污染，每请求自己记账
@@ -416,12 +445,15 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     return out
 
 
-def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None,
+                 approvals=None):
     """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
     history 是多轮对话历史；memories 是长期偏好/事实。两者都只用于理解问题，
     不作为回答证据。
+    approvals 是一次性工具授权回调，透传给 tool_loop；旧的 JSON 模式没有对应
+    协议，会忽略它（那条路径本来就执行所有工具，仅用于 A/B）。
     MINGLI_TOOL_MODE=json 可切回旧的手写 ReAct，用于 A/B 对照。
     """
     if TOOL_MODE == "json":
@@ -431,7 +463,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
         )
     return _agent_answer_function(
         question, max_steps=max_steps, api_key=api_key,
-        history=history, memories=memories,
+        history=history, memories=memories, approvals=approvals,
     )
 
 

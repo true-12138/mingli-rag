@@ -950,6 +950,169 @@ button {
   color: var(--cinnabar);
 }
 
+/* ---------- 待确认动作 ---------- */
+/* 一条待办：左侧色条是状态，正文只放工具、参数、原因和两个决定。 */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 18px 0 0;
+}
+
+.action-card {
+  padding: 12px 14px 11px;
+  border: 1px solid var(--rule);
+  border-left: 2px solid #b07b2e;
+  border-radius: 2px;
+  background: var(--panel);
+}
+
+.action-card--allowed {
+  border-left-color: #5c6b45;
+}
+
+.action-card--expired {
+  border-left-color: var(--cinnabar);
+}
+
+.action-card--rejected {
+  border-left-color: var(--rule-strong);
+  background: rgba(239, 233, 220, 0.4);
+}
+
+.action-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.action-card__state {
+  font-size: 12px;
+  color: #7a6a4f;
+}
+
+.action-card--allowed .action-card__state {
+  color: #5c6b45;
+}
+
+.action-card--expired .action-card__state {
+  color: var(--cinnabar-deep);
+}
+
+.action-card--rejected .action-card__state {
+  color: var(--faint);
+}
+
+.action-card__tool {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.action-card--rejected .action-card__tool {
+  color: var(--muted);
+}
+
+.action-card__raw {
+  font-size: 11.5px;
+  color: var(--faint);
+  overflow-wrap: anywhere;
+}
+
+.action-card__args {
+  display: grid;
+  gap: 2px;
+  margin: 9px 0 0;
+}
+
+.action-card__arg {
+  display: grid;
+  grid-template-columns: fit-content(160px) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.action-card__arg dt {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--faint);
+  overflow-wrap: anywhere;
+}
+
+.action-card__arg dd {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.action-card__reason {
+  margin: 9px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.action-card--rejected .action-card__reason {
+  color: var(--faint);
+}
+
+.action-card__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.action-card__btn {
+  padding: 4px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.action-card__btn:hover:not(:disabled) {
+  border-color: rgba(150, 50, 42, 0.4);
+  color: var(--cinnabar);
+}
+
+.action-card__btn--allow {
+  border-color: rgba(150, 50, 42, 0.45);
+  color: var(--cinnabar-deep);
+}
+
+.action-card__btn--allow:hover:not(:disabled) {
+  background: rgba(150, 50, 42, 0.07);
+  color: var(--cinnabar-deep);
+}
+
+.action-card__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.action-card__hint {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.action-card__error {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--cinnabar-deep);
+}
+
 /* ---------- 追问 ---------- */
 
 .followups {

@@ -43,6 +43,15 @@ export function ChatPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
     [chat, mode],
   );
 
+  // 用户点「让助手继续」：沿用该轮的问题和模式，只多带一个一次性令牌。
+  const continueWith = useCallback(
+    (question: string, turnMode: Mode, approvals: string[]) => {
+      stickRef.current = true;
+      void chat.send(question, turnMode, approvals);
+    },
+    [chat],
+  );
+
   return (
     <>
       <header className="topbar">
@@ -75,7 +84,9 @@ export function ChatPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
                 turn={turn}
                 chunks={chat.chunks}
                 streaming={chat.streaming && turn.status === "streaming"}
+                busy={chat.streaming}
                 onAsk={send}
+                onContinue={continueWith}
               />
             ))
           )}

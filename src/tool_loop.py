@@ -38,8 +38,17 @@ def _usage_tokens(usage):
         return 0
 
 
-def _permission_denied(name, args, allow_side_effects):
-    """side_effect 工具默认不执行，只回一条「需要确认」的 observation。"""
+def _permission_denied(name, args, allow_side_effects, approve=None):
+    """side_effect 工具默认不执行；有用户授权回调时再放行。
+
+    放行的优先级：
+    1. `allow_side_effects=True`：旧的单次运行开关，保留向后兼容；
+    2. `approve(name, args)` 返回 True：调用方已经拿到一次性的、绑定参数的授权；
+    3. 其余情况都拒绝，并回一条 `requires_confirmation` 的 observation。
+
+    授权回调抛异常必须按未授权处理。权限层是安全边界，出错时只能收紧不能放宽
+    （不 fail-open），否则数据库抖动会变成「有副作用的工具被静默执行」。
+    """
     if allow_side_effects:
         return None
     check = getattr(tools, "permission", None)
@@ -51,6 +60,12 @@ def _permission_denied(name, args, allow_side_effects):
         return None
     if verdict.get("allowed", True):
         return None
+    if approve is not None:
+        try:
+            if approve(name, args):
+                return None
+        except Exception:  # noqa: BLE001 - 授权层出错必须拒绝，不能 fail-open
+            pass
     return {
         "ok": False,
         "tool": name,
@@ -103,14 +118,15 @@ def _parse_args(raw):
 
 def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
         on_call=None, counter=None, max_rounds=MAX_ROUNDS,
-        max_tokens=None, allow_side_effects=False):
+        max_tokens=None, allow_side_effects=False, approve=None):
     """跑 tool-calling 循环，直到模型不再调用工具。
 
     messages 会被原地追加（assistant/tool 轮次）。返回 (最终 content, messages, 已用调用数)。
     prepare(name, args) -> args 用于强制/修正参数（如检索员锁定 book）。
     on_call(name, args, result) 用于记 trace、收证据；抛异常会终止循环。
     max_tokens 是本轮运行允许消耗的模型 token 总量；用完后不再传 tools。
-    side_effect 工具默认不执行，除非 allow_side_effects=True（用户已确认）。
+    side_effect 工具默认不执行：`allow_side_effects=True`（旧的整轮开关）或
+    `approve(name, args) -> bool`（用户确认后的一次性授权）任一放行才执行。
     """
     used = 0
     # 同一 counter 上的多次 run（如终稿 JSON 解析失败后重跑）要接着累计，
@@ -168,7 +184,7 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
                 if err is not None:
                     result = {"ok": False, "tool": name, "args": None, "error": err}
                 else:
-                    denied = _permission_denied(name, args, allow_side_effects)
+                    denied = _permission_denied(name, args, allow_side_effects, approve)
                     if denied is not None:
                         result = denied
                         err = "denied"
@@ -189,7 +205,7 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
 
 async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                on_call=None, on_delta=None, counter=None, max_rounds=MAX_ROUNDS,
-               client=None, max_tokens=None, allow_side_effects=False):
+               client=None, max_tokens=None, allow_side_effects=False, approve=None):
     """`run()` 的异步版：用 llm.stream() 逐 token 下发，工具层协议不变。
 
     `on_delta(text)` 只收最终正文的增量；工具轮如果模型同时吐了正文，
@@ -257,7 +273,7 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                 if err is not None:
                     result = {"ok": False, "tool": name, "args": None, "error": err}
                 else:
-                    denied = _permission_denied(name, args, allow_side_effects)
+                    denied = _permission_denied(name, args, allow_side_effects, approve)
                     if denied is not None:
                         result = denied
                         err = "denied"

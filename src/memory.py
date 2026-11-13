@@ -22,7 +22,10 @@ import re
 from db import repo
 
 MAX_MEMORIES_PER_TURN = 3
-MAX_VALUE_CHARS = 200
+# 存储上限和 prompt 上限是两回事：库里能放长偏好，进 prompt 时再压缩。
+# 以前写入就砍到 200 字符，用户说一句带条件的偏好，后半句直接丢了，
+# 而且库里再也找不回来。现在写满 2000，prompt 侧仍只带前 200 字符。
+MAX_VALUE_CHARS = 2000
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{1,49}$")
 SENSITIVE_RE = re.compile(
     r"(\b\d{17}[\dXx]\b|\b1[3-9]\d{9}\b|身份证|银行卡|密码|病史|病历)"
@@ -36,7 +39,7 @@ EXTRACT_PROMPT = """你是长期记忆抽取器。只从用户**明确说过**�
 规则：
 1. 最多 3 条；没有就输出 {"memories": []}。
 2. kind 只能是 preference（偏好）或 fact（事实）。
-3. key 用英文 snake_case，不超过 50 字符；value 不超过 200 字符。
+3. key 用英文 snake_case，不超过 50 字符；value 不超过 2000 字符，但越短越好。
 4. 不要存敏感信息：身份证、手机号、住址、银行卡、密码、病史、政治宗教观点。
 5. 不要存一次性的问题、助手给出的结论、推测出来的性格或命运。
 6. 偏好示例：以后优先查某本书、回答要简短、只看原文。

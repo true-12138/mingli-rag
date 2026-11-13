@@ -51,7 +51,7 @@ def _conversation(session: Session, user: User) -> Conversation:
     return conv
 
 
-def test_creates_eight_business_tables(session):
+def test_creates_nine_business_tables(session):
     assert set(Base.metadata.tables) == {
         "users",
         "conversations",
@@ -61,6 +61,7 @@ def test_creates_eight_business_tables(session):
         "feedback",
         "quota_ledger",
         "user_memories",
+        "pending_actions",
     }
 
 
