@@ -89,6 +89,18 @@ def memory_block(memories):
     return "\n".join(lines)
 
 
+def _count_tokens(counter, usage):
+    """把一次模型调用的 total_tokens 累加到本次运行的账上（token 预算用）。"""
+    if counter is None or not isinstance(usage, dict):
+        return
+    try:
+        n = int(usage.get("total_tokens") or 0)
+    except (TypeError, ValueError):
+        n = 0
+    if n:
+        counter["tokens_used"] = counter.get("tokens_used", 0) + n
+
+
 def rewrite_question(question, history, api_key=None, counter=None):
     """把追问改写成独立检索问题。失败或不需要改写时返回原问题。"""
     history = normalize_history(history)
@@ -96,20 +108,25 @@ def rewrite_question(question, history, api_key=None, counter=None):
         return question
 
     # 延迟导入：rag 在模块顶层会 import 本模块的函数，避免循环依赖。
-    from rag import _chat, _parse_json
+    from rag import _chat_message, _parse_json
 
     prompt = history_block(history) + "\n\n【最后一句追问】\n" + question
     if counter is not None:
         counter["llm_calls"] = counter.get("llm_calls", 0) + 1
     try:
-        raw = _chat(
+        message = _chat_message(
             [
                 {"role": "system", "content": REWRITE_PROMPT},
                 {"role": "user", "content": prompt},
             ],
             api_key=api_key,
         )
-        data = _parse_json(raw)
+        if counter is not None:
+            usage = message.get("usage")
+            if usage:
+                counter.setdefault("usage", []).append(usage)
+            _count_tokens(counter, usage)
+        data = _parse_json(message.get("content") or "")
         standalone = str((data or {}).get("standalone") or "").strip()
         # 改写结果只接受短问题；一旦模型写成一段话，直接退回原问题。
         if standalone and len(standalone) <= 200 and "\n" not in standalone:
@@ -148,6 +165,7 @@ async def arewrite_question(question, history, api_key=None, counter=None, clien
         )
         if counter is not None and usage:
             counter.setdefault("usage", []).append(usage)
+        _count_tokens(counter, usage)
         data = _parse_json(message.get("content") or "")
         standalone = str((data or {}).get("standalone") or "").strip()
         if standalone and len(standalone) <= 200 and "\n" not in standalone:

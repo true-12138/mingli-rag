@@ -25,6 +25,9 @@ from rag import REFUSAL_TEXT, _chat, _parse_json
 from conversation import history_block, memory_block, normalize_history, rewrite_question
 
 MAX_STEPS = 6
+# 单次运行允许消耗的模型 token 总量。步数管「调几次工具」，token 管「花多少钱」：
+# 长上下文可能一步就烧掉几千 token，只靠步数拦不住。0 表示不限制。
+MAX_TOKENS = int(os.environ.get("MINGLI_MAX_TOKENS", "24000"))
 # function=原生 tool_calls（默认）；json=旧的手写 ReAct，保留一版用于 A/B 和回滚
 TOOL_MODE = os.environ.get("MINGLI_TOOL_MODE", "function").strip().lower()
 
@@ -244,6 +247,7 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
             messages,
             api_key=api_key,
             max_calls=max(0, max_steps - len(trace)),
+            max_tokens=MAX_TOKENS or None,
             schemas=tool_schema.all_schemas(),
             on_call=lambda name, args, result: _record_call(trace, seen, name, args, result),
             counter=counter,
@@ -297,6 +301,8 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
     out["history_turns"] = len(history)
     out["llm_calls"] = counter["llm_calls"]
     out["tool_mode"] = "function"
+    # 本次运行实际花掉的模型 token（含追问改写与重跑），便于成本核算与预算调优
+    out["tokens_used"] = counter.get("tokens_used", 0)
     return out
 
 
@@ -346,6 +352,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
             messages,
             api_key=api_key,
             max_calls=max(0, max_steps - len(trace)),
+            max_tokens=MAX_TOKENS or None,
             schemas=tool_schema.all_schemas(),
             on_call=record,
             # 已经下发过正文就不再重放，避免前端看到重复文本
@@ -402,6 +409,8 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     out["history_turns"] = len(history)
     out["llm_calls"] = counter["llm_calls"]
     out["tool_mode"] = "function"
+    # 本次运行实际花掉的模型 token（含追问改写与重跑），便于成本核算与预算调优
+    out["tokens_used"] = counter.get("tokens_used", 0)
     # 流式路径不用全局 usage 累加器：并发请求会互相污染，每请求自己记账
     out["usage"] = llm.merge_usage(counter.get("usage"))
     return out

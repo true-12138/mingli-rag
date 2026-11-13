@@ -33,9 +33,9 @@ import llm
 import tool_loop
 import tool_schema
 import tools
-from agent import MAX_STEPS, _finalize, step_event
+from agent import MAX_STEPS, MAX_TOKENS, _finalize, step_event
 from answer_stream import AnswerExtractor
-from rag import _chat, _parse_json
+from rag import _chat_message, _parse_json
 from conversation import history_block, memory_block, normalize_history, rewrite_question
 
 EVIDENCE_CHAR = 420          # 喂给 Verifier / 汇总的每条证据截断长度
@@ -67,17 +67,39 @@ class Budget:
         self.used += n
 
 
+def _note_usage(counter, usage):
+    """把一次模型调用的 usage 记到本次运行的账上（token 预算按整个运行累计）。"""
+    if counter is None:
+        return
+    if usage:
+        counter.setdefault("usage", []).append(usage)
+    counter["tokens_used"] = counter.get("tokens_used", 0) + tool_loop._usage_tokens(usage)
+
+
+def _tokens_left(counter):
+    """还剩多少 token 预算；MAX_TOKENS<=0 表示不限制，返回 None。"""
+    if MAX_TOKENS <= 0:
+        return None
+    return max(0, MAX_TOKENS - int(counter.get("tokens_used", 0) or 0))
+
+
+def _out_of_tokens(counter):
+    left = _tokens_left(counter)
+    return left is not None and left <= 0
+
+
 def _ask_json(system, prompt, counter=None, api_key=None):
     """调一次模型并解析 JSON；解析失败重试一次（实测模型偶尔吐两个对象）。"""
     for _ in range(2):
-        raw = _chat([
+        message = _chat_message([
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ], api_key=api_key)
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
+        _note_usage(counter, message.get("usage"))
         try:
-            data = _parse_json(raw)
+            data = _parse_json(message.get("content") or "")
         except json.JSONDecodeError:
             continue
         if isinstance(data, dict):
@@ -342,6 +364,7 @@ def _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=Non
         messages,
         api_key=api_key,
         max_calls=allowed,
+        max_tokens=_tokens_left(counter),
         schemas=RETRIEVER_SCHEMAS,
         prepare=prepare,
         on_call=on_call,
@@ -461,9 +484,7 @@ async def _astream_json(system, prompt, counter=None, api_key=None, on_delta=Non
                         use_delta(text)
                         streamed = True
             elif counter is not None:
-                usage = event.get("usage")
-                if usage:
-                    counter.setdefault("usage", []).append(usage)
+                _note_usage(counter, event.get("usage"))
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
         last_raw = "".join(parts)
@@ -490,8 +511,7 @@ async def _aask_json(system, prompt, counter=None, api_key=None, client=None):
         )
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
-            if usage:
-                counter.setdefault("usage", []).append(usage)
+            _note_usage(counter, usage)
         try:
             data = _parse_json(message.get("content") or "")
         except (json.JSONDecodeError, TypeError):
@@ -586,6 +606,7 @@ async def _aretrieve(task, context, budget, trace, evidence, seen, counter, api_
         messages,
         api_key=api_key,
         max_calls=allowed,
+        max_tokens=_tokens_left(counter),
         schemas=RETRIEVER_SCHEMAS,
         prepare=prepare,
         on_call=on_call,
@@ -708,7 +729,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
         context += "\n" + _run_pre({"pre": retry["pre"]}, budget, trace, evidence, seen)[0]
 
     for task in plan["searches"]:
-        if budget.left <= 0:
+        if budget.left <= 0 or _out_of_tokens(counter):
             break
         _retrieve(task, context, budget, trace, evidence, seen, counter, api_key=api_key)
 
@@ -717,13 +738,13 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
 
     # 缺口回补：补检索，或按校验员指的 chunk_id 读上下文
     for gap in verdict["gaps"]:
-        if budget.left <= 0:
+        if budget.left <= 0 or _out_of_tokens(counter):
             break
         if gap.get("action") == "fetch_chunk":
             _fetch_gap(gap["chunk_id"], budget, trace, evidence, seen)
         else:
             _retrieve(gap, context, budget, trace, evidence, seen, counter, api_key=api_key)
-    if verdict["gaps"] and budget.used < max_steps:
+    if verdict["gaps"] and budget.used < max_steps and not _out_of_tokens(counter):
         verdict = _verify(question, list(evidence.values()), context,
                           plan["out_of_scope"], counter, api_key=api_key, history=hist_block)
 
@@ -738,6 +759,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
     # 和单 Agent 对齐：结果文件必须能证明这一轮跑的是原生 tool_calls，
     # 否则 D2 的 function calling / JSON ReAct A/B 无法从落盘结果复核。
     res["tool_mode"] = "function"
+    res["tokens_used"] = counter.get("tokens_used", 0)
     return res
 
 
@@ -782,7 +804,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
                                            evidence, seen, on_step=on_step))[0]
 
     for task in plan["searches"]:
-        if budget.left <= 0:
+        if budget.left <= 0 or _out_of_tokens(counter):
             break
         stage("retriever", status="start", book=task["book"], query=task["query"])
         thought = await _aretrieve(task, context, budget, trace, evidence, seen, counter,
@@ -798,7 +820,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
           gaps=verdict["gaps"], notes=verdict["notes"])
 
     for gap in verdict["gaps"]:
-        if budget.left <= 0:
+        if budget.left <= 0 or _out_of_tokens(counter):
             break
         if gap.get("action") == "fetch_chunk":
             await _afetch_gap(gap["chunk_id"], budget, trace, evidence, seen, on_step=on_step)
@@ -808,7 +830,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
                                        api_key=api_key, on_step=on_step, client=client)
             stage("retriever", status="done", book=gap["book"], query=gap["query"],
                   thought=thought, evidence=len(evidence))
-    if verdict["gaps"] and budget.used < max_steps:
+    if verdict["gaps"] and budget.used < max_steps and not _out_of_tokens(counter):
         verdict = await _averify(question, list(evidence.values()), context,
                                  plan["out_of_scope"], counter, api_key=api_key,
                                  history=hist_block, client=client)
@@ -828,6 +850,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     res["plan"] = plan
     res["verdict"] = verdict
     res["tool_mode"] = "function"
+    res["tokens_used"] = counter.get("tokens_used", 0)
     res["usage"] = llm.merge_usage(counter.get("usage"))
     return res
 

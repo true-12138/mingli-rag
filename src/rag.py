@@ -132,7 +132,13 @@ def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choi
         raise RuntimeError("DeepSeek 返回错误：{}".format(payload["error"]))
     # 旁路累计 token；没有 reset() 的调用方（脚本 / 测试）不记录，不影响行为
     usage.add(payload.get("usage"))
-    return payload["choices"][0]["message"]
+    message = payload["choices"][0]["message"]
+    # tool_loop 用 usage 做单次运行的 token 预算。放回 message 不影响协议，
+    # 因为它只挑 content / tool_calls 回灌给下一轮。
+    used = payload.get("usage")
+    if isinstance(used, dict):
+        message = {**message, "usage": used}
+    return message
 
 
 def _chat(messages, temperature=0.0, api_key=None):

@@ -25,7 +25,9 @@
           "transport": "streamable-http",
           "url": "https://example.com/mcp",
           "headers": {"Authorization": "Bearer ${SOME_TOKEN}"},
-          "allow": ["search"]
+          "allow": ["search"],
+          "read_only": ["search"],
+          "deny": ["delete_all"]
         }
       }
     }
@@ -34,6 +36,9 @@
 - `command` 写 `python` / `python3` 时替换成当前解释器（`sys.executable`），
   这样 venv / 容器里不用改配置。
 - `allow` 是工具白名单，只挂列出的工具；不写表示全挂。
+- `read_only` 声明哪些工具只读。外部工具默认按 side_effect 处理，不在
+  这个列表里的调用会被 tool_loop 拦下，等用户确认后才执行。
+- `deny` 里的工具连 schema 都不挂，模型不知道它存在。
 - `env` 会合并进子进程环境（stdio）；`headers` 支持 `${ENV_VAR}` 取值，
   便于把 token 放在环境变量里而不是配置文件里。
 """
@@ -52,6 +57,8 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("mingli.mcp")
+
+from tool_policy import READ, SIDE_EFFECT
 
 PREFIX = "mcp__"
 MAX_TOOL_NAME = 64          # OpenAI function name 上限
@@ -76,6 +83,8 @@ class ServerConfig:
     url: str | None = None
     headers: dict[str, str] = field(default_factory=dict)
     allow: list[str] | None = None
+    read_only: list[str] | None = None
+    deny: list[str] | None = None
     timeout: float = CALL_TIMEOUT
 
 
@@ -150,6 +159,8 @@ def load_config(path: str | None = None) -> list[ServerConfig]:
             url=cfg.get("url"),
             headers={str(k): str(v) for k, v in (cfg.get("headers") or {}).items()},
             allow=list(cfg["allow"]) if cfg.get("allow") else None,
+            read_only=list(cfg["read_only"]) if cfg.get("read_only") else None,
+            deny=list(cfg["deny"]) if cfg.get("deny") else None,
             timeout=float(cfg.get("timeout") or CALL_TIMEOUT),
         ))
     return configs
@@ -223,10 +234,7 @@ class _ServerWorker:
 
                 listed = await session.list_tools()
                 tools = list(getattr(listed, "tools", []) or [])
-                if self.cfg.allow:
-                    allow = set(self.cfg.allow)
-                    tools = [t for t in tools if t.name in allow]
-                self.tools = tools
+                self.tools = visible_tools(self.cfg, tools)
                 self._ready.set_result(True)
 
                 while True:
@@ -263,6 +271,18 @@ class _ServerWorker:
 # --------------------------------------------------------------------------- #
 # 工具名 / schema 转换
 # --------------------------------------------------------------------------- #
+def visible_tools(cfg: ServerConfig, listed: list[Any]) -> list[Any]:
+    """按 allow / deny 过滤 server 暴露的工具；deny 连 schema 都不挂。"""
+    tools = list(listed)
+    if cfg.allow:
+        allow = set(cfg.allow)
+        tools = [t for t in tools if t.name in allow]
+    if cfg.deny:
+        deny = set(cfg.deny)
+        tools = [t for t in tools if t.name not in deny]
+    return tools
+
+
 def tool_name(server: str, tool: str) -> str:
     kind = PREFIX + _NAME_RE.sub("_", server) + "__" + _NAME_RE.sub("_", tool)
     if len(kind) <= MAX_TOOL_NAME:
@@ -343,6 +363,7 @@ class MCPRegistry:
         self._workers: list[_ServerWorker] = []
         self._schemas: list[dict] = []
         self._routes: dict[str, tuple[_ServerWorker, str]] = {}
+        self._tiers: dict[str, str] = {}
         self.errors: dict[str, str] = {}
 
     # ---- 生命周期 --------------------------------------------------------
@@ -378,6 +399,7 @@ class MCPRegistry:
                     self.errors[cfg.name] = worker.error
                     continue
                 self._workers.append(worker)
+                read_only = set(cfg.read_only or [])
                 for tool in worker.tools:
                     full = tool_name(cfg.name, tool.name)
                     if full in self._routes:
@@ -385,6 +407,7 @@ class MCPRegistry:
                         continue
                     self._schemas.append(openai_schema(cfg.name, tool))
                     self._routes[full] = (worker, tool.name)
+                    self._tiers[full] = READ if tool.name in read_only else SIDE_EFFECT
                 logger.info(
                     "MCP server %s 已挂载 %d 个工具", cfg.name, len(worker.tools)
                 )
@@ -397,6 +420,11 @@ class MCPRegistry:
     def has(self, name: str) -> bool:
         self.load()
         return name in self._routes
+
+    def tier(self, name: str) -> str:
+        """外部工具默认 side_effect；配置里 read_only 声明过的才是 read。"""
+        self.load()
+        return self._tiers.get(name, SIDE_EFFECT)
 
     def call(self, name: str, args: dict) -> dict:
         self.load()

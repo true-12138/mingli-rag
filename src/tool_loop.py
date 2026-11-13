@@ -25,6 +25,41 @@ import tools
 from answer_stream import AnswerExtractor
 
 MAX_ROUNDS = 12
+BUDGET_ERROR = "步数预算已用完，请直接输出终稿"
+TOKEN_ERROR = "token 预算已用完，请直接输出终稿"
+
+
+def _usage_tokens(usage):
+    if not isinstance(usage, dict):
+        return 0
+    try:
+        return max(0, int(usage.get("total_tokens") or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _permission_denied(name, args, allow_side_effects):
+    """side_effect 工具默认不执行，只回一条「需要确认」的 observation。"""
+    if allow_side_effects:
+        return None
+    check = getattr(tools, "permission", None)
+    if check is None:
+        return None
+    try:
+        verdict = check(name) or {}
+    except Exception:  # noqa: BLE001 - 权限层失败按放行处理，错误留给工具本身
+        return None
+    if verdict.get("allowed", True):
+        return None
+    return {
+        "ok": False,
+        "tool": name,
+        "args": args,
+        "error": verdict.get("reason") or "该工具未获授权，需要用户确认后执行",
+        "tier": verdict.get("tier") or "side_effect",
+        "requires_confirmation": True,
+    }
+
 
 
 def _clean_call(call, idx):
@@ -54,16 +89,23 @@ def _parse_args(raw):
 
 
 def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
-        on_call=None, counter=None, max_rounds=MAX_ROUNDS):
+        on_call=None, counter=None, max_rounds=MAX_ROUNDS,
+        max_tokens=None, allow_side_effects=False):
     """跑 tool-calling 循环，直到模型不再调用工具。
 
     messages 会被原地追加（assistant/tool 轮次）。返回 (最终 content, messages, 已用调用数)。
     prepare(name, args) -> args 用于强制/修正参数（如检索员锁定 book）。
     on_call(name, args, result) 用于记 trace、收证据；抛异常会终止循环。
+    max_tokens 是本轮运行允许消耗的模型 token 总量；用完后不再传 tools。
+    side_effect 工具默认不执行，除非 allow_side_effects=True（用户已确认）。
     """
     used = 0
+    # 同一 counter 上的多次 run（如终稿 JSON 解析失败后重跑）要接着累计，
+    # 否则第二次运行会把第一次花的 token 从账上抹掉。
+    used_tokens = (counter or {}).get("tokens_used", 0)
+    tokens_out = False
     for _ in range(max_rounds):
-        with_tools = used < max_calls
+        with_tools = used < max_calls and not tokens_out
         msg = rag._chat_message(
             messages,
             tools=schemas if with_tools else None,
@@ -72,6 +114,14 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
         )
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
+            usage = msg.get("usage")
+            if usage:
+                counter.setdefault("usage", []).append(usage)
+        used_tokens += _usage_tokens(msg.get("usage"))
+        if counter is not None:
+            counter["tokens_used"] = used_tokens
+        if max_tokens is not None and used_tokens >= max_tokens:
+            tokens_out = True
 
         calls = msg.get("tool_calls") or []
         if not calls:
@@ -89,11 +139,11 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
 
         for call in calls:
             name = call["function"]["name"]
-            if used >= max_calls:
+            if used >= max_calls or tokens_out:
                 # 模型一次给了多个调用，预算只够前面几个。剩下的也要回一条
                 # tool 消息，否则下一轮请求会因为 tool_call_id 没有响应而报错。
                 result = {"ok": False, "tool": name, "args": None,
-                          "error": "步数预算已用完，请直接输出终稿"}
+                          "error": TOKEN_ERROR if tokens_out else BUDGET_ERROR}
                 err = "budget"
             else:
                 args, err = _parse_args(call["function"]["arguments"])
@@ -102,15 +152,22 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
                         args = prepare(name, args) or args
                     except Exception as exc:  # prepare 的错误也回给模型，别让循环崩
                         err = "参数预处理失败：{}".format(exc)
-                result = (tools.call(name, **args) if err is None else
-                          {"ok": False, "tool": name, "args": None, "error": err})
+                if err is not None:
+                    result = {"ok": False, "tool": name, "args": None, "error": err}
+                else:
+                    denied = _permission_denied(name, args, allow_side_effects)
+                    if denied is not None:
+                        result = denied
+                        err = "denied"
+                    else:
+                        result = tools.call(name, **args)
             messages.append({
                 "role": "tool",
                 "tool_call_id": call["id"],
                 "content": json.dumps(result, ensure_ascii=False),
             })
             if on_call is not None and err != "budget":
-                on_call(name, args if err is None else None, result)
+                on_call(name, args if err in (None, "denied") else None, result)
             if err != "budget":
                 used += 1
         # 一次返回多个调用时可能超过预算：下一轮 with_tools=False，模型必须收口。
@@ -119,7 +176,7 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
 
 async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                on_call=None, on_delta=None, counter=None, max_rounds=MAX_ROUNDS,
-               client=None):
+               client=None, max_tokens=None, allow_side_effects=False):
     """`run()` 的异步版：用 llm.stream() 逐 token 下发，工具层协议不变。
 
     `on_delta(text)` 只收最终正文的增量；工具轮如果模型同时吐了正文，
@@ -127,8 +184,10 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
     """
     client = client or llm.default_client()
     used = 0
+    used_tokens = (counter or {}).get("tokens_used", 0)
+    tokens_out = False
     for _ in range(max_rounds):
-        with_tools = used < max_calls
+        with_tools = used < max_calls and not tokens_out
         extractor = AnswerExtractor()
         final = None
         async for event in client.stream(
@@ -147,11 +206,15 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                 final = event
         if final is None:
             return "", messages, used
+        usage = final.get("usage")
+        used_tokens += _usage_tokens(usage)
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
-            usage = final.get("usage")
+            counter["tokens_used"] = used_tokens
             if usage:
                 counter.setdefault("usage", []).append(usage)
+        if max_tokens is not None and used_tokens >= max_tokens:
+            tokens_out = True
 
         msg = final["message"]
         calls = msg.get("tool_calls") or []
@@ -167,9 +230,9 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
 
         for call in calls:
             name = call["function"]["name"]
-            if used >= max_calls:
+            if used >= max_calls or tokens_out:
                 result = {"ok": False, "tool": name, "args": None,
-                          "error": "步数预算已用完，请直接输出终稿"}
+                          "error": TOKEN_ERROR if tokens_out else BUDGET_ERROR}
                 err = "budget"
             else:
                 args, err = _parse_args(call["function"]["arguments"])
@@ -178,16 +241,22 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                         args = prepare(name, args) or args
                     except Exception as exc:
                         err = "参数预处理失败：{}".format(exc)
-                result = (await asyncio.to_thread(tools.call, name, **(args or {}))
-                          if err is None else
-                          {"ok": False, "tool": name, "args": None, "error": err})
+                if err is not None:
+                    result = {"ok": False, "tool": name, "args": None, "error": err}
+                else:
+                    denied = _permission_denied(name, args, allow_side_effects)
+                    if denied is not None:
+                        result = denied
+                        err = "denied"
+                    else:
+                        result = await asyncio.to_thread(tools.call, name, **(args or {}))
             messages.append({
                 "role": "tool",
                 "tool_call_id": call["id"],
                 "content": json.dumps(result, ensure_ascii=False),
             })
             if on_call is not None and err != "budget":
-                on_call(name, args if err is None else None, result)
+                on_call(name, args if err in (None, "denied") else None, result)
             if err != "budget":
                 used += 1
     return "", messages, used

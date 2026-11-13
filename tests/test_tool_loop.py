@@ -254,3 +254,170 @@ def test_invalid_arguments_are_reported_not_raised(mods):
     err = json.loads(messages[-1]["content"])
     assert err["ok"] is False and "JSON" in err["error"]
     assert content == '{"thought": "改好了"}'
+
+
+# --------------------------------------------------------------------------- #
+# 权限分级
+# --------------------------------------------------------------------------- #
+def _denying_permission(name):
+    return {"allowed": False, "tier": "side_effect",
+            "reason": "工具 %s 属于 side_effect，需要用户确认后执行" % name}
+
+
+def test_side_effect_tool_is_denied_and_not_executed(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ]},
+        {"content": '{"thought": "需要用户确认"}'},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+    trace = []
+
+    content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}],
+        on_call=lambda name, args, result: trace.append((name, args, result)),
+    )
+
+    assert executed == []                      # 有副作用的工具一次都没执行
+    assert used == 1                           # 但这次尝试仍占一步，防止模型反复重试
+    denial = json.loads(messages[-1]["content"])
+    assert denial["ok"] is False
+    assert denial["requires_confirmation"] is True
+    assert denial["tier"] == "side_effect"
+    assert denial["args"] == {"book": "全部"}  # 参数保留，用户确认后原样执行
+    assert trace[0][2]["requires_confirmation"] is True
+    assert content == '{"thought": "需要用户确认"}'
+
+
+def test_side_effect_tool_runs_after_user_confirmation(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "tool_calls": [
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ]},
+        {"content": '{"thought": "已执行"}'},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: (
+        executed.append((name, kw)) or {"ok": True, "result": {"deleted": 1}})
+
+    content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}],
+        allow_side_effects=True,
+    )
+
+    assert executed == [("mcp__remote__delete_all", {"book": "全部"})]
+    assert used == 1
+    assert json.loads(messages[-1]["content"])["result"] == {"deleted": 1}
+    assert content == '{"thought": "已执行"}'
+
+
+def test_denied_side_effect_is_also_blocked_in_arun(mods):
+    mod, _fake_rag, fake_tools = mods
+    api = FakeStreamAPI([
+        [_message(tool_calls=[
+            _tool_call("c1", "mcp__remote__delete_all", {"book": "全部"}),
+        ])],
+        [_message('{"thought": "等确认"}')],
+    ])
+    fake_tools.permission = _denying_permission
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+
+    _content, messages, used = asyncio.run(mod.arun(
+        [{"role": "user", "content": "问"}], max_calls=2,
+        schemas=[{"type": "function"}], client=api,
+    ))
+
+    assert executed == []
+    assert used == 1
+    denial = json.loads(messages[-1]["content"])
+    assert denial["requires_confirmation"] is True
+
+
+# --------------------------------------------------------------------------- #
+# token 预算
+# --------------------------------------------------------------------------- #
+def test_token_budget_forces_final_without_tools(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "usage": {"total_tokens": 12}, "tool_calls": [
+            _tool_call("c1", "search_classics", {"query": "甲"}),
+        ]},
+        {"content": '{"thought": "省着点"}'},
+    ])
+    fake_rag._chat_message = api
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+
+    content, messages, used = mod.run(
+        [{"role": "user", "content": "问"}], max_calls=5,
+        schemas=[{"type": "function"}], max_tokens=10,
+    )
+
+    # 第一步就把额度花完了：这次工具调用不再执行（也不计步），下一轮不传 tools
+    assert executed == []
+    assert used == 0
+    assert json.loads(messages[-1]["content"])["error"].startswith("token 预算已用完")
+    assert api.calls[1]["tools"] is None
+    assert content == '{"thought": "省着点"}'
+
+
+def test_token_usage_accumulates_across_rounds_and_reruns(mods):
+    mod, fake_rag, fake_tools = mods
+    api = FakeAPI([
+        {"content": "", "usage": {"total_tokens": 7}, "tool_calls": [
+            _tool_call("c1", "search_classics", {"query": "甲"}),
+        ]},
+        {"content": '{"thought": "ok"}', "usage": {"total_tokens": 5}},
+    ])
+    fake_rag._chat_message = api
+    fake_tools.call = lambda name, **kw: {"ok": True, "result": {}}
+    counter = {"llm_calls": 0}
+
+    mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], counter=counter,
+    )
+    assert counter["tokens_used"] == 12
+    assert counter["usage"] == [{"total_tokens": 7}, {"total_tokens": 5}]
+
+    # 同一个 counter 再跑一次（终稿 JSON 失败后的重跑）要接着累计，不能清零
+    api.replies = [{"content": '{"thought": "again"}', "usage": {"total_tokens": 3}}]
+    mod.run(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], counter=counter,
+    )
+    assert counter["tokens_used"] == 15
+
+
+def test_arun_token_budget_and_usage(mods):
+    mod, _fake_rag, fake_tools = mods
+    api = FakeStreamAPI([
+        [_message(tool_calls=[_tool_call("c1", "search_classics", {"query": "甲"})],
+                  usage={"total_tokens": 11})],
+        [_message('{"thought": "ok"}', usage={"total_tokens": 2})],
+    ])
+    executed = []
+    fake_tools.call = lambda name, **kw: executed.append(name) or {"ok": True}
+    counter = {"llm_calls": 0}
+
+    asyncio.run(mod.arun(
+        [{"role": "user", "content": "问"}], max_calls=3,
+        schemas=[{"type": "function"}], max_tokens=10,
+        counter=counter, client=api,
+    ))
+
+    assert executed == []
+    assert counter["tokens_used"] == 13
+    assert api.calls[1]["tools"] is None
+

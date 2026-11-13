@@ -76,6 +76,38 @@ def test_load_config_expands_env(tmp_path, monkeypatch):
     assert cfg.headers["Authorization"] == "Bearer s3cret"
 
 
+def test_load_config_reads_permission_lists(tmp_path):
+    path = tmp_path / "mcp.json"
+    path.write_text(json.dumps({
+        "servers": {"r": {
+            "transport": "streamable-http",
+            "url": "https://example.com/mcp",
+            "allow": ["search", "delete_all"],
+            "read_only": ["search"],
+            "deny": ["delete_all"],
+        }}
+    }), encoding="utf-8")
+    cfg = mcp_client.load_config(str(path))[0]
+    assert cfg.read_only == ["search"]
+    assert cfg.deny == ["delete_all"]
+
+
+def test_visible_tools_applies_allow_and_deny():
+    cfg = mcp_client.ServerConfig(
+        name="r", allow=["search", "delete_all"], deny=["delete_all"])
+    listed = [_fake_tool("search"), _fake_tool("delete_all"), _fake_tool("other")]
+    assert [t.name for t in mcp_client.visible_tools(cfg, listed)] == ["search"]
+
+
+def test_registry_tier_defaults_to_side_effect():
+    worker = _StubWorker(SimpleNamespace(name="time"))
+    reg, full = _registry_with(worker)
+    reg._tiers = {full: mcp_client.READ}
+    assert reg.tier(full) == mcp_client.READ
+    # 没在 read_only 里声明过的外部工具一律按 side_effect 处理
+    assert reg.tier("mcp__time__delete_all") == mcp_client.SIDE_EFFECT
+
+
 # --------------------------------------------------------------------------- #
 # 名字与 schema
 # --------------------------------------------------------------------------- #

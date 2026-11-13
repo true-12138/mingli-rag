@@ -311,6 +311,16 @@ def external_registry():
 
 
 
+def permission(name):
+    """这次调用属于 read 还是 side_effect，是否放行。见 `tool_policy.py`。"""
+    try:
+        from tool_policy import evaluate
+        return evaluate(name, external_registry())
+    except Exception:  # noqa: BLE001 - 权限层自己坏了不能把工具循环拖死
+        logger.warning("工具权限检查失败，按 read 放行：%s", name, exc_info=True)
+        return {"allowed": True, "tier": "read", "reason": None}
+
+
 def call(name, **kwargs):
     """按名字调工具。未知工具名或参数不合法都返回 ok=False，而不是抛异常。
 

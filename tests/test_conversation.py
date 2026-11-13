@@ -58,7 +58,8 @@ def test_rewrite_without_history_returns_original_without_llm_call(monkeypatch):
 
 
 def test_rewrite_success_returns_standalone(monkeypatch):
-    monkeypatch.setattr(rag, "_chat", lambda *a, **k: '{"standalone": "《渊海子平》怎么看正官"}')
+    monkeypatch.setattr(rag, "_chat_message",
+                        lambda *a, **k: {"content": '{"standalone": "《渊海子平》怎么看正官"}'})
     counter = {"llm_calls": 0}
     got = conversation.rewrite_question(
         "那这本书呢",
@@ -102,6 +103,9 @@ def test_answer_retrieves_with_standalone_and_isolates_citations(monkeypatch):
 
     monkeypatch.setattr(rag, "retrieve_one", fake_retrieve)
     monkeypatch.setattr(rag, "_chat", fake_chat)
+    # 追问改写走 _chat_message（要拿 usage），回答正文仍走 _chat
+    monkeypatch.setattr(rag, "_chat_message",
+                        lambda messages, **kw: {"content": fake_chat(messages, **kw)})
 
     res = rag.answer(
         "那这本书呢",
