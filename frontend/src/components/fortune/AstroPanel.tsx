@@ -2,8 +2,15 @@
 // 地点只影响上升/天顶和宫位；行星的黄经由时刻决定。
 import { useState } from "react";
 
-import { ApiError, drawAstro, type AstroChart, type AstroInput } from "../../api";
+import {
+  ApiError,
+  intakeFortune,
+  type AstroChart,
+  type AstroInput,
+  type IntakeNeedInput,
+} from "../../api";
 import { AstroWheel } from "./AstroWheel";
+import { Questionnaire } from "./Questionnaire";
 import { ReadingBox } from "./ReadingBox";
 import { splitDate, splitTime } from "./datetime";
 
@@ -34,8 +41,10 @@ export function AstroPanel() {
   const [lon, setLon] = useState(String(CITIES[0].lon));
   const [chart, setChart] = useState<AstroChart | null>(null);
   const [lastInput, setLastInput] = useState<AstroInput | null>(null);
+  const [needInput, setNeedInput] = useState<IntakeNeedInput | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const pickCity = (name: string) => {
     setCity(name);
@@ -46,38 +55,52 @@ export function AstroPanel() {
     }
   };
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    const ymd = splitDate(date);
-    if (!ymd) {
-      setError("先填出生日期（公历）。");
-      return;
-    }
-    const { hour, minute } = splitTime(time);
-    const input: AstroInput = {
-      ...ymd,
-      hour,
-      minute,
-      tz: 8,
-      lat: Number(lat),
-      lon: Number(lon),
-      city: city.trim() || "未标注",
-    };
-    if (!Number.isFinite(input.lat) || !Number.isFinite(input.lon)) {
-      setError("纬度、经度要填数字。");
-      return;
-    }
+  // 缺出生日期/钟点时由后端决定问什么；城市和经纬度可选，
+  // 用默认值时会带回警告，不悄悄当成北京。
+  const runIntake = async (params: Record<string, unknown>) => {
     setBusy(true);
     setError(null);
+    setWarning(null);
     try {
-      setChart(await drawAstro(input));
-      setLastInput(input);
+      const result = await intakeFortune("astro", params);
+      if (result.status === "need_input") {
+        setNeedInput(result);
+        setChart(null);
+        return;
+      }
+      const next = result.chart as AstroChart;
+      setChart(next);
+      setLastInput(result.params as unknown as AstroInput);
+      setNeedInput(null);
+      const p = result.params as {
+        year: number; month: number; day: number; hour: number; minute: number;
+      };
+      setDate(
+        `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`,
+      );
+      setTime(`${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`);
+      setCity(next.input.city);
+      setLat(String(next.input.lat));
+      setLon(String(next.input.lon));
+      if (result.warnings.length > 0) setWarning(result.warnings.join(" "));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "排盘失败了，请检查出生信息");
     } finally {
       setBusy(false);
     }
+  };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+    const ymd = splitDate(date);
+    const { hour, minute } = splitTime(time);
+    const input: Record<string, unknown> = { hour, minute, tz: 8 };
+    if (ymd) Object.assign(input, ymd);
+    if (city.trim()) input.city = city.trim();
+    if (lat.trim() && Number.isFinite(Number(lat))) input.lat = Number(lat);
+    if (lon.trim() && Number.isFinite(Number(lon))) input.lon = Number(lon);
+    void runIntake(input);
   };
 
   const params: Record<string, unknown> | null = lastInput
@@ -96,7 +119,6 @@ export function AstroPanel() {
             min="1900-01-01"
             max="2100-12-31"
             onChange={(event) => setDate(event.target.value)}
-            required
           />
         </label>
         <label className="f-field f-field--time">
@@ -156,7 +178,18 @@ export function AstroPanel() {
         </p>
       )}
 
-      {!chart && !error && (
+      {warning && <p className="note note--warn">{warning}</p>}
+
+      {needInput && (
+        <Questionnaire
+          message={needInput.message}
+          fields={needInput.fields}
+          busy={busy}
+          onSubmit={(values) => void runIntake({ ...needInput.known, ...values })}
+        />
+      )}
+
+      {!chart && !error && !needInput && (
         <div className="chart-empty">
           <span className="chart-empty__seal" aria-hidden="true">
             星

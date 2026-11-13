@@ -2,7 +2,13 @@
 // 排盘本身不调模型，点「排盘」会立刻出结果；解读才需要等模型。
 import { useState } from "react";
 
-import { ApiError, drawBazi, type BaziChart, type BaziInput } from "../../api";
+import {
+  ApiError,
+  intakeFortune,
+  type BaziChart,
+  type IntakeNeedInput,
+} from "../../api";
+import { Questionnaire } from "./Questionnaire";
 import { ReadingBox } from "./ReadingBox";
 import { splitDate, splitTime } from "./datetime";
 
@@ -20,28 +26,46 @@ export function BaziPanel() {
   const [time, setTime] = useState("12:00");
   const [gender, setGender] = useState<"male" | "female">("male");
   const [chart, setChart] = useState<BaziChart | null>(null);
+  const [needInput, setNeedInput] = useState<IntakeNeedInput | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (busy) return;
-    const ymd = splitDate(date);
-    if (!ymd) {
-      setError("先填出生日期（公历）。");
-      return;
-    }
-    const { hour, minute } = splitTime(time);
-    const input: BaziInput = { ...ymd, hour, minute, gender };
+  // 把已知信息交给后端检查：齐了直接出盘，不齐就渲染它要补的字段。
+  const runIntake = async (params: Record<string, unknown>) => {
     setBusy(true);
     setError(null);
     try {
-      setChart(await drawBazi(input));
+      const result = await intakeFortune("bazi", params);
+      if (result.status === "need_input") {
+        setNeedInput(result);
+        setChart(null);
+        return;
+      }
+      const next = result.chart as BaziChart;
+      setChart(next);
+      setNeedInput(null);
+      // 补全的字段回填到表单，避免下面显示的信息和盘对不上
+      const { year, month, day, hour, minute, gender: sex } = next.input;
+      setDate(
+        `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      );
+      setTime(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
+      setGender(sex);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "排盘失败了，请检查出生时间");
     } finally {
       setBusy(false);
     }
+  };
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+    const ymd = splitDate(date);
+    const { hour, minute } = splitTime(time);
+    const input: Record<string, unknown> = { hour, minute, gender };
+    if (ymd) Object.assign(input, ymd);
+    void runIntake(input);
   };
 
   const params: Record<string, unknown> | null = chart
@@ -67,7 +91,6 @@ export function BaziPanel() {
             min="1900-01-01"
             max="2100-12-31"
             onChange={(event) => setDate(event.target.value)}
-            required
           />
         </label>
         <label className="f-field f-field--time">
@@ -100,6 +123,7 @@ export function BaziPanel() {
       </form>
       <p className="f-hint">
         公历时间，按北京时间排。不确定时辰就填 12:00——时柱会不准，日柱仍然准确。
+        日期没填全也没关系，会只问缺的那几项。
       </p>
 
       {error && (
@@ -108,7 +132,16 @@ export function BaziPanel() {
         </p>
       )}
 
-      {!chart && !error && (
+      {needInput && (
+        <Questionnaire
+          message={needInput.message}
+          fields={needInput.fields}
+          busy={busy}
+          onSubmit={(values) => void runIntake({ ...needInput.known, ...values })}
+        />
+      )}
+
+      {!chart && !error && !needInput && (
         <div className="chart-empty">
           <span className="chart-empty__seal" aria-hidden="true">
             八

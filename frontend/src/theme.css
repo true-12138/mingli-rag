@@ -1552,6 +1552,56 @@ button {
   color: var(--faint);
 }
 
+/* ---------- 结构化追问 ---------- */
+/* 字段清单来自 /v1/fortune/intake：后端说缺什么，这里就问什么。 */
+
+.f-ask {
+  margin: 0 0 22px;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--rule-strong);
+  border-left: 2px solid var(--cinnabar);
+  background: var(--panel);
+}
+
+.f-ask__message {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-soft);
+}
+
+.f-ask__fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.f-input--ask {
+  width: 128px;
+}
+
+.f-field--bad .f-input {
+  border-color: var(--cinnabar);
+}
+
+.f-ask__error {
+  font-size: 11px;
+  color: var(--cinnabar);
+}
+
+.f-ask__foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.f-ask__hint {
+  font-size: 11px;
+  color: var(--faint);
+}
+
 /* ---------- 盘面 ---------- */
 
 .chart-empty {

@@ -218,6 +218,44 @@ export interface TarotChart {
 
 export type FortuneChart = BaziChart | AstroChart | TarotChart;
 
+// 排盘信息不够时，后端返回「还缺什么」，由这里渲染成追问表单。
+export interface IntakeField {
+  name: string;
+  label: string;
+  ask: string;
+  type: "int" | "float" | "str" | "enum";
+  required: boolean;
+  min?: number;
+  max?: number;
+  max_length?: number;
+  options?: string[];
+  option_labels?: Record<string, string>;
+  example?: number | string;
+  error?: string;
+  value?: unknown;
+}
+
+export interface IntakeNeedInput {
+  status: "need_input";
+  kind: FortuneKind;
+  reason: "missing" | "invalid" | "calendar";
+  known: Record<string, unknown>;
+  fields: IntakeField[];
+  message: string;
+}
+
+export interface IntakeReady {
+  status: "ready";
+  kind: FortuneKind;
+  params: Record<string, unknown>;
+  defaults: Record<string, unknown>;
+  ignored: string[];
+  warnings: string[];
+  chart: FortuneChart;
+}
+
+export type IntakeResult = IntakeNeedInput | IntakeReady;
+
 export interface FortuneReading {
   kind: FortuneKind;
   summary: string;
@@ -247,6 +285,18 @@ export function rejectMemory(id: number, version?: number): Promise<Memory> {
   return request<Memory>(`/v1/memories/${id}/reject`, {
     method: "POST",
     body: JSON.stringify({ version: version ?? null }),
+  });
+}
+
+// 先把已知信息交给后端检查：齐了直接带盘回来，不齐就返回要补的字段。
+// 默认值只用于可选字段，并在 warnings 里说明。
+export function intakeFortune(
+  kind: FortuneKind,
+  params: Record<string, unknown>,
+): Promise<IntakeResult> {
+  return request<IntakeResult>("/v1/fortune/intake", {
+    method: "POST",
+    body: JSON.stringify({ kind, params }),
   });
 }
 
