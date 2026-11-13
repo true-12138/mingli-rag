@@ -530,6 +530,9 @@ curl -s localhost:8000/chat \
 worker 都没用。换供应商 / 配多 key 的步骤见 [`docs/llm-providers.md`](docs/llm-providers.md)；
 换完先跑 `python scripts/check_llm.py`，确认流式、`json_object` 与工具调用三项都通过。
 
+每一层坏掉时用户看到什么、系统留下什么、哪条测试锁住了它，见
+[`docs/engineering.md`](docs/engineering.md)（边界与异常处理）。
+
 启动顺序（本地全量）：
 
 ```bash
