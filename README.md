@@ -1,16 +1,22 @@
 # 命理古籍 RAG Agent · v1.9
 
-一个「只回答古籍原文里写了什么」的检索增强 Agent：**45 部命理古籍 / 8,681 个 chunk / 约 340 万字** → BGE-M3 + BM25 双路召回 → RRF 融合 → DeepSeek 生成 → **ReAct 工具调用 / 多 Agent 编排** → **强制引用 + 无依据拒答**。
+**一个「只回答古籍原文里写了什么」的检索增强 Agent。**
+检索不到依据，它说不知道——而不是编一段听起来像古文的回答。
 
-[演示（录屏）](#演示) ·
-[公开 Demo](https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/)（CloudStudio 单机，**工作区运行期间**可用，停止后失效） ·
+[项目主页](https://thetrue.cn/) ·
+[五段录屏](docs/demo/) ·
+[在线 Demo](https://79394fd9aadc4a299de775f8acaf4afb--80.ap-shanghai2.cloudstudio.club/)（CloudStudio 单机，**工作区运行期间**可用，停止后失效） ·
 [HTTP API 文档](#61-http-apiv14) ·
-[检索评测明细](eval/results_8681_tuned.csv) ·
-[拒答评测明细](eval/refusal_results.csv) ·
+[检索评测明细](eval/baselines.md) ·
 [Agent A/B 报告](eval/REPORT.md) ·
-[排盘模块](#11-排盘模块v11) ·
-[语料工程说明](docs/corpus_pipeline.md) ·
-[开发日志](docs/daily_dev_journal.md)
+[局限清单](#5-局限诚实清单)
+
+| 维度 | 实测 |
+|---|---|
+| 语料 | 45 部古籍 · 8,681 块 · 约 340 万字（标点组 16 部 + 无标点组 29 部） |
+| 检索 | dense + BM25 → RRF：exact R@5 **70.0%**、line R@5 **75.0%**；单路 dense 52.5 / 62.5、BM25 42.5 / 52.5；280 组参数对照 |
+| 可信 | 每句结论绑定 `chunk_id`；语料外问题拒答 **10/10**；编造引用 **0/30** |
+| 并发 | 200 条 SSE 连接 + 20 条并发回答同窗；错误率 **0.41%**；TTFB P95 **1.01s**；206 项测试 |
 
 > **免责声明**
 > 本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；**排盘是确定性的历法/天文计算**；解读属于文化娱乐内容，不是预测，也不构成医疗、法律、投资或人生决策建议。
