@@ -1,4 +1,4 @@
-#命理古籍RAG|项目开发日志
+# 古籍文献 RAG | 项目开发日志
 ##D1
 背景
 目标：在 CloudStudio 搭建RAG项目环境，D1任务：创建venv虚拟环境、安装jieba分词、项目初始化并提交Git，日志存入GitHub可追踪目录。

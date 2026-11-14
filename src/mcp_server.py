@@ -32,7 +32,7 @@ SERVER_NAME = "mingli-rag"
 SERVER_VERSION = "1.0.0"
 
 SERVER_INSTRUCTIONS = """\
-这是「古籍原文检索」工具集，覆盖 45 部命理古籍、8,681 个 chunk。
+这是「古籍原文检索」工具集，覆盖 45 部古籍文献、8,681 个 chunk。
 
 使用约定：
 1. 回答古籍内容前必须先调用 search_classics 或 fetch_chunk 取证。

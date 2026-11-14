@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""命理古籍问答 · 排盘：Streamlit 界面。
+"""古籍问答 · 排盘：Streamlit 界面。
 
 给访客看的只有两件事：问古籍、排盘。检索策略、Agent 编排、评测账本都是
 内部工具，默认不出现；维护时用 MINGLI_ADMIN=1 或 URL 加 ?admin=1 打开。
@@ -152,7 +152,7 @@ def _header():
         '<div class="brand-row">'
         '<span class="seal-mark">古</span>'
         '<span class="brand-name">问古</span>'
-        '<span class="brand-sub">命理古籍问答</span>'
+        '<span class="brand-sub">古籍问答</span>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -337,7 +337,7 @@ def _empty_state():
     st.markdown(
         '<div class="hero">'
         '<h1>问古籍，得原文</h1>'
-        '<p class="hero-sub">命理里的一个词、一句断语，回到四十五部古籍里找依据。'
+        '<p class="hero-sub">古籍里的一个词、一句断语，回到四十五部古籍里找依据。'
         '找不到，它会直说。</p>'
         '</div>',
         unsafe_allow_html=True,
@@ -439,7 +439,7 @@ def _ask_page():
     api_key = _key_panel()
     ready = bool(has_api_key() or api_key)
     typed = st.chat_input(
-        "问一个命理里的问题…" if ready else "填入自己的 Key 后就能提问",
+        "问一个古籍里的问题…" if ready else "填入自己的 Key 后就能提问",
         key="qa_input",
         disabled=not ready,
     )
@@ -1121,7 +1121,7 @@ def _admin_page():
 
 def main():
     st.set_page_config(
-        page_title="问古 · 命理古籍问答",
+        page_title="问古 · 古籍问答",
         page_icon="📜",
         layout="wide",
         initial_sidebar_state="collapsed",

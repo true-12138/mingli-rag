@@ -655,6 +655,23 @@ def _is_expired(expires_at, now) -> bool:
     return expires_at <= now
 
 
+def _find_pending_action(
+    session: Session, user_id: int, tool: str, args_hash: str
+) -> PendingAction | None:
+    """按「同一用户 + 同一工具 + 同一参数摘要」取仍在 pending 的那一行。"""
+    return session.scalar(
+        select(PendingAction)
+        .where(
+            PendingAction.user_id == user_id,
+            PendingAction.tool == tool,
+            PendingAction.args_hash == args_hash,
+            PendingAction.status == "pending",
+        )
+        .order_by(PendingAction.id.desc())
+        .limit(1)
+    )
+
+
 def create_pending_action(
     session: Session,
     user_id: int,
@@ -669,23 +686,17 @@ def create_pending_action(
     幂等是必要的：模型在一轮里可能反复尝试同一个被拒的工具，前端也会重复提交，
     每轮都插入新行会让待确认列表迅速膨胀、用户还要点很多次同样的确认。
 
+    先查一次是快路径；两个请求同时到达时都会查不到，插入阶段由部分唯一索引
+    `uq_pending_actions_pending_args` 兜底，后到的那个捕获 `IntegrityError`、
+    回滚后返回先写入的那一行。
+
     会 commit。
     """
     tool = (str(tool) or "").strip()[:200]
     args_json = _canonical_args(args)
     args_hash = _args_hash(args)
 
-    existing = session.scalar(
-        select(PendingAction)
-        .where(
-            PendingAction.user_id == user_id,
-            PendingAction.tool == tool,
-            PendingAction.args_hash == args_hash,
-            PendingAction.status == "pending",
-        )
-        .order_by(PendingAction.id.desc())
-        .limit(1)
-    )
+    existing = _find_pending_action(session, user_id, tool, args_hash)
     if existing is not None:
         return existing
 
@@ -699,7 +710,18 @@ def create_pending_action(
         status="pending",
     )
     session.add(action)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        # 并发请求抢先插入了同一组 (user, tool, args_hash) 的 pending 行。
+        # rollback 让会话回到干净状态，再读回那条已存在的行。
+        session.rollback()
+        existing = _find_pending_action(session, user_id, tool, args_hash)
+        if existing is None:
+            # 不是这条部分唯一索引造成的冲突（比如 user_id 外键不存在），
+            # 不能静默吞掉。
+            raise
+        return existing
     session.refresh(action)
     return action
 

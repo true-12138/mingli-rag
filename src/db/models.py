@@ -26,10 +26,12 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import relationship
 
@@ -289,9 +291,24 @@ class PendingAction(Base):
 
     `args_hash` 存参数的 canonical JSON 摘要，令牌只对「同一工具 + 同一组参数」
     有效；`token_hash` 只存令牌的 sha256，数据库泄露也拿不到可用的明文令牌。
+
+    并发调用方可能同时走「先查后插」都查不到已有行；部分唯一索引把「同一用户 +
+    同一工具 + 同一参数最多一条 pending」交给数据库保证。条件里带 status，
+    所以确认/拒绝/消费后状态离开 pending，不会阻塞以后的新提议。
     """
 
     __tablename__ = "pending_actions"
+    __table_args__ = (
+        Index(
+            "uq_pending_actions_pending_args",
+            "user_id",
+            "tool",
+            "args_hash",
+            unique=True,
+            sqlite_where=text("status = 'pending'"),
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(

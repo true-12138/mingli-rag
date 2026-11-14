@@ -224,6 +224,12 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
    `MINGLI_CACHE_FINGERPRINT_TTL`（默认 30s）缓存，所以更新后最坏 30 秒内
    仍可能命中旧答案；`chunks/` 只取目录 mtime 和条目数，原地改写单个文件
    检测不到。需要立即生效可设 TTL=0 或固定 `MINGLI_CACHE_FINGERPRINT`。
+8. **并发重复提议已由部分唯一索引兜底。** `create_pending_action` 原先的
+   「先查后插」在两个请求同时到达时都可能插入成功，产生重复的待确认行；
+   现在 `pending_actions` 上有部分唯一索引 `uq_pending_actions_pending_args`
+   （`user_id, tool, args_hash`，仅约束 `status = 'pending'` 的行，SQLite 与
+   Postgres 都支持）。插入撞约束时仓库层回滚并返回已存在的那一行；状态离开
+   pending 后不再受约束，同一动作以后仍可重新提议。
 
 ## 7. 内容与合规边界
 
@@ -257,5 +263,9 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | 授权确认与重放 | `tests/test_approvals.py` |
 | MCP | `tests/test_mcp_client.py`、`tests/test_mcp_server.py` |
 | 排盘与追问 | `tests/test_fortune.py`、`tests/test_fortune_api.py` |
+
+授权链路同时覆盖数据库层去重：`tests/test_approvals.py` 的
+`test_duplicate_pending_insert_is_deduplicated_at_db_layer` 验证重复 pending
+插入会撞 `uq_pending_actions_pending_args`，仓库层回滚后返回已存在行。
 
 回归基线：全量 `pytest` 必须全绿；任何失败模式修复都要先有一条会红的测试。

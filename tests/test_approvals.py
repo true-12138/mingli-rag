@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 SRC = Path(__file__).resolve().parent.parent / "src"
@@ -21,6 +22,7 @@ import api  # noqa: E402
 import api_conversations  # noqa: E402
 from db import repo  # noqa: E402
 from db.base import Base, get_session, make_engine  # noqa: E402
+from db.models import PendingAction  # noqa: E402
 
 DENY = {
     "allowed": False,
@@ -207,6 +209,46 @@ def test_create_pending_action_is_idempotent_for_same_tool_and_args(db):
         session, user.id, "mcp__remote__delete_all", {"book": "部分"}
     )
     assert len(repo.list_pending_actions(session, user.id)) == 2
+
+
+def test_duplicate_pending_insert_is_deduplicated_at_db_layer(db, monkeypatch):
+    """数据库层兜底：并发插入撞部分唯一索引，仓库层回滚后返回已存在的那一行。"""
+    session = db()
+    user = _user(session, "u-race")
+    args = {"book": "全部"}
+    tool = "mcp__remote__delete_all"
+    first = repo.create_pending_action(session, user.id, tool, args)
+    first_id = first.id
+
+    # 绕过仓库层直接插一条相同的 pending：唯一索引在 commit 时拒绝。
+    session.add(
+        PendingAction(
+            user_id=user.id,
+            tool=tool,
+            args_json=repo._canonical_args(args),
+            args_hash=first.args_hash,
+            status="pending",
+        )
+    )
+    with pytest.raises(IntegrityError):
+        session.commit()
+    session.rollback()
+    assert [a.id for a in repo.list_pending_actions(session, user.id)] == [first_id]
+
+    # 模拟「先查后插」的竞态：预检查没看到并发请求刚写入的行。
+    real_scalar = session.scalar
+    calls = {"n": 0}
+
+    def scalar_misses_once(stmt, *a, **kw):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return None
+        return real_scalar(stmt, *a, **kw)
+
+    monkeypatch.setattr(session, "scalar", scalar_misses_once)
+    second = repo.create_pending_action(session, user.id, tool, args)
+    assert second.id == first_id
+    assert len(repo.list_pending_actions(session, user.id)) == 1
 
 
 def test_token_replay_executes_once_for_same_tool_and_args(db, loop_env):

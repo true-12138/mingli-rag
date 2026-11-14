@@ -81,7 +81,7 @@ _TRACES: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
 _TRACES_LOCK = threading.Lock()
 
 app = FastAPI(
-    title="命理古籍 RAG API",
+    title="问古 · 古籍问答 API",
     version=API_VERSION,
     description="45 部古籍 / 8,681 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
 )
