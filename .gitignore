@@ -44,3 +44,6 @@ api.log
 
 # design-taste 前端巡检的截图与报告产物
 .taste-inspect/
+
+# 个人面试准备，不属于公开仓库
+面试准备*.md
