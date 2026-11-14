@@ -62,6 +62,8 @@
 
 ---
 
+> 产品视角的定位、目标用户、需求清单与验收口径在 **[`docs/PRD.md`](docs/PRD.md)**（回溯版，按已实现现状反推）。
+
 ## 1. 为什么做这个
 
 古籍问答最要命的失败不是答得浅，而是**编造原文**——模型用现代常识补出一句听起来很像古籍的话，用户无法分辨。
@@ -937,6 +939,7 @@ POST /v1/actions/{id}/reject        # 拒绝后不可再确认
 │   └── eval/eval_questions_seed.md # 30 条评测问题种子
 ├── docs/
 │   ├── demo/                  # 五段录屏 mp4 + GIF + 十一张节点截图
+│   ├── PRD.md                 # 产品需求文档（回溯版：用户、非目标、需求与验收）
 │   ├── corpus_pipeline.md     # 语料工程说明（原 README）
 │   └── daily_dev_journal.md   # 开发日志与踩坑
 ├── ATTRIBUTION.md             # 语料来源与许可证
