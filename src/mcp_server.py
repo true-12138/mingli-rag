@@ -12,6 +12,9 @@
     # 远程 HTTP（Streamable HTTP，默认 127.0.0.1:8765/mcp）
     MCP_TRANSPORT=streamable-http MCP_PORT=8765 python src/mcp_server.py
 
+HTTP 传输设置 ``MINGLI_MCP_TOKEN`` 后要求 ``Authorization: Bearer <token>``；
+未设置时启动会告警，并保持原来的无鉴权行为（默认只绑回环地址）。stdio 不受影响。
+
 MCP 解决的是「工具怎么被发现、怎么被调用」；模型侧仍然需要 function
 calling 或 JSON action 协议来表达「我要调哪个工具」。两者不是同一层。
 """
@@ -25,6 +28,7 @@ from typing import Literal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import mcp_auth
 import tools
 from mcp.server.mcpserver import MCPServer
 
@@ -43,10 +47,34 @@ SERVER_INSTRUCTIONS = """\
 5. 输出不得用于医疗、法律、投资或人生决策。
 """
 
+
+def _http_endpoint() -> tuple[str, int]:
+    """HTTP 传输的绑定地址；stdio 不使用。"""
+    host = os.environ.get("MCP_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    port = int(os.environ.get("MCP_PORT", "8765"))
+    return host, port
+
+
+def _base_url(host: str, port: int) -> str:
+    """给原生 AuthSettings 用的资源标识；IPv6 字面量要加方括号。"""
+    if ":" in host and not host.startswith("["):
+        host = "[%s]" % host
+    return "http://%s:%d" % (host, port)
+
+
+# mcp 的鉴权只能在构造 MCPServer 时配置，所以 token 必须在进程启动前就绪。
+# 未设置时 build_http_auth 返回空 dict，服务保持原行为。
+_MCP_TOKEN = mcp_auth.token_from_env()
+_MCP_AUTH: dict = {}
+if _MCP_TOKEN:
+    _host, _port = _http_endpoint()
+    _MCP_AUTH = mcp_auth.build_http_auth(_MCP_TOKEN, _base_url(_host, _port))
+
 server = MCPServer(
     name=SERVER_NAME,
     version=SERVER_VERSION,
     instructions=SERVER_INSTRUCTIONS,
+    **_MCP_AUTH,
 )
 
 
@@ -194,8 +222,15 @@ def main() -> None:
         raise SystemExit(
             "MCP_TRANSPORT 只能是 stdio / sse / streamable-http，收到：%r" % transport
         )
-    host = os.environ.get("MCP_HOST", "127.0.0.1")
-    port = int(os.environ.get("MCP_PORT", "8765"))
+    host, port = _http_endpoint()
+    if not _MCP_TOKEN:
+        print(
+            "警告：MINGLI_MCP_TOKEN 未设置，MCP HTTP 传输（%s）未鉴权；"
+            "当前绑定 %s:%d，请只监听回环地址或设置 token 后重启。"
+            % (transport, host, port),
+            file=sys.stderr,
+            flush=True,
+        )
     server.run(transport=transport, host=host, port=port)
 
 

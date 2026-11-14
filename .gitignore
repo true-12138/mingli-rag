@@ -41,3 +41,6 @@ frontend/dist/
 # scripts/serve.sh 的运行时状态与日志
 .serve/
 api.log
+
+# design-taste 前端巡检的截图与报告产物
+.taste-inspect/

@@ -19,7 +19,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest numpy lunar_python ephem rank-bm25 requests python-dotenv \
-            fastapi uvicorn httpx SQLAlchemy alembic
+            fastapi uvicorn httpx SQLAlchemy alembic "mcp>=2.3,<3"
       - name: Run tests
         run: pytest -q
       - name: Migration smoke test

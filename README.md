@@ -16,7 +16,7 @@
 | 语料 | 45 部古籍 · 8,681 块 · 约 340 万字（标点组 16 部 + 无标点组 29 部） |
 | 检索 | dense + BM25 → RRF：exact R@5 **70.0%**、line R@5 **75.0%**；单路 dense 52.5 / 62.5、BM25 42.5 / 52.5；280 组参数对照 |
 | 可信 | 每句结论绑定 `chunk_id`；语料外问题拒答 **10/10**；编造引用 **0/30** |
-| 并发 | 200 条 SSE 连接 + 20 条并发回答同窗；错误率 **0.41%**；TTFB P95 **1.01s**；287 项通过 · 3 项跳过 |
+| 并发 | 200 条 SSE 连接 + 20 条并发回答同窗；错误率 **0.41%**；TTFB P95 **1.01s**；319 项通过 · 1 项跳过（未装 jieba） |
 
 > **免责声明**
 > 本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；**排盘是确定性的历法/天文计算**；以上为传统文化视角的说明，仅供文化研究与娱乐参考，不是预测，不构成医疗、法律、投资或人生决策建议。
@@ -413,7 +413,7 @@ pass_rate = 0.0
 | 10 | 工程细节：数据路径曾硬编码 `/workspace`（已改为仓库相对路径 + `MINGLI_DATA_DIR`）；Demo 无登录态，只有全站每日额度闸门 | 单会话限制挡不住脚本，全站额度是唯一硬闸门 | 加 Nginx 限流 + 接 Langfuse 做持久化 trace |
 | 11 | 内容边界：古籍里的概念与现代生活不是一一对应 | 可能出现不恰当类比 | 提示词硬约束 + 拒绝样例回归测试 |
 | 12 | 30 条版每系统只跑 1 次，且题型与 prompt 在迭代中互相改过，属于 **development set**；`b04`（该取原条却直接引用检索片段）两边都挂 | 26/30 不能外推成泛化准确率；方差只能从 15 条版的三次重复（±1 条）间接推断 | 冻结 prompt 后用新题集做一次盲测；修 b04 的工具选择 |
-| 13 | MCP server + client 都有了（client 支持 stdio / streamable-http、工具白名单）；但 server 的 HTTP transport 仍无鉴权 | 默认只绑 `127.0.0.1`；client 挂载的外部工具没有做「哪些工具允许进 prompt」的策略，只靠 `allow` 白名单 | 给 server 的 HTTP transport 加 token + 给 client 加按会话的工具开关 |
+| 13 | MCP server + client 都有了（client 支持 stdio / streamable-http、工具白名单）；设置 `MINGLI_MCP_TOKEN` 后，server 的 HTTP transport 要求 Bearer token | 未设置 token 时仅绑 `127.0.0.1` 并告警；client 挂载的外部工具没有做「哪些工具允许进 prompt」的策略，只靠 `allow` 白名单 | 给 client 加按会话的工具开关 |
 | 14 | D4 排盘/记忆页的浏览器验收用的是**假 LLM + stub 检索**，没有真实 key | 盘面计算、接口契约、页面交互是真跑的；「解读」的文本质量与真实延迟没在浏览器里验过 | 有 key 后在 CloudStudio 走一遍 `#/fortune` 解读并截图 |
 | 15 | 并发底座分两层验证：单测用 fakeredis 测 Lua 语义、假编码器测微批；**真实压测在 CloudStudio 上跑**（2 worker + Redis，2026-11-08，见 §6.1.1 实测表）。本机没有 Redis/PG 服务，本地只覆盖逻辑 | 200/20、阶梯并发、soak、检索 QPS 都是单机 8 核上的数字；**Postgres 写竞争与跨机扩容没有压过**，真实 BGE-M3 微批吞吐也是以 CloudStudio 当次为准 | 换独立压测机复测；上多机时补 Postgres 写竞争与跨机闸门测试 |
 | 16 | 语义缓存不是全局向量检索：Redis 普通镜像无 RediSearch，语义层索引只在各进程内 | 多 worker 下精确命中共享，**语义命中各进程各自学习**；新扩容的进程冷启动 | 需要全局语义命中时换 Redis Stack / 独立向量库，并重跑检索评测确认口径 |
@@ -756,7 +756,7 @@ Claude Desktop 配置（`%APPDATA%\Claude\claude_desktop_config.json`）：
 
 设计上只做协议适配，不复制业务逻辑：每个 tool 都转调 `tools.call`，所以 CLI、Agent、MCP 三个入口的参数校验和错误格式完全一致。schema 由类型注解生成，`mode` / `gender` 是枚举而不是自由字符串。启动信息必须写 stderr——stdio 通道把 stdout 当 JSON-RPC 帧，`retrieval.py` 曾把 `chunks:8681|...` 打到 stdout，客户端会报 `Failed to parse JSONRPC message`。
 
-**边界**：HTTP transport 没有鉴权，默认只绑 `127.0.0.1`。另外，MCP 和 function calling 不是同一层：MCP 管工具怎么被发现、怎么被调用，function calling / JSON action 管模型怎么表达"我要调哪个工具"。
+**边界**：HTTP transport 默认只绑 `127.0.0.1`；设置 `MINGLI_MCP_TOKEN` 后，`sse` / `streamable-http` 要求 `Authorization: Bearer <token>`（缺失或错误返回 401），未设置时启动会打印告警但保持原有行为。这是**单个共享密钥，不是 OAuth 授权服务器**：401 会按 SDK 约定带 `WWW-Authenticate` 元数据地址，带静态 `Authorization` 头的客户端不受影响，试图走 OAuth 发现的客户端走不通。token 在进程启动时读取，改了要重启。另外，MCP 和 function calling 不是同一层：MCP 管工具怎么被发现、怎么被调用，function calling / JSON action 管模型怎么表达"我要调哪个工具"。
 
 #### MCP client：反向挂载外部 server
 
