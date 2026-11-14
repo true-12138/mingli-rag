@@ -158,6 +158,10 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | 单次调用超时 | 60s，可按 server 覆盖 | `:66` |
 | 调用抛异常 | 转 `ok=false` 的 result，不炸工具循环 | `:429-440` |
 | server 退出 | 排队中的 future 全部唤醒为异常，调用方不会等到超时 | `:258-267` |
+| HTTP 传输 token 错误/缺失 | 401，在 MCP 协议层之前拒绝；常量时间比较（`hmac.compare_digest`） | `src/mcp_auth.py:38-70` |
+| HTTP 传输未设 token | stderr 告警，保持无鉴权；默认只绑 `127.0.0.1` | `src/mcp_server.py:226-232` |
+
+鉴权接的是 mcp 2.x 原生 `MCPServer(auth=..., token_verifier=...)`，不是自己包 ASGI 中间件。取舍：这套 API 是 OAuth 形状（`AuthSettings` 强制要求 issuer/resource URL），但真正的校验只有共享密钥一项，不提供授权端点；带静态 `Authorization` 头的客户端正常，尝试 OAuth 发现的客户端走不通。token 在模块导入时读取，轮换要重启进程。
 
 ### 3.9 HTTP 错误码约定
 
@@ -261,7 +265,7 @@ HTTP / SSE           src/api.py, src/api_conversations.py, src/api_fortune.py
 | 并发闸门 | `tests/test_gate.py` |
 | 语义缓存与失效 | `tests/test_semcache.py`、`tests/test_cache_invalidation.py` |
 | 授权确认与重放 | `tests/test_approvals.py` |
-| MCP | `tests/test_mcp_client.py`、`tests/test_mcp_server.py` |
+| MCP | `tests/test_mcp_client.py`、`tests/test_mcp_server.py`、`tests/test_mcp_auth.py` |
 | 排盘与追问 | `tests/test_fortune.py`、`tests/test_fortune_api.py` |
 
 授权链路同时覆盖数据库层去重：`tests/test_approvals.py` 的
