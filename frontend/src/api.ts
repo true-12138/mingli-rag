@@ -123,6 +123,8 @@ export interface Memory {
 // 模型提议、但被权限层拦下的有副作用工具调用。args 已是对象，不用再解析字符串。
 export interface PendingAction {
   id: number;
+  // 旧动作可能没有会话归属；刷新后按它决定是否挂在当前会话下。
+  conversation_id?: string | null;
   tool: string;
   args: unknown;
   reason: string | null;
@@ -379,8 +381,14 @@ export function deleteConversation(id: string): Promise<void> {
 
 // ---------- 待确认动作 ----------
 
-export function listPendingActions(limit = 20): Promise<PendingAction[]> {
-  return request<PendingAction[]>(`/v1/actions?limit=${limit}`);
+export function listPendingActions(
+  limit = 20,
+  conversationId?: string,
+): Promise<PendingAction[]> {
+  // 传 conversationId 时只取该会话的待确认项；不传仍是当前用户的全部动作。
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (conversationId) query.set("conversation_id", conversationId);
+  return request<PendingAction[]>(`/v1/actions?${query.toString()}`);
 }
 
 // 确认后拿到一次性令牌；只有模型下次真的调用同一个工具时才会消费。

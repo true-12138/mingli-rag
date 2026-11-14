@@ -440,6 +440,70 @@ def test_pending_action_persist_failure_does_not_fail_answer(client, monkeypatch
     assert body["pending_actions"] == []
 
 
+def test_list_actions_filters_by_conversation_id(client, monkeypatch):
+    """按会话过滤：只拿到本会话的行动作；不传参数仍是全量。
+
+    两个会话故意用不同参数，避免同用户「同工具同参数只留一条 pending」
+    的幂等逻辑把第二条合并到第一个会话里。
+    """
+    headers = {"X-Anonymous-Id": "dave"}
+    conv_a = _create_conv(client, "dave")
+    conv_b = _create_conv(client, "dave")
+    body_a = _chat_with_pending(
+        client, monkeypatch, anon="dave", conversation_id=conv_a,
+        pending=[{
+            "tool": "mcp__remote__delete_all",
+            "args": {"book": "会话 A"},
+            "reason": "工具需要用户确认后执行",
+        }],
+    )
+    body_b = _chat_with_pending(
+        client, monkeypatch, anon="dave", conversation_id=conv_b,
+        pending=[{
+            "tool": "mcp__remote__delete_all",
+            "args": {"book": "会话 B"},
+            "reason": "工具需要用户确认后执行",
+        }],
+    )
+    action_a = body_a["pending_actions"][0]
+    action_b = body_b["pending_actions"][0]
+    # 落库时就记住了会话归属，chat 响应里也能直接读到
+    assert action_a["conversation_id"] == conv_a
+    assert action_b["conversation_id"] == conv_b
+
+    only_a = client.get(
+        f"/v1/actions?conversation_id={conv_a}", headers=headers
+    ).json()
+    assert [a["id"] for a in only_a] == [action_a["id"]]
+    assert only_a[0]["conversation_id"] == conv_a
+
+    only_b = client.get(
+        f"/v1/actions?conversation_id={conv_b}", headers=headers
+    ).json()
+    assert [a["id"] for a in only_b] == [action_b["id"]]
+
+    # 不传 conversation_id：保持原有行为，两个会话的动作都在
+    everything = client.get("/v1/actions", headers=headers).json()
+    assert {a["id"] for a in everything} == {action_a["id"], action_b["id"]}
+
+
+def test_actions_conversation_filter_does_not_leak_other_users(client, monkeypatch):
+    """拿着别人的会话 ID 也查不到动作：归属仍由 user_id 兜底。"""
+    body = _chat_with_pending(client, monkeypatch, anon="erin")
+    conv_id = body["conversation_id"]
+    action_id = body["pending_actions"][0]["id"]
+
+    mine = client.get(
+        f"/v1/actions?conversation_id={conv_id}", headers={"X-Anonymous-Id": "erin"}
+    ).json()
+    assert [a["id"] for a in mine] == [action_id]
+
+    other = client.get(
+        f"/v1/actions?conversation_id={conv_id}", headers={"X-Anonymous-Id": "frank"}
+    ).json()
+    assert other == []
+
+
 def test_action_endpoints_enforce_404_and_409(client, monkeypatch):
     """别人的动作 404；已确认的动作再确认 409 并带回当前状态。"""
     body = _chat_with_pending(client, monkeypatch, anon="alice")

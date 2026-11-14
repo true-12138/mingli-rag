@@ -102,6 +102,8 @@ class PendingActionOut(BaseModel):
     """一条等用户确认的工具调用。args 直接返回对象，前端不必再解析字符串。"""
 
     id: int
+    # 旧数据可能没有会话归属；前端据此只在对应会话里展示这条卡片。
+    conversation_id: str | None = None
     tool: str
     args: Any = None
     reason: str | None = None
@@ -461,6 +463,7 @@ def _memory_conflict(exc: repo.MemoryConflict) -> HTTPException:
 def _action_out(action) -> dict[str, Any]:
     return {
         "id": action.id,
+        "conversation_id": action.conversation_id,
         "tool": action.tool,
         "args": _loads(action.args_json, {}),
         "reason": action.reason,
@@ -561,12 +564,22 @@ def delete_memory(
 @router.get("/actions", response_model=list[PendingActionOut])
 def list_actions(
     limit: int = Query(default=20, ge=1, le=100),
+    conversation_id: str | None = Query(default=None),
     anonymous_id: str = Depends(current_anonymous_id),
     session: Session = Depends(get_session),
 ) -> list[dict[str, Any]]:
-    """列出当前用户仍在等待确认的工具调用，最新的在前。"""
+    """列出当前用户仍在等待确认的工具调用，最新的在前。
+
+    带 `conversation_id` 时只返回该会话下的项：刷新/切回会话后前端据此
+    把卡片重新挂到消息列表末尾；不传保持原来的「所有会话」行为。
+    """
     user = repo.get_or_create_user(session, anonymous_id)
-    return [_action_out(a) for a in repo.list_pending_actions(session, user.id, limit=limit)]
+    return [
+        _action_out(a)
+        for a in repo.list_pending_actions(
+            session, user.id, limit=limit, conversation_id=conversation_id
+        )
+    ]
 
 
 @router.post("/actions/{action_id}/approve", response_model=ActionApproveOut)

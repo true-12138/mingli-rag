@@ -19,6 +19,12 @@ interface Props {
   /** 有回答正在生成时不允许再发下一条。 */
   busy: boolean;
   onContinue: (question: string, mode: Mode, approvals: string[]) => void;
+  /**
+   * 卡片已经不再是「待确认」时通知父级（拒绝成功，或允许后已提交继续）。
+   * 刷新后恢复的卡片据此从待确认区域移除；允许成功但还没继续时保留卡片，
+   * 否则一次性令牌会随组件卸载丢掉，工具再也执行不了。
+   */
+  onResolved?: (id: number) => void;
 }
 
 type Phase =
@@ -59,7 +65,14 @@ const TOOL_LABELS: Record<string, string> = {
 
 const DEFAULT_REASON = "这个操作会修改外部状态，需要你确认后才会执行。";
 
-export function ActionCard({ action, question, mode, busy, onContinue }: Props) {
+export function ActionCard({
+  action,
+  question,
+  mode,
+  busy,
+  onContinue,
+  onResolved,
+}: Props) {
   const [phase, setPhase] = useState<Phase>("pending");
   const [token, setToken] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
@@ -112,7 +125,9 @@ export function ActionCard({ action, question, mode, busy, onContinue }: Props) 
     try {
       await rejectAction(action.id);
       setPhase("rejected");
+      onResolved?.(action.id);
     } catch (err) {
+      // 409 等冲突保持现有逻辑：回到待确认并展示错误，交给用户刷新后重试。
       setPhase("pending");
       setError(describeError(err, "没能拒绝"));
     }
@@ -125,6 +140,7 @@ export function ActionCard({ action, question, mode, busy, onContinue }: Props) 
     setToken(null);
     setExpiresAt(null);
     setPhase("submitted");
+    onResolved?.(action.id);
   };
 
   const tool = toolLabel(action.tool);

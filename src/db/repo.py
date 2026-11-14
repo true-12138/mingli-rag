@@ -727,20 +727,28 @@ def create_pending_action(
 
 
 def list_pending_actions(
-    session: Session, user_id: int, limit: int = 20
+    session: Session,
+    user_id: int,
+    limit: int = 20,
+    *,
+    conversation_id: str | None = None,
 ) -> list[PendingAction]:
-    """按创建时间倒序列出仍在等用户确认的动作。"""
-    return list(
-        session.scalars(
-            select(PendingAction)
-            .where(
-                PendingAction.user_id == user_id,
-                PendingAction.status == "pending",
-            )
-            .order_by(PendingAction.created_at.desc(), PendingAction.id.desc())
-            .limit(limit)
-        ).all()
+    """按创建时间倒序列出仍在等用户确认的动作。
+
+    `conversation_id` 是关键字参数（旧调用方可能按位置传 limit）：
+    传入非空值时只返回该会话下的项，不传/传空保持原来的全量行为。
+    归属仍由 `user_id` 约束，别人的会话 ID 不会带出任何行。
+    """
+    stmt = select(PendingAction).where(
+        PendingAction.user_id == user_id,
+        PendingAction.status == "pending",
     )
+    if conversation_id:
+        stmt = stmt.where(PendingAction.conversation_id == conversation_id)
+    stmt = stmt.order_by(
+        PendingAction.created_at.desc(), PendingAction.id.desc()
+    ).limit(limit)
+    return list(session.scalars(stmt).all())
 
 
 def get_pending_action(
