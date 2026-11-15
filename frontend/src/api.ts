@@ -285,6 +285,12 @@ export interface FortuneReading {
   sections: { title: string; content: string }[];
   disclaimer: string;
   parse_error?: boolean;
+  // 解读里 [n] 指向的古籍片段；盘面本身是主证据，没有引用也正常。
+  citations_chunk_ids?: number[];
+  citation_map?: CitationRef[];
+  invalid_citations?: number[];
+  retrieved_chunk_ids?: number[];
+  retrieval_query?: string;
 }
 
 export function listMemories(): Promise<Memory[]> {

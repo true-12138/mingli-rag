@@ -68,7 +68,7 @@
 | R6 | P1 | 会话管理：新建 / 切换 / 删除 / 刷新恢复 | 刷新后历史与待确认卡片不丢 | ✅ | README §6.2、`frontend/src/pages/ChatPage.tsx` |
 | R7 | P1 | 长期记忆：可查看、可删除，注入不越权 | 两步确认删除；记忆不进入他人会话 | ✅ | README §6.4、`tests/test_memory.py` |
 | R8 | P1 | 有副作用的工具必须一次性授权 | 令牌 sha256 存储、绑定参数、600s 过期、原子消费 | ✅ | README §6.5、`tests/test_approvals.py` |
-| R9 | P1 | 历法盘面：八字 / 星盘 / 塔罗，算和讲分开 | 盘面确定性可复现；解读不得改盘 | ✅（解读质量未评测） | README §11、局限 #14 |
+| R9 | P1 | 历法盘面：八字 / 星盘 / 塔罗，算和讲分开；解读可按盘面检索古籍片段 | 盘面确定性可复现；解读不得改盘；引用编号只来自本轮片段、越界丢弃；检索失败退化为纯盘面解读 | ✅（解读质量未评测） | README §11、`src/fortune/interpret.py`、`tests/test_fortune_interpret.py`、局限 #14 |
 | R10 | P1 | MCP server：7 个工具对外暴露 | stdio + streamable-http；stdio 不污染 stdout | ✅ | README §6.3、`tests/test_mcp_server.py` |
 | R11 | P1 | MCP client：挂载外部 server | 工具名加前缀；allow / read_only / deny 策略 | ✅ | `src/mcp_client.py`、`tests/test_mcp_client.py` |
 | R12 | P1 | HTTP 传输鉴权 | 设置 `MINGLI_MCP_TOKEN` 后无 token / 错 token 401 | ✅ | README §6.3、`tests/test_mcp_auth.py` |

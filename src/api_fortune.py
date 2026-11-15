@@ -6,6 +6,7 @@
 - **排盘是确定性计算**，不经过模型。同样的输入永远得到同一个盘；
 - **解读**才调用模型，而且 prompt 里的盘面是服务端重新算出来的，
   不接受前端直接塞一张盘进来——否则模型看到什么就全由调用方决定了。
+  解读会额外检索几段古籍作为说明材料，引用编号随解读一起返回。
 
 塔罗是例外里的细节：`seed` 不传时服务端生成一个具体 seed 并返回。
 前端拿这张盘去请求解读时必须把 seed 带回来，否则会重新抽一次，
@@ -216,5 +217,11 @@ def read_fortune(
     except Exception:
         logger.exception("fortune read failed kind=%s", req.kind)
         raise HTTPException(status_code=500, detail="解读失败") from exc
-    logger.info("fortune read kind=%s sections=%d", req.kind, len(result.get("sections") or []))
+    logger.info(
+        "fortune read kind=%s sections=%d cited=%d retrieved=%d",
+        req.kind,
+        len(result.get("sections") or []),
+        len(result.get("citations_chunk_ids") or []),
+        len(result.get("retrieved_chunk_ids") or []),
+    )
     return result
