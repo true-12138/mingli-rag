@@ -37,3 +37,49 @@ def test_json_mode_prompts_mention_json(source, name):
     body = _prompt(source, name)
     assert re.search(r"json", body, re.I), \
         "{} 缺 json 关键字，JSON 模式会 400".format(name)
+
+
+# 出口拒答判据：有原文证据时，不能仅因「表述不标准 / 没有定义句式」拒答。
+# 它对应的失分是 eval/multiturn.jsonl 的 mt09 / mt17（19/20、18/20 的失分点）。
+# 这几个 prompt 都能直接决定 can_answer，改措辞时容易把这条一起删掉，所以钉住。
+OVER_REFUSAL_MARKERS = [
+    ("rag.py", "SYSTEM_PROMPT", "不算证据不足"),
+    ("agent.py", "SYSTEM_PROMPT", "不算证据不足"),
+    ("agent.py", "FUNCTION_SYSTEM_PROMPT", "不算证据不足"),
+    ("agent_multi.py", "SYNTHESIZER_PROMPT", "不等于材料不足"),
+    # 校验员这一侧守的是「对象有、清单类属性不全 → 先补检索，别直接判不足」
+    ("agent_multi.py", "VERIFIER_PROMPT", "属性词"),
+]
+
+
+@pytest.mark.parametrize("source,name,marker", OVER_REFUSAL_MARKERS)
+def test_refusal_prompts_keep_anti_over_refusal_rule(source, name, marker):
+    body = _prompt(source, name)
+    assert marker in body, \
+        "{} 里缺「{}」：有证据却因谨慎拒答的判据丢了".format(name, marker)
+
+
+# 放宽拒答的同时，跨时代类比的硬拒答必须还在：这两条是反方向的约束，
+# 少了它，「不因谨慎拒答」会被读成「什么都能答」。
+MODERN_LIFE_MARKERS = [
+    ("rag.py", "SYSTEM_PROMPT"),
+    ("agent.py", "SYSTEM_PROMPT"),
+    ("agent.py", "FUNCTION_SYSTEM_PROMPT"),
+    ("agent_multi.py", "SYNTHESIZER_PROMPT"),
+]
+
+
+@pytest.mark.parametrize("source,name", MODERN_LIFE_MARKERS)
+def test_refusal_prompts_keep_modern_life_guard(source, name):
+    body = _prompt(source, name)
+    assert "科举" in body and "财星" in body, \
+        "{} 丢了「古代概念≠现代生活」的拒答例子".format(name)
+
+
+# mt09 的实测：目标原文（chunk 8213，同时讲建日/除日）在 BM25 限书检索里
+# 「除日」排第 15、「除日 宜 忌」排第 8，k=8 拿不到；但同一 chunk 在上一轮
+# 「建日 宜」里排第 1。检索员必须知道要放大 k，否则只会判「没有原文」。
+def test_retriever_prompt_tells_to_widen_k():
+    body = _prompt("agent_multi.py", "RETRIEVER_PROMPT")
+    assert "k=20" in body and "清单类" in body, \
+        "RETRIEVER_PROMPT 丢了「清单类问题放大 k 再搜」这条，mt09 一类会继续漏召回"
