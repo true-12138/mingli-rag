@@ -54,6 +54,7 @@ import rag
 import retrieval
 import semcache
 import sse
+import terms
 import usage
 from db.base import db_info
 from guards import (
@@ -187,6 +188,13 @@ class ChunkOut(BaseModel):
     text: str = ""
 
 
+class TermAnnotateRequest(BaseModel):
+    """术语卡：前端把最终正文发过来，后端返回可下划线的词条和区间。"""
+
+    text: str = Field(min_length=1, max_length=8000)
+    limit: int = Field(default=40, ge=1, le=200)
+
+
 class TraceResponse(BaseModel):
     trace_id: str
     created_at: str
@@ -301,6 +309,7 @@ def health() -> dict[str, Any]:
         "llm_url": llm.DEEPSEEK_URL,
         "streaming": True,
         "trace_cache": len(_TRACES),
+        "terms": terms.stats(),
     }
 
 
@@ -345,6 +354,32 @@ def lookup_chunks(
             "text": str(chunk.get("chunk_text") or "").strip(),
         })
     return out
+
+
+@app.get("/v1/terms")
+def search_terms(
+    q: str,
+    limit: int = 10,
+    _: None = Depends(_require_token),
+) -> dict[str, Any]:
+    """查术语：词条名或释义里的子串。词典是解释，不是古籍原文。"""
+    needle = (q or "").strip()
+    if not needle:
+        raise HTTPException(status_code=400, detail="q 不能为空")
+    return {"query": needle, "terms": terms.search(needle, limit=limit)}
+
+
+@app.post("/v1/terms/annotate")
+def annotate_terms(
+    req: TermAnnotateRequest,
+    _: None = Depends(_require_token),
+) -> dict[str, Any]:
+    """给一段正文标出可点的术语：返回互不重叠的区间和释义。
+
+    只读词典文件，不调模型、不碰检索索引，所以不进并发闸门。
+    """
+    hits = terms.annotate_with_entries(req.text, limit=req.limit)
+    return {"terms": hits, "n": len(hits)}
 
 
 @app.get("/metrics", response_class=PlainTextResponse, tags=["ops"])

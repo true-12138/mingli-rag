@@ -1,11 +1,29 @@
 // 一轮问答：问 → 进度 / 正文 → 出处。
 import { useEffect, useRef, useState } from "react";
 
-import type { Chunk, Mode, StepEvent } from "../api";
+import { annotateTerms, type Chunk, type Mode, type StepEvent, type TermHit } from "../api";
 import type { Turn } from "../useChat";
 import { ActionCard } from "./ActionCard";
 import { AnswerBody } from "./AnswerBody";
 import { Sources } from "./Sources";
+
+// 术语标注是等回答写完才发的一次请求，结果按正文缓存。翻回旧会话时
+// 同一段正文命中的是同一份标注；缓存太小反而每滚一次就重新请求一次。
+const TERM_CACHE_LIMIT = 24;
+const termCache = new Map<string, TermHit[]>();
+
+function loadTerms(text: string): Promise<TermHit[]> {
+  const cached = termCache.get(text);
+  if (cached) return Promise.resolve(cached);
+  return annotateTerms(text).then((hits) => {
+    if (termCache.size >= TERM_CACHE_LIMIT) {
+      const oldest = termCache.keys().next().value;
+      if (oldest != null) termCache.delete(oldest);
+    }
+    termCache.set(text, hits);
+    return hits;
+  });
+}
 
 interface Props {
   turn: Turn;
@@ -54,6 +72,23 @@ export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: P
   const finished = turn.status !== "streaming";
   const refusal = turn.canAnswer === false;
 
+  // 边流边标会把半句话切成词条，也会每帧打一次接口；等写完再标。
+  const [terms, setTerms] = useState<TermHit[]>([]);
+  useEffect(() => {
+    if (!finished || !turn.answer || refusal) return;
+    let alive = true;
+    loadTerms(turn.answer)
+      .then((hits) => {
+        if (alive) setTerms(hits);
+      })
+      .catch(() => {
+        /* 标不出来就只是没有下划线，不影响正文 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [finished, turn.answer, refusal]);
+
   return (
     <article className="turn">
       <div className="turn__ask">
@@ -76,7 +111,7 @@ export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: P
 
           {turn.answer ? (
             <div className={`answer-wrap${streaming ? " answer-wrap--streaming" : ""}`}>
-              <AnswerBody text={turn.answer} onCite={cite} />
+              <AnswerBody text={turn.answer} onCite={cite} terms={terms} />
             </div>
           ) : (
             streaming &&

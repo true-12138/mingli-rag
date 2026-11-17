@@ -340,6 +340,38 @@ def test_chunks_lookup_rejects_empty_ids(client):
     assert client.post("/chunks", json={"ids": []}).status_code == 422
 
 
+# ---------- 术语卡 ----------
+
+
+def test_terms_annotate_returns_offsets_and_meanings(client):
+    text = "日主甲木，月令建禄，年干透出正官。"
+    r = client.post("/v1/terms/annotate", json={"text": text})
+    assert r.status_code == 200
+    items = r.json()["terms"]
+    assert items
+    for item in items:
+        assert text[item["start"]:item["end"]] == item["term"]
+        assert item["category"]
+        assert item["definition"] or item["snippets"]
+
+
+def test_terms_annotate_rejects_empty_text(client):
+    assert client.post("/v1/terms/annotate", json={"text": ""}).status_code == 422
+
+
+def test_terms_search_and_validation(client):
+    r = client.get("/v1/terms", params={"q": "贵人"})
+    assert r.status_code == 200
+    hits = r.json()["terms"]
+    assert hits and hits[0]["term"] == "天乙贵人"
+    assert client.get("/v1/terms", params={"q": "  "}).status_code == 400
+
+
+def test_health_reports_term_dictionary(client):
+    stats = client.get("/health").json()["terms"]
+    assert stats["annotatable"] > 100
+
+
 # ---------- 语义缓存 ----------
 
 

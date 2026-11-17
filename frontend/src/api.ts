@@ -415,6 +415,36 @@ export function lookupChunks(ids: number[]): Promise<Chunk[]> {
   });
 }
 
+// ---------- 术语卡 ----------
+
+export interface TermSnippet {
+  chunk_id: number;
+  book: string;
+  chapter: string;
+  text: string;
+}
+
+export interface TermHit {
+  term: string;
+  /** 在正文里的位置；搜索接口返回的词条没有这一项。 */
+  start?: number;
+  end?: number;
+  category: string;
+  /** 词典释义，源数据缺失时为空串。 */
+  definition: string;
+  source: string;
+  snippets: TermSnippet[];
+}
+
+/** 让后端找出正文里的术语。不用前端那份词典：25k 行的词条全量下发太重。 */
+export function annotateTerms(text: string, limit = 40): Promise<TermHit[]> {
+  if (!text.trim()) return Promise.resolve([]);
+  return request<{ terms: TermHit[]; n: number }>("/v1/terms/annotate", {
+    method: "POST",
+    body: JSON.stringify({ text: text.slice(0, 8000), limit }),
+  }).then((res) => res.terms);
+}
+
 // ---------- 流式问答 ----------
 
 export interface StepEvent {

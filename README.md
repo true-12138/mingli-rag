@@ -16,7 +16,8 @@
 | 语料 | 45 部古籍 · 8,681 块 · 约 340 万字（标点组 16 部 + 无标点组 29 部） |
 | 检索 | dense + BM25 → RRF：exact R@5 **70.0%**、line R@5 **75.0%**；单路 dense 52.5 / 62.5、BM25 42.5 / 52.5；280 组参数对照 |
 | 可信 | 每句结论绑定 `chunk_id`；语料外问题拒答 **10/10**；编造引用 **0/30** |
-| 并发 | 200 条 SSE 连接 + 20 条并发回答同窗；错误率 **0.41%**；TTFB P95 **1.01s**；319 项通过 · 1 项跳过（未装 jieba）→ 2026-11-17 全量重跑 **346 项通过 · 1 项跳过** |
+| 并发 | 200 条 SSE 连接 + 20 条并发回答同窗；错误率 **0.41%**；TTFB P95 **1.01s**；2026-11-17 全量重跑 **359 项通过 · 1 项跳过** |
+| 术语 | 正文词条可点开看释义：词典 **203 条**（可标注 156 条），**147 条**带原文例句（共 288 条），例句注明不算引用依据 |
 
 > **免责声明**
 > 本项目是大模型 RAG 与工具调用 Agent 的学习与作品集项目。语料是历史文献；**排盘是确定性的历法/天文计算**；以上为传统文化视角的说明，仅供文化研究与娱乐参考，不是预测，不构成医疗、法律、投资或人生决策建议。
@@ -426,6 +427,7 @@ pass_rate = 0.0
 | 17 | 检索吞吐在 16 并发是拐点，再往上（32/64）反而下降 | 压测客户端与服务端同机，客户端单进程 asyncio 抢 CPU；服务端自身 P50 仍只有 10.5ms | 换独立压测机复测，或客户端改多进程；生产用 `MINGLI_EMBED_URL` 后 CPU 释放给检索 |
 | 18 | 盘面能带进对话追问，但**只活在当前标签页**：`chart` 随每次请求传，不写进会话记录 | 刷新页面或换设备打开同一会话，追问不再带盘面，要回排盘页重新点一次；关掉 chip 就等于回到普通问答 | 有登录态后再考虑把「最近一张盘」存进会话（加列 + 迁移） |
 | 19 | 盘面进 prompt 的效果**没有在真实模型上核过**：本机没有 key，只验了 prompt 组装、引用契约和缓存开关 | 能保证的是"不会把盘面当引用""不会串盘"，不能保证解读措辞一定对 | 有 key 后在 CloudStudio 走一遍排盘 → 追问，抽 10 条看是否改盘、是否乱引 |
+| 20 | 术语卡只覆盖手工整理的两份词典（203 条）：八字术语的释义来自 `bazi-terms`，是**英文**的；很多常见词条（如「官星」「建禄」）不在表里 | 中文读者点开英文释义会别扭；没收录的词不标，看起来像"只有这几个词能点"；例句的选取规则是启发式，不保证最能解释该词 | 补中文释义；把 `term_snippets.jsonl` 的选句改成按「词条 × 邻近定义句式」排序；接受投稿词条 |
 
 > 关于"没做完"的部分：微调、换 LangChain/LlamaIndex 重写、向量库仍然**不做**；reranker 已接入但默认关闭、尚未打过 bigram 基线，RAGAS 忠实度排进 v2。多轮和 query rewrite 已经做了最小闭环，但只做到"能用 + 有测试"，没有包装成"多轮能力很强"。判断标准是"能不能让简历多一个数字或一个链接"，不能就推迟。
 
@@ -503,6 +505,8 @@ uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
 | `POST` | `/v1/fortune/tarot` | 生成牌面；不传 `seed` 时服务端定一个并返回，客户端回传即可复现 |
 | `POST` | `/v1/fortune/read` | 解读：服务端用 `params` 重算盘面后再调模型，不信任前端传来的盘；按盘面检索 Top-5 古籍片段，返回引用映射 |
 | `POST` | `/chunks` | 按 chunk_id 批量取书名与原文（引用展开用，最多 20 条） |
+| `POST` | `/v1/terms/annotate` | 给正文标术语：返回词条、区间（`start`/`end`）、分类、释义与 1–2 条原文例句 |
+| `GET` | `/v1/terms?q=` | 按词条名或释义搜词典（词条名命中排前） |
 
 ```bash
 curl -s localhost:8000/chat \
@@ -736,6 +740,16 @@ python eval/run_feedback.py --mode rag --baseline <id>   # 回归门，掉超过
 python scripts/demo_closed_loop.py
 ```
 
+### 6.2.2 正文术语卡（`src/terms.py`）
+
+回答里出现的命理词条（日主、正官、天乙贵人……）在正文里加一道点线，点开是一张卡片：分类、释义、1–2 条原文例句，底部注明「词典释义与例句只作术语解释，不算本条回答的引用依据」。
+
+- **词典只用手工整理的两份**：`data/terminology/bazi-terms.jsonl`（168 条，英文释义）+ `iztro-terms.jsonl`（60 条，中文释义）。合并后 203 条；同名词条中文释义优先，源数据里被截断成「五行属，。」的 6 条星曜释义会被识别并退回另一份，而不是把坏文本展示出来。
+- **例句来自语料本身**：`scripts/build_term_snippets.py` 把每个词条在 45 部书里的出现位置汇总，按「有标点的片段优先」挑 2 条，截取前后各 60 字，生成 `data/terminology/term_snippets.jsonl`（147 条词条 / 288 条例句）。重跑约 15 秒。
+- **标注口径**：单字（甲、子）与通用词（性别、当前、顺行）可搜到但不自动标注；同一处命中取最长词条；区间左闭右开、互不重叠。这些口径都钉在 `tests/test_terms.py` 里——标错一个词比少标十个更伤。
+- **为什么不用 `tools.search_terms` 那份 25,685 行词表**：它混进了程序生成的简介文本和 `nature` / `简介` 这类字段名，没法直接画到正文上。
+- **前端**：`AnswerBody.tsx` 用一个 remark 插件在 mdast 文本节点里查词（代码块、行内代码、引用上标里不标），卡片用 portal 挂在 body 上按点击位置 fixed 定位；回答写完才请求标注，结果按正文缓存 24 条。
+
 ### 6.3 MCP server / client（v1.6 + v1.8）
 
 `src/mcp_server.py` 把 Agent 的 7 个工具按 MCP 暴露出去，Claude Desktop、Cursor 或自建 MCP client 可以发现并调用：
@@ -905,6 +919,7 @@ POST /v1/actions/{id}/reject        # 拒绝后不可再确认
 │   ├── chunk_*.py             # 语料切分（细节见 docs/corpus_pipeline.md）
 │   ├── validate_chunks.py     # chunk 数据契约校验
 │   ├── tools.py               # Agent 工具层（检索 + 排盘，纯函数）
+│   ├── terms.py               # 术语词典：合并两份 jsonl、中文优先、正文标注区间
 │   ├── agent.py               # 单 Agent：ReAct 工具调用 + 引用校验
 │   ├── agent_multi.py         # 多 Agent：Supervisor / Retriever / Verifier
 │   └── fortune/               # 排盘：纯计算，不经过大模型
@@ -923,6 +938,7 @@ POST /v1/actions/{id}/reject        # 拒绝后不可再确认
 │   ├── test_multiturn_eval.py # 多轮集书名 / 判分器通过-失败形态
 │   ├── test_memory.py         # 记忆抽取过滤 / 摘要触发 / 注入不越权
 │   ├── test_cost_report.py    # P50/P95 / 缓存价拆分 / 缺 usage 处理
+│   ├── test_terms.py          # 术语词典合并 / 例句真实性 / 标注区间与最长匹配
 │   └── test_api.py            # FastAPI 路由 / 参数校验 / trace / 错误映射
 ├── eval/
 │   ├── questions.jsonl        # 30 题检索评测集（20 可答 + 10 语料外）
@@ -941,6 +957,7 @@ POST /v1/actions/{id}/reject        # 拒绝后不可再确认
 │   └── make_chart.py          # 由评测明细生成对比图
 ├── scripts/
 │   ├── demo_closed_loop.py    # 一条命令跑通反馈闭环（假模型、临时库）
+│   ├── build_term_snippets.py # 为术语词典生成原文例句（词条 × 书 → 2 条）
 │   ├── check_llm.py           # 验证供应商三条契约：流式 / JSON / tools
 │   └── check_mcp_client.py    # 起一个真实 MCP server，发现并调用工具
 ├── data/
@@ -948,6 +965,7 @@ POST /v1/actions/{id}/reject        # 拒绝后不可再确认
 │   ├── chunks/unpunct.jsonl   # 无标点组（5,851 行，chunk_id 2831..8681）
 │   ├── chunks/index_report.json # build_index.py 产出的校验报告
 │   ├── embeddings.npy         # 8,681 × 1024
+│   ├── terminology/           # 术语词典：bazi-terms / iztro-terms / term_snippets（预生成例句）
 │   └── eval/eval_questions_seed.md # 30 条评测问题种子
 ├── docs/
 │   ├── demo/                  # 五段录屏 mp4 + GIF + 十一张节点截图

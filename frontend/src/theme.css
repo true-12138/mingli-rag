@@ -616,6 +616,132 @@ button {
   background: rgba(150, 50, 42, 0.1);
 }
 
+/* 术语：正文里的词条是一枚按下去才展开的短语，没有底色，只用一道点线 */
+
+.term-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  border-bottom: 1px dotted var(--rule-strong);
+  cursor: help;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.term-link:hover,
+.term-link[aria-expanded="true"] {
+  color: var(--cinnabar-deep);
+  border-bottom-color: var(--cinnabar);
+}
+
+/* 术语卡：挂在 body 上的浮层，坐标由点击位置算，避免被正文的 overflow 裁掉 */
+
+.term-pop {
+  position: fixed;
+  z-index: 60;
+  width: 320px;
+  max-width: min(340px, calc(100vw - 32px));
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding: 14px 16px 12px;
+  background: var(--panel);
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  box-shadow: 0 14px 34px -12px rgba(29, 26, 23, 0.28), 0 2px 6px rgba(29, 26, 23, 0.08);
+}
+
+.term-pop__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.term-pop__term {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.term-pop__cat {
+  padding: 1px 6px;
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  background: var(--panel-soft);
+  border-radius: 2px;
+}
+
+.term-pop__close {
+  margin-left: auto;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--faint);
+  cursor: pointer;
+}
+
+.term-pop__close:hover {
+  color: var(--ink);
+}
+
+.term-pop__def {
+  margin: 0 0 10px;
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: var(--ink-soft);
+}
+
+.term-pop__def--missing {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--faint);
+}
+
+.term-pop__snippet {
+  margin: 0 0 8px;
+  padding: 6px 0 6px 10px;
+  border-left: 2px solid var(--rule);
+}
+
+.term-pop__snippet p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+
+.term-pop__src {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-style: normal;
+  color: var(--faint);
+}
+
+.term-pop__note {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--sans);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--faint);
+}
+
 /* 打字机光标：挂在最后一段的行尾 */
 
 .answer-wrap--streaming .answer > :last-child::after {
