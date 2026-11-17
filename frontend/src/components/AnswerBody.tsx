@@ -20,12 +20,32 @@ interface Props {
   onCite?: (marker: number) => void;
   /** 后端标出的术语；不传就不加下划线。 */
   terms?: TermHit[];
+  /** chunk_id → 本轮引用编号。用来把正文里漏出来的 chunk_id 换回 [n]。 */
+  chunkLabels?: Record<number, number>;
 }
 
 const CITE = /\[(\d{1,4})\](?!\()/g;
 
+// 模型有时会把内部编号直接写进正文：「（chunk 6073）」「(chunk 5445、5434)」。
+// 用户点了没用，还暴露实现细节。能对成本轮引用的换成 [n]，对不上（跨轮串进来的、
+// 或本来就是乱写的）直接删掉——旁边的书名和引文还在，信息不丢。
+const CHUNK_REF = /[（(]\s*chunk\s*#?([\d\s、,，]+)\s*[）)]/gi;
+
+function relabelChunks(text: string, labels?: Record<number, number>): string {
+  return text.replace(CHUNK_REF, (_, raw: string) => {
+    const marks: number[] = [];
+    for (const part of raw.split(/[\s、,，]+/)) {
+      if (!part) continue;
+      const id = Number(part);
+      const marker = Number.isFinite(id) ? labels?.[id] : undefined;
+      if (marker != null) marks.push(marker);
+    }
+    return marks.map((marker) => `[${marker}]`).join("");
+  });
+}
+
 /** 把 [n] 改成 markdown 链接。代码块和行内代码里的方括号原样保留。 */
-function linkCitations(md: string): string {
+function linkCitations(md: string, labels?: Record<number, number>): string {
   const lines = md.split("\n");
   const out: string[] = [];
   let fenced = false;
@@ -44,7 +64,11 @@ function linkCitations(md: string): string {
     out.push(
       line
         .split(/(`[^`\n]*`)/g)
-        .map((seg, i) => (i % 2 === 1 ? seg : seg.replace(CITE, (_, n: string) => `[${n}](#cite-${n})`)))
+        .map((seg, i) =>
+          i % 2 === 1
+            ? seg
+            : relabelChunks(seg, labels).replace(CITE, (_, n: string) => `[${n}](#cite-${n})`),
+        )
         .join(""),
     );
   }
@@ -178,8 +202,8 @@ function TermCard({ card, onClose }: { card: CardState; onClose: () => void }) {
 
 // ---------- 组件 ----------
 
-export function AnswerBody({ text, onCite, terms }: Props) {
-  const source = useMemo(() => linkCitations(text), [text]);
+export function AnswerBody({ text, onCite, terms, chunkLabels }: Props) {
+  const source = useMemo(() => linkCitations(text, chunkLabels), [text, chunkLabels]);
   const [card, setCard] = useState<CardState | null>(null);
 
   // 同一个词条在一段话里可能出现多次，下划线只按词条名对齐，卡片内容按名字查。

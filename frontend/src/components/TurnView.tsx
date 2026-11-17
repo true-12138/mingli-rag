@@ -1,29 +1,12 @@
 // 一轮问答：问 → 进度 / 正文 → 出处。
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { annotateTerms, type Chunk, type Mode, type StepEvent, type TermHit } from "../api";
+import type { Chunk, Mode, StepEvent, TermHit } from "../api";
+import { loadTerms } from "../termCache";
 import type { Turn } from "../useChat";
 import { ActionCard } from "./ActionCard";
 import { AnswerBody } from "./AnswerBody";
 import { Sources } from "./Sources";
-
-// 术语标注是等回答写完才发的一次请求，结果按正文缓存。翻回旧会话时
-// 同一段正文命中的是同一份标注；缓存太小反而每滚一次就重新请求一次。
-const TERM_CACHE_LIMIT = 24;
-const termCache = new Map<string, TermHit[]>();
-
-function loadTerms(text: string): Promise<TermHit[]> {
-  const cached = termCache.get(text);
-  if (cached) return Promise.resolve(cached);
-  return annotateTerms(text).then((hits) => {
-    if (termCache.size >= TERM_CACHE_LIMIT) {
-      const oldest = termCache.keys().next().value;
-      if (oldest != null) termCache.delete(oldest);
-    }
-    termCache.set(text, hits);
-    return hits;
-  });
-}
 
 interface Props {
   turn: Turn;
@@ -68,7 +51,8 @@ export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: P
   };
 
   const citedBooks = uniqueBooks(turn.citationIds, chunks);
-  const labels = citationLabels(turn);
+  // 引用编号表要稳定：变了会让正文整段重解析。
+  const labels = useMemo(() => citationLabels(turn), [turn.citationIds, turn.citationMap]);
   const finished = turn.status !== "streaming";
   const refusal = turn.canAnswer === false;
 
@@ -111,7 +95,7 @@ export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: P
 
           {turn.answer ? (
             <div className={`answer-wrap${streaming ? " answer-wrap--streaming" : ""}`}>
-              <AnswerBody text={turn.answer} onCite={cite} terms={terms} />
+              <AnswerBody text={turn.answer} onCite={cite} terms={terms} chunkLabels={labels} />
             </div>
           ) : (
             streaming &&

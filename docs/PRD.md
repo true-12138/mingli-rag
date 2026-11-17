@@ -79,7 +79,7 @@
 | R17 | P2 | 按会话控制 MCP 外部工具是否进 prompt | 每个会话独立开关 | ⬜ | 局限 #13 剩余项 |
 | R18 | P2 | 解读质量评测（越界 / 改盘） | 20 条检查项 | ⬜ | 局限 #14 |
 | R19 | P1 | 排盘结果带入对话追问：盘面作既定事实进 prompt，检索问句带盘面关键词 | 盘面不当引用依据（编号仍只来自本轮片段）；缺字段 / 超 16KB / 未知 `kind` 退化为普通问答；带盘面时不走语义缓存 | ✅（盘面不落库） | `src/chart_context.py`、`src/rag.py`、`src/agent_multi.py`、`tests/test_chart_context.py`、README 局限 #18 / #19 |
-| R20 | P1 | 正文术语可点：回答里的命理词条加下划线，点开是释义卡（分类 + 释义 + 原文例句） | 只用两份人工整理的词典；单字与通用词不标；最长匹配、区间不重叠；例句注明「不算本条回答的引用依据」 | ✅（词典 203 条、可标注 156 条、例句覆盖 147 条 / 288 条） | `src/terms.py`、`scripts/build_term_snippets.py`、`src/api.py`、`frontend/src/components/AnswerBody.tsx`、`tests/test_terms.py` |
+| R20 | P1 | 正文术语可点：回答里的命理词条加下划线，点开是释义卡（分类 + 释义 + 原文例句） | 只用两份人工整理的词典；单字与通用词不标；最长匹配、区间不重叠；例句注明「不算本条回答的引用依据」 | ✅（词典 203 条、可标注 156 条、例句覆盖 147 条 / 288 条） | `src/terms.py`、`scripts/build_term_snippets.py`、`src/api.py`、`frontend/src/components/AnswerBody.tsx`、`frontend/src/components/fortune/ReadingBox.tsx`、`frontend/src/termCache.ts`、`tests/test_terms.py` |
 
 ## 5. 成功指标（当前实测）
 

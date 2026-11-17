@@ -5,7 +5,7 @@
 //
 // 解读会带回收到的古籍片段编号：正文里的 [n] 可以点开原文。
 // 但盘面本身才是主证据——没有引用不代表解读失败。
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   ApiError,
@@ -14,7 +14,9 @@ import {
   type Chunk,
   type FortuneKind,
   type FortuneReading,
+  type TermHit,
 } from "../../api";
+import { loadTerms } from "../../termCache";
 import { AnswerBody } from "../AnswerBody";
 import { Sources } from "../Sources";
 
@@ -32,12 +34,34 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
   const [focus, setFocus] = useState<{ chunkId: number; nonce: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 摘要和每个小节各标一次；下标与渲染顺序一一对应（0 是摘要）。
+  const [terms, setTerms] = useState<TermHit[][]>([]);
 
   useEffect(() => {
     setReading(null);
     setFocus(null);
     setError(null);
+    setTerms([]);
   }, [resetKey]);
+
+  // 解读是本项目里最集中出现命理术语的地方，术语卡在这里比在问答里更有用。
+  // 标注失败不影响解读本身，所以静默降级成纯文字。
+  useEffect(() => {
+    if (!reading) {
+      setTerms([]);
+      return;
+    }
+    const texts = [reading.summary ?? "", ...reading.sections.map((section) => section.content ?? "")];
+    let alive = true;
+    Promise.all(texts.map((text) => (text.trim() ? loadTerms(text) : Promise.resolve([]))))
+      .then((all) => {
+        if (alive) setTerms(all);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [reading]);
 
   const loadChunks = async (ids: number[]) => {
     const unique = Array.from(new Set(ids.filter((id) => Number.isFinite(id))));
@@ -77,13 +101,17 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
   };
 
   const citationIds = reading?.citations_chunk_ids ?? [];
-  const labels: Record<number, number> = {};
-  for (const ref of reading?.citation_map ?? []) {
-    if (ref.marker != null) labels[ref.chunk_id] = ref.marker;
-  }
-  Array.from(new Set(citationIds)).forEach((id, index) => {
-    if (labels[id] == null) labels[id] = index + 1;
-  });
+  // 正文渲染依赖这张表，每次 render 新建对象会让整段重新解析。
+  const labels = useMemo(() => {
+    const out: Record<number, number> = {};
+    for (const ref of reading?.citation_map ?? []) {
+      if (ref.marker != null) out[ref.chunk_id] = ref.marker;
+    }
+    Array.from(new Set(reading?.citations_chunk_ids ?? [])).forEach((id, index) => {
+      if (out[id] == null) out[id] = index + 1;
+    });
+    return out;
+  }, [reading]);
 
   const cite = (marker: number) => {
     const mapped = reading?.citation_map?.find((ref) => ref.marker === marker);
@@ -128,13 +156,18 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
         <article className="reading__out">
           {reading.summary && (
             <div className="reading__summary">
-              <AnswerBody text={reading.summary} onCite={cite} />
+              <AnswerBody text={reading.summary} onCite={cite} terms={terms[0]} chunkLabels={labels} />
             </div>
           )}
           {reading.sections.map((section, index) => (
             <div className="reading__section" key={`${section.title}-${index}`}>
               {section.title && <h3>{section.title}</h3>}
-              <AnswerBody text={section.content} onCite={cite} />
+              <AnswerBody
+                text={section.content}
+                onCite={cite}
+                terms={terms[index + 1]}
+                chunkLabels={labels}
+              />
             </div>
           ))}
           <Sources ids={citationIds} chunks={chunks} focus={focus} labels={labels} />
