@@ -4,7 +4,7 @@ import { Sidebar, type View } from "./components/Sidebar";
 import { ChatPage } from "./pages/ChatPage";
 import { FortunePage } from "./pages/FortunePage";
 import { MemoryPage } from "./pages/MemoryPage";
-import type { Mode } from "./api";
+import type { FortuneChart, Mode } from "./api";
 import { useChat } from "./useChat";
 
 // 轻量 hash 路由：#/chat、#/fortune、#/memory。
@@ -19,7 +19,9 @@ function readView(): View {
 export default function App() {
   // useChat 放在 App：切到排盘页再回来，正在生成的回答不会丢
   const chat = useChat();
-  const [mode, setMode] = useState<Mode>("rag");
+  // 默认用「查证后回答」而不是固定 RAG：三种模式里它最稳，
+  // 固定 RAG 是单次检索、最容易给出「主题相近但答不上」的答案。
+  const [mode, setMode] = useState<Mode>("agent");
   const [view, setView] = useState<View>(readView);
   const [drawer, setDrawer] = useState(false);
 
@@ -37,6 +39,17 @@ export default function App() {
     setView(next);
     setDrawer(false);
   }, []);
+
+  // 排盘页点「就这个盘继续问」：把盘挂到对话上，再切到对话页。
+  // 盘面只是前端状态，后端不落库——刷新后需要重新带一次。
+  const { attachChart } = chat;
+  const askWithChart = useCallback(
+    (chart: FortuneChart) => {
+      attachChart(chart);
+      go("chat");
+    },
+    [attachChart, go],
+  );
 
   return (
     <div className={`app${drawer ? " app--drawer" : ""}`}>
@@ -70,7 +83,7 @@ export default function App() {
           />
         )}
         {view === "fortune" && (
-          <FortunePage onOpenDrawer={() => setDrawer((open) => !open)} />
+          <FortunePage onOpenDrawer={() => setDrawer((open) => !open)} onAsk={askWithChart} />
         )}
         {view === "memory" && (
           <MemoryPage onOpenDrawer={() => setDrawer((open) => !open)} />

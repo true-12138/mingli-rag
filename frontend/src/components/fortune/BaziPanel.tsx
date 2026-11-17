@@ -21,7 +21,7 @@ const WUXING = [
   { name: "水", cls: "shui" },
 ];
 
-export function BaziPanel() {
+export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("12:00");
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -273,6 +273,15 @@ export function BaziPanel() {
                 </div>
               </dl>
             </details>
+          </div>
+
+          <div className="ask-row">
+            <button type="button" className="btn" onClick={() => onAsk(chart)}>
+              就这个盘继续问
+            </button>
+            <span className="ask-row__hint">
+              盘面会带进对话当已知信息，追问时不必再描述八字
+            </span>
           </div>
 
           {params && (

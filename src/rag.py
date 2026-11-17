@@ -144,27 +144,34 @@ def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choi
 def _chat(messages, temperature=0.0, api_key=None):
     msg = _chat_message(messages, temperature=temperature, api_key=api_key)
     return msg.get("content") or ""
-def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None,
+           chart=None):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。
     api_key 用于公网访客自带 key 的场景，不传就读环境变量。
     history 是多轮对话历史；memories 是长期偏好/事实。两者都只用于理解问题，
     不作为回答证据。
+    chart 是用户在排盘页算好的盘面；它进 prompt 但也**不是**引用依据。
     """
+    import chart_context
+
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
-    hits = retrieve_one(standalone, top_k=top_k, mode=mode)
+    search_query = chart_context.retrieval_query(chart, standalone)
+    hits = retrieve_one(search_query, top_k=top_k, mode=mode)
     hist = history_block(history)
     mem = memory_block(memories)
-    user = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
+    ctx = chart_context.prompt_block(chart)
+    user = (ctx + "\n\n" if ctx else "") + (hist + "\n\n" if hist else "") + \
+        (mem + "\n\n" if mem else "") + \
         "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), standalone)
     data = None
     last_raw = ""
     for _ in range(2):  # JSON 解析失败重试一次
         last_raw = _chat(
             [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": chart_context.system_prompt(SYSTEM_PROMPT, chart)},
                 {"role": "user", "content": user},
             ],
             api_key=api_key,
@@ -223,7 +230,8 @@ def _finalize_rag(data, hits, standalone, history, counter):
 
 
 async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=None,
-                        memories=None, on_delta=None, on_step=None, client=None):
+                        memories=None, on_delta=None, on_step=None, client=None,
+                        chart=None):
     """RAG 模式的流式版：检索照旧，生成逐 token 下发。
 
     检索是同步 numpy 计算，丢线程池；生成走 `llm` 异步客户端 +
@@ -232,6 +240,7 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
     """
     import asyncio
 
+    import chart_context
     import llm
     from answer_stream import AnswerExtractor
     from conversation import arewrite_question
@@ -241,12 +250,13 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
     history = normalize_history(history)
     standalone = await arewrite_question(question, history, api_key=api_key,
                                          counter=counter, client=client)
-    hits = await asyncio.to_thread(retrieve_one, standalone, top_k=top_k, mode=mode)
+    search_query = chart_context.retrieval_query(chart, standalone)
+    hits = await asyncio.to_thread(retrieve_one, search_query, top_k=top_k, mode=mode)
     if on_step is not None:
         on_step({
             "agent": "retrieval",
             "tool": "retrieve",
-            "args": {"query": standalone, "top_k": top_k, "mode": mode},
+            "args": {"query": search_query, "top_k": top_k, "mode": mode},
             "ok": True,
             "chunk_ids": [h["chunk_id"] for h in hits],
             "error": None,
@@ -254,10 +264,12 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
 
     hist = history_block(history)
     mem = memory_block(memories)
-    user = ((hist + "\n\n") if hist else "") + ((mem + "\n\n") if mem else "") + \
+    ctx = chart_context.prompt_block(chart)
+    user = ((ctx + "\n\n") if ctx else "") + ((hist + "\n\n") if hist else "") + \
+        ((mem + "\n\n") if mem else "") + \
         "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), standalone)
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": chart_context.system_prompt(SYSTEM_PROMPT, chart)},
         {"role": "user", "content": user},
     ]
 

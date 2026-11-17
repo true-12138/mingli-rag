@@ -16,6 +16,7 @@ import {
   type CitationRef,
   type Conversation,
   type DonePayload,
+  type FortuneChart,
   type Mode,
   type PendingAction,
   type RunSummary,
@@ -100,6 +101,9 @@ export function useChat() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [fatal, setFatal] = useState<string | null>(null);
+  // 从排盘页带过来的盘面。只活在这个浏览器标签页里：
+  // 后端不落库，刷新后要重新从排盘页带一次。
+  const [chart, setChart] = useState<FortuneChart | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const loadTokenRef = useRef(0);
@@ -212,6 +216,8 @@ export function useChat() {
             mode,
             // 只有用户确认过动作才带令牌；空数组不必发给后端。
             ...(approvals.length > 0 ? { approvals } : {}),
+            // 有盘面就每一问都带：同一句「我这盘」在不同盘下答案不同。
+            ...(chart ? { chart } : {}),
           },
           {
             onDelta: (text) =>
@@ -258,12 +264,16 @@ export function useChat() {
         void refreshList();
       }
     },
-    [activeId, hydrate, patchTurn, refreshList, streaming],
+    [activeId, chart, hydrate, patchTurn, refreshList, streaming],
   );
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
   }, []);
+
+  // 换了盘就换一份上下文：不清掉旧的，下一问会被上一张盘带偏。
+  const attachChart = useCallback((next: FortuneChart) => setChart(next), []);
+  const clearChart = useCallback(() => setChart(null), []);
 
   const startNew = useCallback(() => {
     if (streaming) return;
@@ -305,6 +315,9 @@ export function useChat() {
     loadingThread,
     streaming,
     fatal,
+    chart,
+    attachChart,
+    clearChart,
     select,
     send,
     stop,

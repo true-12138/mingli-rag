@@ -6,7 +6,7 @@ import { AstroPanel } from "../components/fortune/AstroPanel";
 import { BaziPanel } from "../components/fortune/BaziPanel";
 import { TarotPanel } from "../components/fortune/TarotPanel";
 import { MenuIcon } from "../components/icons";
-import type { FortuneKind } from "../api";
+import type { FortuneChart, FortuneKind } from "../api";
 
 const TABS: { key: FortuneKind; label: string; hint: string }[] = [
   { key: "bazi", label: "八字", hint: "四柱 · 大运" },
@@ -14,7 +14,13 @@ const TABS: { key: FortuneKind; label: string; hint: string }[] = [
   { key: "tarot", label: "塔罗", hint: "可复现生成牌面" },
 ];
 
-export function FortunePage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
+interface Props {
+  onOpenDrawer: () => void;
+  // 把当前这张盘挂到对话上并跳过去；盘面只在前端存活，后端不落库。
+  onAsk: (chart: FortuneChart) => void;
+}
+
+export function FortunePage({ onOpenDrawer, onAsk }: Props) {
   const [tab, setTab] = useState<FortuneKind>("bazi");
 
   return (
@@ -55,9 +61,9 @@ export function FortunePage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
 
       <div className="page__scroll">
         <div className="page__inner">
-          {tab === "bazi" && <BaziPanel />}
-          {tab === "astro" && <AstroPanel />}
-          {tab === "tarot" && <TarotPanel />}
+          {tab === "bazi" && <BaziPanel onAsk={onAsk} />}
+          {tab === "astro" && <AstroPanel onAsk={onAsk} />}
+          {tab === "tarot" && <TarotPanel onAsk={onAsk} />}
         </div>
       </div>
     </div>

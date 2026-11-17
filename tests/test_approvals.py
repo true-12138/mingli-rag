@@ -159,7 +159,8 @@ def _chat_with_pending(client, monkeypatch, anon="anon-1", pending=None,
         "reason": "工具需要用户确认后执行",
     }]
 
-    def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None):
+    def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None,
+                   chart=None):
         return _agent_result(pending_actions=pending)
 
     monkeypatch.setattr(api_conversations.agent, "agent_answer", fake_agent)
@@ -540,7 +541,7 @@ def test_chat_passes_one_time_approval_callback_to_agent(client, monkeypatch):
     seen = []
 
     def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None,
-                   approvals=None):
+                   approvals=None, chart=None):
         assert approvals is not None
         seen.append(approvals("mcp__remote__delete_all", {"book": "全部"}))
         seen.append(approvals("mcp__remote__delete_all", {"book": "全部"}))
@@ -570,7 +571,8 @@ def test_chat_stream_done_contains_pending_actions_with_id(client, monkeypatch):
     """流式路径的 done 事件也要带走落库后的待确认动作，字段与同步一致。"""
 
     async def fake_stream(question, max_steps=6, api_key=None, history=None,
-                          memories=None, on_delta=None, on_step=None, client=None):
+                          memories=None, on_delta=None, on_step=None, client=None,
+                          chart=None):
         on_delta("测试回答")
         return _agent_result(pending_actions=[{
             "tool": "mcp__remote__delete_all",

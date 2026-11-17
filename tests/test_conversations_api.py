@@ -92,7 +92,8 @@ def test_create_list_get_delete(client):
 def test_chat_stores_messages_and_reuses_history(client, monkeypatch):
     seen_history = []
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
+                    memories=None, chart=None):
         seen_history.append(history)
         return _rag_result()
 
@@ -166,7 +167,8 @@ def test_v1_requires_token_when_configured(client, monkeypatch):
 
 
 def test_chat_persists_run_and_tool_calls(client, monkeypatch):
-    def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None):
+    def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None,
+                   chart=None):
         out = _rag_result()
         out["llm_calls"] = 3
         out["trace"] = [{
@@ -210,7 +212,8 @@ def test_chat_persists_run_and_tool_calls(client, monkeypatch):
 
 
 def test_refusal_run_is_marked_refused(client, monkeypatch):
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
+                    memories=None, chart=None):
         out = _rag_result()
         out.update({"can_answer": False, "answer": "拒答", "citations": []})
         return out
@@ -253,7 +256,8 @@ def test_failed_run_is_recorded(client, monkeypatch):
 
 
 def test_run_is_isolated_by_anonymous_id(client, monkeypatch):
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
+                    memories=None, chart=None):
         return _rag_result()
 
     monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)
@@ -272,7 +276,8 @@ def test_run_is_isolated_by_anonymous_id(client, monkeypatch):
 def test_memory_endpoints_and_chat_injection(client, monkeypatch):
     seen = []
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
+                    memories=None, chart=None):
         seen.append(memories)
         return _rag_result()
 
@@ -333,7 +338,8 @@ def test_memory_overwrite_requires_confirmation(client, monkeypatch):
             source_conversation_id=conversation_id,
         )]
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
+                    memories=None, chart=None):
         return _rag_result()
 
     monkeypatch.setattr(api_conversations.memory, "remember_from_turn", fake_remember)
@@ -403,7 +409,7 @@ def _parse_sse(text):
 
 def test_chat_stream_persists_turn_and_returns_ids(client, monkeypatch):
     async def fake_stream(question, top_k=5, api_key=None, history=None, memories=None,
-                          on_delta=None, on_step=None, client=None):
+                          on_delta=None, on_step=None, client=None, chart=None):
         on_delta("测试")
         on_delta("回答")
         return dict(_rag_result(), usage={"total_tokens": 7})
@@ -458,7 +464,8 @@ def test_chat_stream_marks_run_failed_on_error(client, monkeypatch):
 
 
 def test_conversation_detail_keeps_citations_after_reload(client, monkeypatch):
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
+                    memories=None, chart=None):
         return _rag_result()
 
     monkeypatch.setattr(api_conversations.rag, "answer", fake_answer)

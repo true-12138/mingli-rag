@@ -105,6 +105,9 @@ class ChatRequest(BaseModel):
     max_steps: int = Field(6, ge=1, le=10)
     # 前端最多带 3 轮；这里放宽到 20 条，normalize_history 会再裁剪
     history: list[HistoryTurn] = Field(default_factory=list, max_length=20)
+    # 排盘页算好的盘面（bazi / astro / tarot）。只作上下文，不作引用依据；
+    # 合法性由 chart_context.normalize 再拦一道，这里不写死字段结构。
+    chart: dict[str, Any] | None = None
 
     @field_validator("question")
     @classmethod
@@ -231,12 +234,14 @@ def _cache_allowed(
 
     - agent / multi 的答案带工具轨迹与步数，不能按问题复用；
     - 有历史时同一句问题的含义可能不同；
+    - 带盘面时同一句问题的含义更不同（「我这盘」指哪张盘由请求决定），
+      缓存 key 里没有盘面，命中就等于把别人的盘答给这个人；
     - 访客自带 key 不缓存，避免拿别人的结果冒充自己 key 的输出；
     - `X-No-Cache: 1` 给压测和调试留后门。
     """
     if (x_no_cache or "").strip().lower() not in ("", "0", "false", "no"):
         return False
-    return req.mode == "rag" and not history and api_key is None
+    return req.mode == "rag" and not history and api_key is None and not req.chart
 
 
 # ---------- 接口 ----------
@@ -461,15 +466,18 @@ def chat(
     try:
         if req.mode == "rag":
             result = rag.answer(
-                req.question, top_k=req.top_k, api_key=key, history=history
+                req.question, top_k=req.top_k, api_key=key, history=history,
+                chart=req.chart,
             )
         elif req.mode == "agent":
             result = agent.agent_answer(
-                req.question, max_steps=req.max_steps, api_key=key, history=history
+                req.question, max_steps=req.max_steps, api_key=key, history=history,
+                chart=req.chart,
             )
         else:
             result = agent_multi.agent_answer(
-                req.question, max_steps=req.max_steps, api_key=key, history=history
+                req.question, max_steps=req.max_steps, api_key=key, history=history,
+                chart=req.chart,
             )
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 502
@@ -599,16 +607,19 @@ async def chat_stream(
                 result = await rag.answer_stream(
                     req.question, top_k=req.top_k, api_key=key, history=history,
                     on_delta=on_delta, on_step=on_step, client=client,
+                    chart=req.chart,
                 )
             elif req.mode == "agent":
                 result = await agent.agent_answer_stream(
                     req.question, max_steps=req.max_steps, api_key=key,
                     history=history, on_delta=on_delta, on_step=on_step, client=client,
+                    chart=req.chart,
                 )
             else:
                 result = await agent_multi.agent_answer_stream(
                     req.question, max_steps=req.max_steps, api_key=key, history=history,
                     on_delta=on_delta, on_step=on_step, on_stage=on_stage, client=client,
+                    chart=req.chart,
                 )
             elapsed_ms = (time.perf_counter() - started) * 1000
             out = dict(result)

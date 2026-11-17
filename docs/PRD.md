@@ -78,6 +78,7 @@
 | R16 | P2 | 管理端：数据版本 / 质量门 / 评测中台 | Streamlit `?admin=1` 可用 | ✅（只对维护者） | `src/datahub.py`、`src/evalhub.py`、`src/app.py` |
 | R17 | P2 | 按会话控制 MCP 外部工具是否进 prompt | 每个会话独立开关 | ⬜ | 局限 #13 剩余项 |
 | R18 | P2 | 解读质量评测（越界 / 改盘） | 20 条检查项 | ⬜ | 局限 #14 |
+| R19 | P1 | 排盘结果带入对话追问：盘面作既定事实进 prompt，检索问句带盘面关键词 | 盘面不当引用依据（编号仍只来自本轮片段）；缺字段 / 超 16KB / 未知 `kind` 退化为普通问答；带盘面时不走语义缓存 | ✅（盘面不落库） | `src/chart_context.py`、`src/rag.py`、`src/agent_multi.py`、`tests/test_chart_context.py`、README 局限 #18 / #19 |
 
 ## 5. 成功指标（当前实测）
 

@@ -226,12 +226,14 @@ def step_event(agent_name, name, args, result):
 
 
 def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=None,
-                           memories=None, approvals=None):
+                           memories=None, approvals=None, chart=None):
     """原生 function calling 版：模型直接返回 tool_calls，不再自己拼 JSON 动作。
 
     `approvals(name, args) -> bool` 是接口层解析一次性令牌后构造的授权回调；
     它为 True 时 tool_loop 才执行对应的 side_effect 工具。
     """
+    import chart_context
+
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
@@ -239,10 +241,11 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
     pending_actions = []
     hist = history_block(history)
     mem = memory_block(memories)
-    user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
-        "【问题】\n{}".format(standalone)
+    ctx = chart_context.prompt_block(chart)
+    user_text = (ctx + "\n\n" if ctx else "") + (hist + "\n\n" if hist else "") + \
+        (mem + "\n\n" if mem else "") + "【问题】\n{}".format(standalone)
     messages = [
-        {"role": "system", "content": FUNCTION_SYSTEM_PROMPT},
+        {"role": "system", "content": chart_context.system_prompt(FUNCTION_SYSTEM_PROMPT, chart)},
         {"role": "user", "content": user_text},
     ]
 
@@ -326,7 +329,7 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
 
 async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, history=None,
                               memories=None, on_delta=None, on_step=None, client=None,
-                              approvals=None):
+                              approvals=None, chart=None):
     """单 Agent 的流式版：正文逐 token 通过 `on_delta` 下发，返回结构与 `agent_answer` 一致。
 
     和同步版的差异只有三处：
@@ -337,6 +340,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     注意：`on_delta` 下发的是**预览**。终稿可能被 `_finalize` 归一化
     （如 can_answer=false 时替换成固定拒答），调用方应以返回值的 answer 为准。
     """
+    import chart_context
     from conversation import arewrite_question
 
     counter = {"llm_calls": 0}
@@ -347,10 +351,11 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     pending_actions = []
     hist = history_block(history)
     mem = memory_block(memories)
-    user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
-        "【问题】\n{}".format(standalone)
+    ctx = chart_context.prompt_block(chart)
+    user_text = (ctx + "\n\n" if ctx else "") + (hist + "\n\n" if hist else "") + \
+        (mem + "\n\n" if mem else "") + "【问题】\n{}".format(standalone)
     messages = [
-        {"role": "system", "content": FUNCTION_SYSTEM_PROMPT},
+        {"role": "system", "content": chart_context.system_prompt(FUNCTION_SYSTEM_PROMPT, chart)},
         {"role": "user", "content": user_text},
     ]
 
@@ -446,7 +451,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
 
 
 def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None,
-                 approvals=None):
+                 approvals=None, chart=None):
     """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
@@ -454,21 +459,25 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
     不作为回答证据。
     approvals 是一次性工具授权回调，透传给 tool_loop；旧的 JSON 模式没有对应
     协议，会忽略它（那条路径本来就执行所有工具，仅用于 A/B）。
+    chart 是排盘页算好的盘面：进 prompt 作为既定事实，但不是引用依据。
     MINGLI_TOOL_MODE=json 可切回旧的手写 ReAct，用于 A/B 对照。
     """
     if TOOL_MODE == "json":
         return _agent_answer_json(
             question, max_steps=max_steps, api_key=api_key,
-            history=history, memories=memories,
+            history=history, memories=memories, chart=chart,
         )
     return _agent_answer_function(
         question, max_steps=max_steps, api_key=api_key,
-        history=history, memories=memories, approvals=approvals,
+        history=history, memories=memories, approvals=approvals, chart=chart,
     )
 
 
-def _agent_answer_json(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
+def _agent_answer_json(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None,
+                       chart=None):
     """旧的手写 JSON ReAct。保留用于 A/B：MINGLI_TOOL_MODE=json。"""
+    import chart_context
+
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
@@ -476,10 +485,11 @@ def _agent_answer_json(question, max_steps=MAX_STEPS, api_key=None, history=None
     seen = set()
     hist = history_block(history)
     mem = memory_block(memories)
-    user_text = (hist + "\n\n" if hist else "") + (mem + "\n\n" if mem else "") + \
-        "【问题】\n{}".format(standalone)
+    ctx = chart_context.prompt_block(chart)
+    user_text = (ctx + "\n\n" if ctx else "") + (hist + "\n\n" if hist else "") + \
+        (mem + "\n\n" if mem else "") + "【问题】\n{}".format(standalone)
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": chart_context.system_prompt(SYSTEM_PROMPT, chart)},
         {"role": "user", "content": user_text},
     ]
 

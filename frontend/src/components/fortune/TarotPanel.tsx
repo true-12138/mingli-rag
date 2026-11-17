@@ -11,7 +11,7 @@ const SPREADS: { key: TarotInput["spread"]; label: string; count: number }[] = [
   { key: "cross", label: "五张", count: 5 },
 ];
 
-export function TarotPanel() {
+export function TarotPanel({ onAsk }: { onAsk: (chart: TarotChart) => void }) {
   const [spread, setSpread] = useState<TarotInput["spread"]>("three");
   const [chart, setChart] = useState<TarotChart | null>(null);
   const [lastInput, setLastInput] = useState<TarotInput | null>(null);
@@ -115,6 +115,15 @@ export function TarotPanel() {
                 </figure>
               ))}
             </div>
+          </div>
+
+          <div className="ask-row">
+            <button type="button" className="btn" onClick={() => onAsk(chart)}>
+              就这个牌面继续问
+            </button>
+            <span className="ask-row__hint">
+              牌面会带进对话当已知信息，追问时不必再描述抽到了哪几张
+            </span>
           </div>
 
           {params && (

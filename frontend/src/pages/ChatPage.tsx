@@ -7,7 +7,7 @@ import { Composer } from "../components/Composer";
 import { EmptyState } from "../components/EmptyState";
 import { TurnView } from "../components/TurnView";
 import { MenuIcon } from "../components/icons";
-import { listPendingActions, type Mode, type PendingAction } from "../api";
+import { listPendingActions, type FortuneChart, type Mode, type PendingAction } from "../api";
 import type { useChat } from "../useChat";
 
 interface Props {
@@ -158,6 +158,22 @@ export function ChatPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
         </div>
       </div>
 
+      {chat.chart && (
+        <div className="chart-chip" role="status">
+          <span className="chart-chip__label">已带盘面</span>
+          <span className="chart-chip__text">{chartLabel(chat.chart)}</span>
+          <button
+            type="button"
+            className="chart-chip__close"
+            onClick={chat.clearChart}
+            aria-label="移除盘面"
+            title="移除盘面，之后的追问不再带这张盘"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <Composer
         mode={mode}
         onModeChange={onModeChange}
@@ -177,5 +193,20 @@ function modeLabel(mode: Mode): string {
       return "多书对照";
     default:
       return "原文直答";
+  }
+}
+
+// 顶栏下的一行提示：这一问会带上哪张盘。
+// 盘面只在前端存活，所以必须给一个显式的移除入口，避免用户不知道它在。
+function chartLabel(chart: FortuneChart): string {
+  switch (chart.kind) {
+    case "bazi":
+      return `八字 · 日主${chart.day_master} · 日柱${chart.sizhu["日柱"] ?? ""}`;
+    case "astro":
+      return `星盘 · 上升${chart.asc.sign}`;
+    case "tarot":
+      return `塔罗 · ${chart.cards.length} 张`;
+    default:
+      return "盘面";
   }
 }

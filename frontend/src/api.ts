@@ -477,6 +477,9 @@ export async function streamChat(
     max_steps?: number;
     // 用户确认动作后拿到的一次性令牌；后端只在模型再次调用该工具时消费。
     approvals?: string[];
+    // 排盘页算好的盘面，作为上下文带进这一问。后端只把它当既定事实，
+    // 不作引用依据；盘面不落库，所以每一问都要重新带上。
+    chart?: FortuneChart;
   },
   handlers: StreamHandlers,
   signal?: AbortSignal,

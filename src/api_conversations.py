@@ -145,6 +145,9 @@ class ConversationChatRequest(BaseModel):
     max_steps: int = Field(6, ge=1, le=10)
     # 用户确认动作后拿到的一次性令牌；本次运行只放行与令牌绑定的那一个工具调用。
     approvals: list[str] = Field(default_factory=list, max_length=5)
+    # 排盘页算好的盘面（bazi / astro / tarot）。只作上下文，不作引用依据。
+    # 盘面不落库，所以前端每次追问都要重新带一遍。
+    chart: dict[str, Any] | None = None
 
     @field_validator("question")
     @classmethod
@@ -748,7 +751,7 @@ def chat_in_conversation(
         if req.mode == "rag":
             result = rag.answer(
                 req.question, top_k=req.top_k, api_key=key, history=history,
-                memories=memories,
+                memories=memories, chart=req.chart,
             )
         elif req.mode == "agent":
             agent_kwargs: dict[str, Any] = {
@@ -756,6 +759,7 @@ def chat_in_conversation(
                 "api_key": key,
                 "history": history,
                 "memories": memories,
+                "chart": req.chart,
             }
             # 没有令牌时不传 approvals，保持和测试/旧调用方的签名兼容。
             if approval is not None:
@@ -764,7 +768,7 @@ def chat_in_conversation(
         else:
             result = agent_multi.agent_answer(
                 req.question, max_steps=req.max_steps, api_key=key, history=history,
-                memories=memories,
+                memories=memories, chart=req.chart,
             )
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 502
@@ -918,6 +922,7 @@ async def chat_in_conversation_stream(
                 result = await rag.answer_stream(
                     req.question, top_k=req.top_k, api_key=key, history=history,
                     memories=memories, on_delta=on_delta, on_step=on_step, client=client,
+                    chart=req.chart,
                 )
             elif req.mode == "agent":
                 agent_kwargs: dict[str, Any] = {
@@ -928,6 +933,7 @@ async def chat_in_conversation_stream(
                     "on_delta": on_delta,
                     "on_step": on_step,
                     "client": client,
+                    "chart": req.chart,
                 }
                 if approval is not None:
                     agent_kwargs["approvals"] = approval
@@ -936,7 +942,7 @@ async def chat_in_conversation_stream(
                 result = await agent_multi.agent_answer_stream(
                     req.question, max_steps=req.max_steps, api_key=key, history=history,
                     memories=memories, on_delta=on_delta, on_step=on_step,
-                    on_stage=on_stage, client=client,
+                    on_stage=on_stage, client=client, chart=req.chart,
                 )
             elapsed_ms = (time.perf_counter() - started) * 1000
             tokens = result.get("usage")

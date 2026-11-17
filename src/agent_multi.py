@@ -702,18 +702,27 @@ async def _afetch_gap(chunk_id, budget, trace, evidence, seen, on_step=None):
 
 # ---------- 入口 ----------
 
-def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None):
+def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None,
+                 chart=None):
     """返回结构与 agent.agent_answer() 完全一致，另带 llm_calls / plan。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
     history 是多轮对话历史；memories 是长期偏好/事实。先改写成独立问题，
     再把两者作为「只用于理解、不作为证据」的上下文交给各角色。
+    chart 是排盘页算好的盘面，和它们放进同一段上下文：各角色都能看到这张盘，
+    但盘面同样不是引用依据——引用只能来自检索到的片段。
     """
+    import chart_context
+
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
     question = standalone
-    hist_block = "\n\n".join(b for b in (history_block(history), memory_block(memories)) if b)
+    hist_block = "\n\n".join(
+        b for b in (chart_context.prompt_block(chart), history_block(history),
+                    memory_block(memories))
+        if b
+    )
     budget = Budget(max_steps)
     trace = []
     evidence = {}
@@ -765,13 +774,16 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
 
 async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, history=None,
                               memories=None, on_delta=None, on_step=None, on_stage=None,
-                              client=None):
+                              client=None, chart=None):
     """多 Agent 的流式版。返回结构与 `agent_answer` 完全一致。
 
     `on_delta` 只收汇总员的正文增量；`on_step` 是工具级事件（和单 Agent 同构）；
     `on_stage` 是阶段事件：planner / retriever / verifier / synthesizer。
     正文可能被 `_finalize` 归一化，调用方以返回值里的 answer 为准。
+    chart 同 `agent_answer`：进上下文，不作引用依据。
     """
+    import chart_context
+
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     from conversation import arewrite_question
@@ -779,7 +791,11 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     standalone = await arewrite_question(question, history, api_key=api_key,
                                          counter=counter, client=client)
     question = standalone
-    hist_block = "\n\n".join(b for b in (history_block(history), memory_block(memories)) if b)
+    hist_block = "\n\n".join(
+        b for b in (chart_context.prompt_block(chart), history_block(history),
+                    memory_block(memories))
+        if b
+    )
     budget = Budget(max_steps)
     trace = []
     evidence = {}

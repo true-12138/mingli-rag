@@ -33,7 +33,7 @@ const CITIES = [
 const ELEMENTS = ["火", "土", "风", "水"];
 const MODALITIES = ["基本", "固定", "变动"];
 
-export function AstroPanel() {
+export function AstroPanel({ onAsk }: { onAsk: (chart: AstroChart) => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("12:00");
   const [city, setCity] = useState(CITIES[0].name);
@@ -298,6 +298,15 @@ export function AstroPanel() {
                 )}
               </aside>
             </div>
+          </div>
+
+          <div className="ask-row">
+            <button type="button" className="btn" onClick={() => onAsk(chart)}>
+              就这个盘继续问
+            </button>
+            <span className="ask-row__hint">
+              盘面会带进对话当已知信息，追问时不必再描述出生信息
+            </span>
           </div>
 
           {params && (
