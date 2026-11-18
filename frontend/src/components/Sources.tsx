@@ -2,9 +2,11 @@
 //
 // 正文里的 [n] 点过来时，TurnView 把 chunk_id 塞进 focus，这里负责展开并滚到眼前。
 // 白话释义只在读者点「白话释义」时才请求：默认仍是原文，避免展开一条就多一次模型调用。
+// 无标点组的原文可以点「自动断句」：后端只插标点、改字的结果会被拒绝。
 import { useEffect, useRef, useState } from "react";
 
-import type { Chunk, ChunkInterpretation } from "../api";
+import type { Chunk, ChunkInterpretation, ChunkSegmentation } from "../api";
+import { segmentChunks } from "../api";
 import { loadInterpretation } from "../interpretCache";
 
 interface Focus {
@@ -100,12 +102,12 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
                 白话释义
               </button>
             </div>
-            <span className="source-quote__note">译文仅辅助阅读，不算引用依据</span>
+            <span className="source-quote__note">
+              {tab === "origin" ? "引用以原样原文为准" : "译文仅辅助阅读，不算引用依据"}
+            </span>
           </div>
           {tab === "origin" ? (
-            <p className="source-quote__text">
-              {chunks[open] ? chunks[open].text : "原文还在取，稍等片刻。"}
-            </p>
+            <OriginBody key={open} chunk={chunks[open]} />
           ) : (
             // key=chunk_id：换一段就重新挂载，请求状态跟着这一段走，
             // 不在父组件里维护一份「正在生成」的字典（那样切换时会漏掉回调）。
@@ -119,6 +121,84 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
 
 function shortBook(chunk: Chunk): string {
   return chunk.book || "古籍";
+}
+
+type SegmentState = ChunkSegmentation | "loading";
+
+/** 无标点组：句读标点占比极低。阈值放宽到 1%，避免把「一段只有一两个逗号」的残卷漏掉。 */
+function looksUnpunctuated(text: string): boolean {
+  if (text.length < 40) return false;
+  const marks = (text.match(/[，。、；：！？]/g) || []).length;
+  return marks / text.length < 0.01;
+}
+
+function OriginBody({ chunk }: { chunk: Chunk | undefined }) {
+  const [state, setState] = useState<SegmentState | null>(null);
+  const [showSegmented, setShowSegmented] = useState(false);
+
+  if (!chunk) {
+    return <p className="source-quote__hint">原文还在取，稍等片刻。</p>;
+  }
+  const text = chunk.text;
+  const offer = looksUnpunctuated(text);
+  const loading = state === "loading";
+  const result = state && state !== "loading" ? state : null;
+  const canToggle = Boolean(result?.text);
+
+  async function run() {
+    setState("loading");
+    try {
+      const items = await segmentChunks([chunk!.chunk_id]);
+      const item = items[0];
+      if (item) {
+        setState(item);
+        setShowSegmented(Boolean(item.text));
+      } else {
+        setState({
+          chunk_id: chunk!.chunk_id, text: null, cached: false,
+          error: "没有返回断句结果",
+        });
+      }
+    } catch (err) {
+      setState({
+        chunk_id: chunk!.chunk_id, text: null, cached: false,
+        error: err instanceof Error ? err.message : "自动断句失败",
+      });
+    }
+  }
+
+  if (!offer && !canToggle) {
+    return <p className="source-quote__text">{text}</p>;
+  }
+
+  return (
+    <>
+      <p className="source-quote__text">
+        {showSegmented && result?.text ? result.text : text}
+      </p>
+      <div className="source-quote__foot">
+        <button
+          type="button"
+          className="source-quote__action"
+          disabled={loading}
+          onClick={() => {
+            if (canToggle) setShowSegmented((v) => !v);
+            else void run();
+          }}
+        >
+          {loading ? "正在断句…" : canToggle ? (showSegmented ? "看原样" : "看断句") : "自动断句"}
+        </button>
+        {showSegmented && (
+          <span className="source-quote__hint">
+            程序只补了标点，未改一字；引用仍以原样原文为准。
+          </span>
+        )}
+        {!showSegmented && result?.error && (
+          <span className="source-quote__hint">{result.error}</span>
+        )}
+      </div>
+    </>
+  );
 }
 
 function GlossBody({ chunkId }: { chunkId: number }) {

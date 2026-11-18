@@ -1048,6 +1048,37 @@ button {
   color: var(--muted);
 }
 
+.source-quote__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.source-quote__action {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--sans);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--kaimu, var(--ink));
+  border-bottom: 1px solid var(--rule, rgba(0, 0, 0, 0.15));
+  cursor: pointer;
+}
+
+.source-quote__action:hover {
+  color: var(--cinnabar);
+  border-bottom-color: var(--cinnabar);
+}
+
+.source-quote__action:disabled {
+  color: var(--muted);
+  border-bottom-color: transparent;
+  cursor: default;
+}
+
 /* ---------- 注记 ---------- */
 
 .note {

@@ -53,6 +53,7 @@ import interpret
 import llm
 import rag
 import retrieval
+import segment
 import semcache
 import sse
 import terms
@@ -208,6 +209,24 @@ class InterpretItem(BaseModel):
 
 class InterpretResponse(BaseModel):
     items: list[InterpretItem]
+
+
+class SegmentRequest(BaseModel):
+    """无标点组的自动断句：只插标点、不改字。阅读辅助，不是校勘。"""
+
+    ids: list[int] = Field(min_length=1, max_length=4)
+    force: bool = False
+
+
+class SegmentItem(BaseModel):
+    chunk_id: int
+    text: str | None = None
+    cached: bool = False
+    error: str | None = None
+
+
+class SegmentResponse(BaseModel):
+    items: list[SegmentItem]
 
 
 class TermAnnotateRequest(BaseModel):
@@ -420,6 +439,50 @@ def interpret_chunks(
         )
     try:
         interpret.fill(items, misses, api_key=key)
+    finally:
+        gate.get_gate().release("answer", token)
+    return {"items": items}
+
+
+@app.post("/v1/chunks/segment", response_model=SegmentResponse)
+def segment_chunks(
+    req: SegmentRequest,
+    x_deepseek_key: str | None = Header(default=None),
+    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
+    _: None = Depends(_require_token),
+) -> dict[str, Any]:
+    """给无标点原文补句读：只插标点，不改字。
+
+    和释义一样按原文内容缓存；命中时不调模型、不占回答槽、不扣每日额度。
+    一次最多 4 段；断句结果只是阅读辅助，引用仍以原样原文为准。
+    """
+    index = _chunk_index()
+    chunks = []
+    for cid in dict.fromkeys(int(i) for i in req.ids):
+        chunk = index.get(cid)
+        if chunk:
+            chunks.append({
+                "chunk_id": cid,
+                "text": str(chunk.get("chunk_text") or "").strip(),
+            })
+    if not chunks:
+        return {"items": []}
+
+    items, misses = segment.prepare(chunks, force=req.force)
+    if not misses:
+        return {"items": items}
+
+    key = _api_key(x_deepseek_key)
+    check_quota(x_anonymous_id, x_deepseek_key)
+    token = gate.get_gate().try_acquire("answer", gate.answer_limit(), gate.ANSWER_SLOT_TTL)
+    if token is None:
+        raise HTTPException(
+            status_code=429,
+            detail="服务繁忙，请稍后重试",
+            headers={"Retry-After": "2"},
+        )
+    try:
+        segment.fill(items, misses, api_key=key)
     finally:
         gate.get_gate().release("answer", token)
     return {"items": items}

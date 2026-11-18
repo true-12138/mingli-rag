@@ -444,8 +444,30 @@ export function interpretChunks(ids: number[]): Promise<ChunkInterpretation[]> {
   }).then((res) => res.items);
 }
 
-// ---------- 术语卡 ----------
+// ---------- 自动断句（无标点组） ----------
 
+export interface ChunkSegmentation {
+  chunk_id: number;
+  /** 补好标点的同一段原文；为 null 时看 error。 */
+  text: string | null;
+  cached: boolean;
+  error: string | null;
+}
+
+/**
+ * 给无标点原文补句读。后端保证只插标点、不改字（改字的结果会被拒绝），
+ * 但界面仍要写明「引用以原样为准」。
+ */
+export function segmentChunks(ids: number[]): Promise<ChunkSegmentation[]> {
+  const unique = Array.from(new Set(ids.filter((id) => Number.isFinite(id))));
+  if (unique.length === 0) return Promise.resolve([]);
+  return request<{ items: ChunkSegmentation[] }>("/v1/chunks/segment", {
+    method: "POST",
+    body: JSON.stringify({ ids: unique.slice(0, 4) }),
+  }).then((res) => res.items);
+}
+
+// ---------- 术语卡 ----------
 export interface TermSnippet {
   chunk_id: number;
   book: string;
