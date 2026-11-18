@@ -1,0 +1,339 @@
+{
+ "summary": {
+  "tag": "v9_mt17_r2",
+  "agent": "multi",
+  "code_commit": "5d2153d",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 1,
+  "auto_pass": 1,
+  "errors": 0,
+  "elapsed_seconds": 87.4,
+  "by_category": {
+   "引用隔离": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 2,
+   "total": 2,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt17",
+   "category": "引用隔离",
+   "name": "从渊海子平换到子平真诠评注",
+   "note": "「呢」省略了「怎么论正官」；换书后旧引用必须失效。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《渊海子平》里正官的定义是什么？",
+     "rewritten_question": "《渊海子平》里正官的定义是什么？",
+     "can_answer": true,
+     "answer": "《渊海子平·正官论》说：「夫正官者，甲见辛之类；乃阴见阳为官，阳见阴为鬼，阴阳配合成其道也。」即正官是克我日主而阴阳异性相配者，如甲木见辛金。同篇又说取官以月令提纲为主：「大抵要行官旺乡，月令是也。月令者，提纲也。」并举例「甲用辛为官，生于八月中气之后，金旺在酉，故谓之正官」。正官为贵气之物，「大忌刑冲破害」，喜身旺、印绶，忌伤官、官杀混杂；「正官或多，反不为福」，须求中和之气。《渊海子平·基础》亦以十干生克列明：甲「见辛：为正官、禄马、荣神」，乙「见庚：为正官、禄马」。",
+     "citations": [
+      1749,
+      1750,
+      1722
+     ],
+     "citation_books": [
+      "渊海子平",
+      "渊海子平",
+      "渊海子平"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 3,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "supervisor(pre)",
+       "thought": "前置工具",
+       "action": "search_terms",
+       "args": {
+        "term": "正官",
+        "limit": 5
+       },
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "正官",
+        "book": "渊海子平",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        1749,
+        1750,
+        1841,
+        1722,
+        1840,
+        1856,
+        1826,
+        1877,
+        1857,
+        1878,
+        1765,
+        1827,
+        1754,
+        1839,
+        1770,
+        1780,
+        1745,
+        1830,
+        1791,
+        1866
+       ],
+       "error": null
+      },
+      {
+       "step": 3,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论正官",
+        "book": "渊海子平",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        1749,
+        1745,
+        1750,
+        1840,
+        1856,
+        1722,
+        1878,
+        1855,
+        1780,
+        1746
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['渊海子平', '渊海子平', '渊海子平'] 期望=['渊海子平']"
+       },
+       {
+        "name": "must_contain:正官",
+        "ok": true,
+        "detail": "回答前 120 字='《渊海子平·正官论》说：「夫正官者，甲见辛之类；乃阴见阳为官，阳见阴为鬼，阴阳配合成其道也。」即正官是克我日主而阴阳异性相配者，如甲木见辛金。同篇又说取官以月令提纲为主：「大抵要行官旺乡，月令是也。月令者，提纲也。」并举例「甲用辛为官，生于'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "《子平真诠评注》呢？",
+     "rewritten_question": "《子平真诠评注》里正官的定义是什么？",
+     "can_answer": true,
+     "answer": "《子平真诠评注·论十干十二支》没有给出「正官者，克我而阴阳异性」这类形式化定义，也没有「甲见辛」式的十干举例定义；片段实际说到的是正官的性质与地位：「官以克身，虽与七煞有别，终受彼制」，即正官是克我日主之物，与七煞同属克身但有所区别；又说「正官者分所当尊，如在国有君，在家有亲」，强调正官为分所当尊、以下犯上不可，故「以刑冲破害为忌，则以生之护之为喜矣」。就格局用法而言，片段提到「正官佩印」「正官用财」「正官而带煞」「正官取运」等，并说「正官而用财印，身稍轻则取助身，官稍轻则助官。若官露而不可逢合，不可杂煞，不可重官。与地支刑冲，不问所就何局，皆不利也」；又说「正官佩印，运喜财乡，伤食反吉」。此外片段还提到「官喜透财以相生，生印以护官」，以及「正官逢财而又逢伤；透官而又逢合」属带忌、官逢伤克刑冲则官格败。以上是片段能支持到的范围；至于《子平真诠评注》中正官的定义式表述，片段中没有。",
+     "citations": [
+      1611,
+      1612,
+      1613,
+      1584,
+      1586
+     ],
+     "citation_books": [
+      "子平真诠评注",
+      "子平真诠评注",
+      "子平真诠评注",
+      "子平真诠评注",
+      "子平真诠评注"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 6,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "正官",
+        "book": "子平真诠评注",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        1612,
+        1613,
+        1611,
+        1600,
+        1626,
+        1599,
+        1590,
+        1616,
+        1629,
+        1609,
+        1622,
+        1605,
+        1588,
+        1587,
+        1586,
+        1589,
+        1623,
+        1584,
+        1598,
+        1639
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论正官",
+        "book": "子平真诠评注",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        1613,
+        1612,
+        1626,
+        1611,
+        1599,
+        1590,
+        1600,
+        1625,
+        1598,
+        1622
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:子平真诠评注",
+        "ok": true,
+        "detail": "命中 ['子平真诠评注']；改写='《子平真诠评注》里正官的定义是什么？'"
+       },
+       {
+        "name": "rewrite:正官",
+        "ok": true,
+        "detail": "命中 ['正官']；改写='《子平真诠评注》里正官的定义是什么？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['子平真诠评注', '子平真诠评注', '子平真诠评注', '子平真诠评注', '子平真诠评注'] 期望=['子平真诠评注']"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['渊海子平']"
+       },
+       {
+        "name": "must_contain:正官",
+        "ok": true,
+        "detail": "回答前 120 字='《子平真诠评注·论十干十二支》没有给出「正官者，克我而阴阳异性」这类形式化定义，也没有「甲见辛」式的十干举例定义；片段实际说到的是正官的性质与地位：「官以克身，虽与七煞有别，终受彼制」，即正官是克我日主之物，与七煞同属克身但有所区别；又说「'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 75097,
+    "completion_tokens": 1711,
+    "total_tokens": 76808,
+    "cached_tokens": 45568,
+    "llm_calls": 11
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['渊海子平', '渊海子平', '渊海子平'] 期望=['渊海子平']"
+       },
+       {
+        "name": "must_contain:正官",
+        "ok": true,
+        "detail": "回答前 120 字='《渊海子平·正官论》说：「夫正官者，甲见辛之类；乃阴见阳为官，阳见阴为鬼，阴阳配合成其道也。」即正官是克我日主而阴阳异性相配者，如甲木见辛金。同篇又说取官以月令提纲为主：「大抵要行官旺乡，月令是也。月令者，提纲也。」并举例「甲用辛为官，生于'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:子平真诠评注",
+        "ok": true,
+        "detail": "命中 ['子平真诠评注']；改写='《子平真诠评注》里正官的定义是什么？'"
+       },
+       {
+        "name": "rewrite:正官",
+        "ok": true,
+        "detail": "命中 ['正官']；改写='《子平真诠评注》里正官的定义是什么？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['子平真诠评注', '子平真诠评注', '子平真诠评注', '子平真诠评注', '子平真诠评注'] 期望=['子平真诠评注']"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['渊海子平']"
+       },
+       {
+        "name": "must_contain:正官",
+        "ok": true,
+        "detail": "回答前 120 字='《子平真诠评注·论十干十二支》没有给出「正官者，克我而阴阳异性」这类形式化定义，也没有「甲见辛」式的十干举例定义；片段实际说到的是正官的性质与地位：「官以克身，虽与七煞有别，终受彼制」，即正官是克我日主之物，与七煞同属克身但有所区别；又说「'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 87.4
+  }
+ ]
+}

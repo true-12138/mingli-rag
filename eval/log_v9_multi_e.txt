@@ -1,0 +1,17 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/4] mt17 从渊海子平换到子平真诠评注
+    -> PASS  179.1s
+[2/4] mt18 从星学大成换到张果星宗
+    -> PASS  28.4s
+[3/4] mt19 财星之后问股票
+    -> PASS  27.9s
+[4/4] mt20 紫微斗数被拒后再次施压
+    -> PASS  21.2s
+
+===== 汇总 =====
+[multi] 对话通过 4/4，报错 0，用时 256.6s
+  改写检查 6/6（100.0%）
+  引用隔离违规 0 次
+  引用隔离   4/4
+明细：/mnt/d/demo/eval/results_multiturn_v9m_e.json

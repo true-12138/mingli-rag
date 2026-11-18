@@ -1,0 +1,537 @@
+{
+ "summary": {
+  "tag": "v9_single_a",
+  "agent": "single",
+  "code_commit": "5d2153d",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 5,
+  "auto_pass": 1,
+  "errors": 4,
+  "elapsed_seconds": 111.4,
+  "by_category": {
+   "指代": {
+    "n": 5,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 3,
+   "total": 3,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt01",
+   "category": "指代",
+   "name": "它和阳刃是不是一回事",
+   "note": "「它」必须回填羊刃；同一本书内换用「阳刃」这个写法。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》里的羊刃是什么意思？",
+     "rewritten_question": "《三命通会》里的羊刃是什么意思？",
+     "can_answer": true,
+     "answer": "《三命通会》「论羊刃」一节对羊刃的解释分几层：\n\n一、字义与得名。引《三车》云：「羊言刚也，刃者取宰割之义。禄过则刃生，功成当退不退，则过越其分，如羊之在刃，言有伤也。」即「羊」取刚强之意，「刃」取宰割之义；禄已过盛而再生，就像功成不退、越出本分，如羊处于刀刃之上，故主有伤。\n\n二、位置与原理。羊刃「常居禄前一辰」，即禄前一位；其对冲之宫称「飞刃」（又名唐符）。引希尹之说：阴阳万物之理皆恶极盛，火极则焦灭、水极则涌竭、金极则折缺、土极则崩裂、木极则摧折；「既成而未极则为福，已极则将反而为灾」。十干的正位（甲卯、乙辰、丙午、丁未、庚酉、辛戌、壬子、癸丑）正是极盛之地，「当其极处，其气刚烈暴戾不和」，所以禄前一辰为羊刃；而「既盛而未极则温柔和畅，故刃后一辰为禄」。引《壶中子》：「凡人有禄，必赐刃以卫之。」\n\n三、吉凶取舍。并非见刃即凶：《一行命书》云「羊刃重重又见禄，富贵饶金玉」，《洞玄经》云「官印相助福相资」，即羊刃带禄、更有官印相资，尤作吉论。若「专羊刃」（只有刃而无制无辅），则主眼露性急、暴害物、亲近恶党；生旺稍可，死绝尤甚；在五行败者逢之多患瘰疬、瘴疠、金刃之灾，且不论贵贱多冗杂劳迫、少得安逸。\n\n四、真刃与偏刃。引《太乙经》：六甲生人逢乙卯、丁卯为「真羊刃」，若重犯主残疾、官禄失退、败散在晚年；其余卯为「偏刃」，则轻。\n\n五、行运之忌。同书别处说「羊刃不喜刑冲」，羊刃格不喜岁运刑冲，经云「羊刃冲合，岁君勃然祸至」；又云「运行羊刃，财物耗散」。\n\n另需注意书中一条辨正：子平之法「以甲丙戊庚壬五阳干有刃，乙丁己辛癸五阴干无刃」，且「是指阴阳之阳，非牛羊之羊」，其义详见后「论阳刃格」。也就是说，后世常写的「阳刃」与「羊刃」在《三命通会》里被视为同一事，而「羊」字并非指牛羊。\n\n以上仅为古籍对羊刃这一概念的义理与用法说明，不构成对任何具体命局或现实事情的判断。",
+     "citations": [
+      6354,
+      6356,
+      7284,
+      6355
+     ],
+     "citation_books": [
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 3,
+     "llm_calls": 3,
+     "trace": [
+      {
+       "step": 1,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "羊刃",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 8
+       },
+       "ok": true,
+       "chunk_ids": [
+        6356,
+        7284,
+        6390,
+        6354,
+        6156,
+        6355,
+        6371,
+        6731
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "thought": null,
+       "action": "search_terms",
+       "args": {
+        "term": "羊刃"
+       },
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      },
+      {
+       "step": 3,
+       "thought": null,
+       "action": "fetch_chunk",
+       "args": {
+        "chunk_id": 6354,
+        "with_neighbors": true
+       },
+       "ok": true,
+       "chunk_ids": [
+        6354,
+        6353,
+        6355
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:羊刃",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会》「论羊刃」一节对羊刃的解释分几层：\\n\\n一、字义与得名。引《三车》云：「羊言刚也，刃者取宰割之义。禄过则刃生，功成当退不退，则过越其分，如羊之在刃，言有伤也。」即「羊」取刚强之意，「刃」取宰割之义；禄已过盛而再生，就像功成不退、越'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "那它和阳刃是一回事吗？",
+     "rewritten_question": "《三命通会》里的羊刃和阳刃是一回事吗？",
+     "can_answer": true,
+     "answer": "是同一回事，但《三命通会》对这两个名称有明确的辨正。\n\n一、书中把「阳刃」直接解释为「羊刃」的异写。论阳刃一节开头标「论阳刃【前论羊刃煞与此参防】」，即前面「论羊刃」与这里「论阳刃」是同一主题的两处论述；正文又云「阳者阴阳之阳，刃者刀刃之刃，即禄前一位，言旺越其分故险」，与论羊刃所引《三车》「羊言刚也，刃者取宰割之义……故羊刃常居禄前一辰」所指位置（禄前一辰）完全一致。\n\n二、书中特别指出「羊」不是牛羊之羊。论羊刃一节末辨正：「子平以甲丙戊庚壬五阳干有刃，乙丁己辛癸五阴干无刃，惟见伤官与羊刃同祸，是指阴阳之阳，非牛羊之羊，其义见后论阳刃格中。」也就是说，子平之法只论五阳干有刃，故其字当作「阳刃」，「羊」只是同音借写。\n\n三、两处所论的吉凶喜忌也相通：论阳刃说「阳刃有三：有劫财刃、有护禄刃、有背禄刃」，又说「劫财阳刃切忌时逢，岁运并临，灾殃立至」；论羊刃则说「羊刃不喜刑冲」「羊刃冲合岁君，勃然祸至」「运行羊刃，财物耗散」。可见书中「羊刃」「阳刃」两名并用，指同一神煞。\n\n需注意的细微差别：书中「羊刃」一节还收录了「飞刃（唐符）」「真羊刃／偏刃」「朝元羊刃」「连珠刃」「刃头财／刃头鬼」等名目，这些是羊刃的衍生名目，并非与阳刃并列的另一回事。\n\n以上仅为古籍对名目的义理辨正，不构成对任何具体命局的判断。",
+     "citations": [
+      6578,
+      6356,
+      6354,
+      7284
+     ],
+     "citation_books": [
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 3,
+     "trace": [
+      {
+       "step": 1,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "阳刃",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 8
+       },
+       "ok": true,
+       "chunk_ids": [
+        6578,
+        6581,
+        6582,
+        7270,
+        6579,
+        6580,
+        6956,
+        7279
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "羊刃",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 8
+       },
+       "ok": true,
+       "chunk_ids": [
+        6356,
+        7284,
+        6390,
+        6354,
+        6156,
+        6355,
+        6371,
+        6731
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:三命通会",
+        "ok": true,
+        "detail": "命中 ['三命通会']；改写='《三命通会》里的羊刃和阳刃是一回事吗？'"
+       },
+       {
+        "name": "rewrite:羊刃",
+        "ok": true,
+        "detail": "命中 ['羊刃']；改写='《三命通会》里的羊刃和阳刃是一回事吗？'"
+       },
+       {
+        "name": "rewrite:阳刃",
+        "ok": true,
+        "detail": "命中 ['阳刃']；改写='《三命通会》里的羊刃和阳刃是一回事吗？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:阳刃",
+        "ok": true,
+        "detail": "回答前 120 字='是同一回事，但《三命通会》对这两个名称有明确的辨正。\\n\\n一、书中把「阳刃」直接解释为「羊刃」的异写。论阳刃一节开头标「论阳刃【前论羊刃煞与此参防】」，即前面「论羊刃」与这里「论阳刃」是同一主题的两处论述；正文又云「阳者阴阳之阳，刃者刀刃之刃'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 29155,
+    "completion_tokens": 1609,
+    "total_tokens": 30764,
+    "cached_tokens": 13440,
+    "llm_calls": 6
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:羊刃",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会》「论羊刃」一节对羊刃的解释分几层：\\n\\n一、字义与得名。引《三车》云：「羊言刚也，刃者取宰割之义。禄过则刃生，功成当退不退，则过越其分，如羊之在刃，言有伤也。」即「羊」取刚强之意，「刃」取宰割之义；禄已过盛而再生，就像功成不退、越'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:三命通会",
+        "ok": true,
+        "detail": "命中 ['三命通会']；改写='《三命通会》里的羊刃和阳刃是一回事吗？'"
+       },
+       {
+        "name": "rewrite:羊刃",
+        "ok": true,
+        "detail": "命中 ['羊刃']；改写='《三命通会》里的羊刃和阳刃是一回事吗？'"
+       },
+       {
+        "name": "rewrite:阳刃",
+        "ok": true,
+        "detail": "命中 ['阳刃']；改写='《三命通会》里的羊刃和阳刃是一回事吗？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:阳刃",
+        "ok": true,
+        "detail": "回答前 120 字='是同一回事，但《三命通会》对这两个名称有明确的辨正。\\n\\n一、书中把「阳刃」直接解释为「羊刃」的异写。论阳刃一节开头标「论阳刃【前论羊刃煞与此参防】」，即前面「论羊刃」与这里「论阳刃」是同一主题的两处论述；正文又云「阳者阴阳之阳，刃者刀刃之刃'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 103.2
+  },
+  {
+   "id": "mt02",
+   "category": "指代",
+   "name": "偏官与正官的分工",
+   "note": "「那偏官呢」省略了「《渊海子平》怎么论」；改写必须带上书名。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《渊海子平》怎么论正官？",
+     "rewritten_question": "《渊海子平》怎么论正官？",
+     "can_answer": true,
+     "answer": "《渊海子平》有专篇《正官论》，其论正官要点如下：\n\n一、名义与取法：正官是「甲见辛之类」，即阴见阳、阳见阴，阴阳配合成其道。取官以月令提纲为主，「大抵要行官旺乡，月令是也」；看命先看提纲，再看其余。如甲用辛为官，生于八月中气之后，金旺在酉，故谓之正官；即使天干不透辛，只要地支有巳酉丑，虽不在八月中气之后，亦可言官。岁时透出正官、地支又有官格，则不拘八月中气之后。\n\n二、喜忌：正官乃贵气之物，喜身旺、印绶（如甲用辛官，喜土生官）；最忌刑冲破害、阳刃七杀，以及伤官之地。行运宜官旺之乡或成局，不宜伤官之地。命中有官星而行伤官之运则不吉，须待印绶、官星旺运方可发。\n\n三、多寡与混杂：正官不宜多，「正官或多，反不为福」，因人之命宜得中和之气，太过与不及同；中和为福厚，偏党相克为灾殃。既以提纲作正官，年时支干若有一偏官便为混杂，须仔细以轻重推测；月令有正官而时干支有偏官，便难以正官言之（时干逢杀即官杀混杂）。「一位若两官不妨」，「官来克我，我去克官不为害」。\n\n四、贵格条件：大率官星须得印绶、身旺则发；若无伤官破印、身不弱者便为贵命。四柱有刑冲破害，皆未为贵命看。\n\n五、诗诀大意：正官须在月中求，无破无伤贵不休；正气官星月上推，无冲无破最为奇，中年岁运来相助，将相公侯总可为；正官仁德性情纯，词馆文章可立身，官印相生逢岁运，玉堂金马坐朝臣；正官大抵要身强，气弱须求运旺方，岁运更逢生旺地，无冲无破是荣昌。\n\n另《碧渊赋》亦概括为「正官正印无伤，出仕牧于庶士」「正官无印，居官不显」。",
+     "citations": [
+      1749,
+      1750,
+      1840
+     ],
+     "citation_books": [
+      "渊海子平",
+      "渊海子平",
+      "渊海子平"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 2,
+     "trace": [
+      {
+       "step": 1,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "正官",
+        "book": "渊海子平",
+        "k": 8
+       },
+       "ok": true,
+       "chunk_ids": [
+        1749,
+        1750,
+        1840,
+        1722,
+        1745,
+        1856,
+        1878,
+        1857
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "thought": null,
+       "action": "list_books",
+       "args": {},
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['渊海子平', '渊海子平', '渊海子平'] 期望=['渊海子平']"
+       },
+       {
+        "name": "must_contain:正官",
+        "ok": true,
+        "detail": "回答前 120 字='《渊海子平》有专篇《正官论》，其论正官要点如下：\\n\\n一、名义与取法：正官是「甲见辛之类」，即阴见阳、阳见阴，阴阳配合成其道。取官以月令提纲为主，「大抵要行官旺乡，月令是也」；看命先看提纲，再看其余。如甲用辛为官，生于八月中气之后，金旺在酉，'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "那偏官呢？",
+     "error": "RuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 1af14b37-67bb-4d8a-9d47-d96db79a46f0)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}",
+     "traceback": "Traceback (most recent call last):\n  File \"/mnt/d/demo/eval/run_multiturn.py\", line 267, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 487, in agent_answer\n    return _agent_answer_function(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 282, in _agent_answer_function\n    raw, messages, _used = tool_loop.run(\n                           ^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/tool_loop.py\", line 138, in run\n    msg = rag._chat_message(\n          ^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/rag.py\", line 140, in _chat_message\n    raise RuntimeError(\"DeepSeek HTTP {}：{}\".format(resp.status_code, resp.text[:600]))\nRuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 1af14b37-67bb-4d8a-9d47-d96db79a46f0)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 9462,
+    "completion_tokens": 679,
+    "total_tokens": 10141,
+    "cached_tokens": 4096,
+    "llm_calls": 2
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['渊海子平', '渊海子平', '渊海子平'] 期望=['渊海子平']"
+       },
+       {
+        "name": "must_contain:正官",
+        "ok": true,
+        "detail": "回答前 120 字='《渊海子平》有专篇《正官论》，其论正官要点如下：\\n\\n一、名义与取法：正官是「甲见辛之类」，即阴见阳、阳见阴，阴阳配合成其道。取官以月令提纲为主，「大抵要行官旺乡，月令是也」；看命先看提纲，再看其余。如甲用辛为官，生于八月中气之后，金旺在酉，'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "error：RuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 1af14b37-67bb-4d8a-9d47-d96db79a46f0)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 6.8
+  },
+  {
+   "id": "mt03",
+   "category": "指代",
+   "name": "太阴从命宫到身宫",
+   "note": "「它」指太阴，不是指命宫；改写若只写「身宫」会丢主语。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《星学大成》里太阴入命宫怎么讲？",
+     "error": "RuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 142cb72b-d1fc-4841-a790-c57193e8b8d5)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}",
+     "traceback": "Traceback (most recent call last):\n  File \"/mnt/d/demo/eval/run_multiturn.py\", line 267, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 487, in agent_answer\n    return _agent_answer_function(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 282, in _agent_answer_function\n    raw, messages, _used = tool_loop.run(\n                           ^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/tool_loop.py\", line 138, in run\n    msg = rag._chat_message(\n          ^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/rag.py\", line 140, in _chat_message\n    raise RuntimeError(\"DeepSeek HTTP {}：{}\".format(resp.status_code, resp.text[:600]))\nRuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 142cb72b-d1fc-4841-a790-c57193e8b8d5)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt04",
+   "category": "指代",
+   "name": "甲木从正月到二月",
+   "note": "「它」指甲木；改写只补「二月」而不补甲木，检索会落到别的日主。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《穷通宝鉴》里甲木在正月怎么取用？",
+     "error": "RuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 1ca3f2e9-2f80-42c6-abb5-7710e655314d)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}",
+     "traceback": "Traceback (most recent call last):\n  File \"/mnt/d/demo/eval/run_multiturn.py\", line 267, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 487, in agent_answer\n    return _agent_answer_function(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 282, in _agent_answer_function\n    raw, messages, _used = tool_loop.run(\n                           ^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/tool_loop.py\", line 138, in run\n    msg = rag._chat_message(\n          ^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/rag.py\", line 140, in _chat_message\n    raise RuntimeError(\"DeepSeek HTTP {}：{}\".format(resp.status_code, resp.text[:600]))\nRuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: 1ca3f2e9-2f80-42c6-abb5-7710e655314d)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  },
+  {
+   "id": "mt05",
+   "category": "指代",
+   "name": "病药说里的四病四药",
+   "note": "「这本书」回指《神峰通考》；四病/四药在语料里各只有 1 条，答案应给出具体名目。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《神峰通考》的病药说是什么？",
+     "error": "RuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: a73697df-dd4a-45bc-a78e-311e5b24bb11)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}",
+     "traceback": "Traceback (most recent call last):\n  File \"/mnt/d/demo/eval/run_multiturn.py\", line 267, in run\n    res = solve(q, max_steps=args.max_steps, history=history)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 487, in agent_answer\n    return _agent_answer_function(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/agent.py\", line 282, in _agent_answer_function\n    raw, messages, _used = tool_loop.run(\n                           ^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/tool_loop.py\", line 138, in run\n    msg = rag._chat_message(\n          ^^^^^^^^^^^^^^^^^^\n  File \"/mnt/d/demo/src/rag.py\", line 140, in _chat_message\n    raise RuntimeError(\"DeepSeek HTTP {}：{}\".format(resp.status_code, resp.text[:600]))\nRuntimeError: DeepSeek HTTP 402：{\"error\":{\"message\":\"Insufficient Balance (request_id: a73697df-dd4a-45bc-a78e-311e5b24bb11)\",\"type\":\"insufficient_balance_error\",\"param\":null,\"code\":\"invalid_request_error\"}}\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "cached_tokens": 0,
+    "llm_calls": 0
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "轮次缺失：应有 2 轮，实际 1 轮"
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 0.5
+  }
+ ]
+}

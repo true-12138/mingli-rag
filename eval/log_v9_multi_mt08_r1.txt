@@ -1,0 +1,11 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/1] mt08 正官格的用神
+    -> PASS  185.5s
+
+===== 汇总 =====
+[multi] 对话通过 1/1，报错 0，用时 185.5s
+  改写检查 3/3（100.0%）
+  引用隔离违规 0 次
+  省略     1/1
+明细：/mnt/d/demo/eval/results_multiturn_v9m_mt08_r1.json

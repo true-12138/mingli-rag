@@ -1,0 +1,19 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/5] mt06 空亡遇吉神
+    -> PASS  63.1s
+[2/5] mt07 驿马逢冲
+    -> PASS  17.6s
+[3/5] mt08 正官格的用神
+    -> PASS  14.4s
+[4/5] mt09 建日到除日
+    -> PASS  12.2s
+[5/5] mt10 命主星到身主星
+    -> PASS  13.5s
+
+===== 汇总 =====
+[single] 对话通过 5/5，报错 0，用时 120.9s
+  改写检查 14/14（100.0%）
+  引用隔离违规 0 次
+  省略     5/5
+明细：/mnt/d/demo/eval/results_multiturn_v9s_b.json

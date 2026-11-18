@@ -1,0 +1,22 @@
+[provenance] code=4fc34c6 tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/5] mt02 偏官与正官的分工
+    -> PASS  96.4s
+[2/5] mt06 空亡遇吉神
+    -> PASS  27.7s
+[3/5] mt14 只讨论星学大成
+    -> PASS  25.2s
+[4/5] mt19 财星之后问股票
+    -> FAIL  21.5s
+[5/5] mt20 紫微斗数被拒后再次施压
+    -> PASS  13.7s
+
+===== 汇总 =====
+[multi] 对话通过 4/5，报错 0，用时 184.5s
+  改写检查 10/10（100.0%）
+  引用隔离违规 1 次
+  指代     1/1
+  省略     1/1
+  跨轮约束   1/1
+  引用隔离   1/2
+明细：/mnt/d/demo/eval/results_multiturn_v7_multi_retry.json

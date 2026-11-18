@@ -1,0 +1,19 @@
+[provenance] code=5d2153d tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/5] mt11 只查三命通会说贵人
+    -> PASS  94.2s
+[2/5] mt12 只用穷通宝鉴说丙火
+    -> PASS  13.6s
+[3/5] mt13 锁定出生时间后再问调候
+    -> PASS  12.4s
+[4/5] mt14 只讨论星学大成
+    -> PASS  26.9s
+[5/5] mt15 只引原文不用术语表
+    -> PASS  16.5s
+
+===== 汇总 =====
+[single] 对话通过 5/5，报错 0，用时 163.6s
+  改写检查 13/13（100.0%）
+  引用隔离违规 0 次
+  跨轮约束   5/5
+明细：/mnt/d/demo/eval/results_multiturn_v8_single_c.json

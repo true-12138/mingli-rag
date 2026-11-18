@@ -1,0 +1,18 @@
+[provenance] code=5d2153d tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/4] mt09 建日到除日
+    -> PASS  119.1s
+[2/4] mt10 命主星到身主星
+    -> PASS  28.8s
+[3/4] mt11 只查三命通会说贵人
+    -> PASS  27.3s
+[4/4] mt12 只用穷通宝鉴说丙火
+    -> PASS  19.2s
+
+===== 汇总 =====
+[multi] 对话通过 4/4，报错 0，用时 194.5s
+  改写检查 9/9（100.0%）
+  引用隔离违规 0 次
+  省略     2/2
+  跨轮约束   2/2
+明细：/mnt/d/demo/eval/results_multiturn_v8_multi_c.json

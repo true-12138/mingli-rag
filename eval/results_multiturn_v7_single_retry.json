@@ -1,0 +1,278 @@
+{
+ "summary": {
+  "tag": "v7_single_retry",
+  "agent": "single",
+  "code_commit": "4fc34c6",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 1,
+  "auto_pass": 1,
+  "errors": 0,
+  "elapsed_seconds": 78.5,
+  "by_category": {
+   "跨轮约束": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 2,
+   "total": 2,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt12",
+   "category": "跨轮约束",
+   "name": "只用穷通宝鉴说丙火",
+   "note": "「只用穷通宝鉴」的限制跨轮；三命通会里丙火材料更多，是最容易被拉进来的书。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "只用《穷通宝鉴》：甲木在十月怎么取用？",
+     "rewritten_question": "只用《穷通宝鉴》：甲木在十月怎么取用？",
+     "can_answer": true,
+     "answer": "《穷通宝鉴·三冬甲木》对十月甲木的取用说得很明确：\n\n**主用**：「十月甲木，庚丁为要，丙火次之。」即首取庚金、丁火，丙火为辅。\n\n**忌与救**：「忌壬水泛身，须戊土制之。」十月壬水司令，怕水多泛木，须用戊土制水。\n\n**格局层次**：\n- 庚丁两透，又加戊土出干，名为「去浊留清」，富贵之极；即使乏丁火，亦稍有富贵。\n- 甲多制戊、庚金无根，则平常。\n- 庚戊若透，虽出比劫，必定富而寿。\n- 多比劫而只一庚出干、坐禄逢生，为「舍丁从庚」，略富贵。\n- 支见申亥、戊己得所，以救庚丁，可许科甲；若单己透，力弱，不过贡监。\n\n**妻、子**：「用庚，土妻金子。用丁，木妻火子。」\n\n补充：原文此段与十一月、十二月甲木合编于「三冬甲木」一篇，十月部分即上述内容；至于「为什么」要庚劈甲、丁引火，本篇未展开，可参十二月「先用庚劈甲，方引丁火」之说。",
+     "citations": [
+      2758
+     ],
+     "citation_books": [
+      "穷通宝鉴"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 2,
+     "trace": [
+      {
+       "step": 1,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "甲木十月",
+        "book": "穷通宝鉴",
+        "mode": "bm25",
+        "k": 8
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2767,
+        2792,
+        2776,
+        2822,
+        2783,
+        2821,
+        2756
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "十月甲木",
+        "book": "穷通宝鉴",
+        "mode": "dense",
+        "k": 8
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2757,
+        2767,
+        2756,
+        2776,
+        2804,
+        2751,
+        2765
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "must_contain:甲木",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》对十月甲木的取用说得很明确：\\n\\n**主用**：「十月甲木，庚丁为要，丙火次之。」即首取庚金、丁火，丙火为辅。\\n\\n**忌与救**：「忌壬水泛身，须戊土制之。」十月壬水司令，怕水多泛木，须用戊土制水。\\n\\n**格局层次**：'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "丙火呢？",
+     "rewritten_question": "《穷通宝鉴》中十月甲木取用，丙火起什么作用？",
+     "can_answer": true,
+     "answer": "《穷通宝鉴·三冬甲木》对十月甲木只说了一句涉及丙火的话：「十月甲木，庚丁为要，丙火次之。」也就是说，十月甲木的取用以庚金、丁火为主，丙火排在二者之后，属于次要的辅助用神。\n\n至于丙火具体起什么作用，例如是否用来解冻、暖木、制水，这一段原文并没有展开说明；它只交代了丙火的位次（次之），没有给出功能性的解释。同篇十一月甲木有「丁先庚后，丙火佐之」的说法，可见丙火在冬月甲木中处于「佐」的地位；但那是十一月的条文，不能直接当作十月丙火作用的原文依据。\n\n所以，按《穷通宝鉴》原文，能确定的只有：十月甲木以庚丁为主，丙火为辅、为次；原文没有进一步说明丙火在十月甲木中的具体功用。",
+     "citations": [
+      2758
+     ],
+     "citation_books": [
+      "穷通宝鉴"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 3,
+     "trace": [
+      {
+       "step": 1,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "十月甲木 丙火",
+        "book": "穷通宝鉴",
+        "mode": "rrf",
+        "k": 6
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2776,
+        2756,
+        2767,
+        2753,
+        2822
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "三冬甲木",
+        "book": "穷通宝鉴",
+        "mode": "bm25",
+        "k": 6
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2783,
+        2797,
+        2784,
+        2798,
+        2756
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:穷通宝鉴",
+        "ok": true,
+        "detail": "命中 ['穷通宝鉴']；改写='《穷通宝鉴》中十月甲木取用，丙火起什么作用？'"
+       },
+       {
+        "name": "rewrite:丙火",
+        "ok": true,
+        "detail": "命中 ['丙火']；改写='《穷通宝鉴》中十月甲木取用，丙火起什么作用？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain:丙火",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》对十月甲木只说了一句涉及丙火的话：「十月甲木，庚丁为要，丙火次之。」也就是说，十月甲木的取用以庚金、丁火为主，丙火排在二者之后，属于次要的辅助用神。\\n\\n至于丙火具体起什么作用，例如是否用来解冻、暖木、制水，这一段原文并'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 23634,
+    "completion_tokens": 970,
+    "total_tokens": 24604,
+    "cached_tokens": 16512,
+    "llm_calls": 5
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "must_contain:甲木",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》对十月甲木的取用说得很明确：\\n\\n**主用**：「十月甲木，庚丁为要，丙火次之。」即首取庚金、丁火，丙火为辅。\\n\\n**忌与救**：「忌壬水泛身，须戊土制之。」十月壬水司令，怕水多泛木，须用戊土制水。\\n\\n**格局层次**：'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:穷通宝鉴",
+        "ok": true,
+        "detail": "命中 ['穷通宝鉴']；改写='《穷通宝鉴》中十月甲木取用，丙火起什么作用？'"
+       },
+       {
+        "name": "rewrite:丙火",
+        "ok": true,
+        "detail": "命中 ['丙火']；改写='《穷通宝鉴》中十月甲木取用，丙火起什么作用？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain:丙火",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》对十月甲木只说了一句涉及丙火的话：「十月甲木，庚丁为要，丙火次之。」也就是说，十月甲木的取用以庚金、丁火为主，丙火排在二者之后，属于次要的辅助用神。\\n\\n至于丙火具体起什么作用，例如是否用来解冻、暖木、制水，这一段原文并'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 78.5
+  }
+ ]
+}

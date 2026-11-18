@@ -1,0 +1,18 @@
+[provenance] code=5d2153d tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/4] mt13 锁定出生时间后再问调候
+    -> PASS  92.9s
+[2/4] mt14 只讨论星学大成
+    -> PASS  30.8s
+[3/4] mt15 只引原文不用术语表
+    -> PASS  29.0s
+[4/4] mt16 从三命通会换到神峰通考
+    -> PASS  36.5s
+
+===== 汇总 =====
+[multi] 对话通过 4/4，报错 0，用时 189.1s
+  改写检查 11/11（100.0%）
+  引用隔离违规 0 次
+  跨轮约束   3/3
+  引用隔离   1/1
+明细：/mnt/d/demo/eval/results_multiturn_v8_multi_d.json

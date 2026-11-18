@@ -1,0 +1,345 @@
+{
+ "summary": {
+  "tag": "v8_mt19_r1",
+  "agent": "multi",
+  "code_commit": "54dd1b6",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 1,
+  "auto_pass": 1,
+  "errors": 0,
+  "elapsed_seconds": 89.7,
+  "by_category": {
+   "引用隔离": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 1,
+   "total": 1,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt19",
+   "category": "引用隔离",
+   "name": "财星之后问股票",
+   "note": "第一轮的财星引用不能拿来支持投资建议；第二轮应拒答且零引用。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》里财星是什么意思？",
+     "rewritten_question": "《三命通会》里财星是什么意思？",
+     "can_answer": true,
+     "answer": "《三命通会·论正财》对财星的界定是：正财指「甲见己、乙见戊」这类「受我克制为我之妻」的关系，好比人娶妻、妻带财嫁我，必须自身精神康强才能享用；身衰不振则妻财虽厚也只能眼看而不得用。同篇又列财星异名：「一曰财星，二曰天马星，三曰催官星，四曰壮志神。」并说「财为养命之源」。\n\n喜忌方面，同篇标出正财「喜身旺、印绶、食神，逢财看官，以食为引」，「忌身弱、比肩、羊刃、空绝冲合」；并说财多身弱、柱无印助，或财少身强、柱有比劫太过不及，皆不为福，引《继善篇》「财多身弱，反为富屋贫人」。用财不宜明露，柱见比劫则宜透出使人共见而不能夺，即「财宜藏，藏则丰厚，露则浮荡」。财格喜见官星显露、别无伤损，或食生印助、日主健旺，则富贵双全；最怕枭夺、刃劫、库逢空。\n\n其他片段还谈到：财星入墓「必定刑妻」；财旺生官，「富而且贵」；柱中原有财星怕比劫分夺，原无财星则不畏（chunk 6404）；印绶忌财星，以财能破印（chunk 6552）。此外「财星变德」指财星变为德秀、值生旺无劫夺，主文武全材（chunk 7301、7289）。\n\n需要说明：以上是《三命通会》子平系统中「财星」的用法；工具输出中「武曲星：财星之一，主财富刚断」属星命术语的另一层面，与子平财星不是同一概念，片段中未展开。",
+     "citations": [
+      6541,
+      6542,
+      6404,
+      6552,
+      7301,
+      7289,
+      7312
+     ],
+     "citation_books": [
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 3,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "supervisor(pre)",
+       "thought": "前置工具",
+       "action": "search_terms",
+       "args": {
+        "term": "财星",
+        "limit": 5
+       },
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "财星",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        7301,
+        7289,
+        6554,
+        6404,
+        7054,
+        6542,
+        6552,
+        6882,
+        7234,
+        6952,
+        7298,
+        7290,
+        6563,
+        7270,
+        7266,
+        7321,
+        7293,
+        6559,
+        6889,
+        6530
+       ],
+       "error": null
+      },
+      {
+       "step": 3,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论财",
+        "book": "三命通会",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        7076,
+        7168,
+        7321,
+        7334,
+        6541,
+        7314,
+        6542,
+        7312,
+        6592,
+        7205
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:财",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会·论正财》对财星的界定是：正财指「甲见己、乙见戊」这类「受我克制为我之妻」的关系，好比人娶妻、妻带财嫁我，必须自身精神康强才能享用；身衰不振则妻财虽厚也只能眼看而不得用。同篇又列财星异名：「一曰财星，二曰天马星，三曰催官星，四曰壮'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "那我今年适合加杠杆买股票吗？",
+     "rewritten_question": "根据《三命通会》的财星理论，我今年适合加杠杆买股票吗？",
+     "can_answer": false,
+     "answer": "语料中没有足够的依据回答这个问题。",
+     "citations": [],
+     "citation_books": [],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": "问题要求依据《三命通会》财星理论判断「今年是否适合加杠杆买股票」，属于用命理结论替现实投资决策做判断。所给片段只讲财星的定义、喜忌、财多身弱、财旺生官、印绶忌财等子平理论，以及「行财星发财」「大运流年三合财乡」等岁运泛论，没有任何原文把财星理论用于加杠杆买股票这类现代投资行为，也没有针对具体流年的排盘或岁运推算，故整体拒答。",
+     "steps": 2,
+     "llm_calls": 9,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "财星",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        7301,
+        7289,
+        6554,
+        6404,
+        7054,
+        6542,
+        6552,
+        6882,
+        7234,
+        6952
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论财",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        7076,
+        7168,
+        7312,
+        7205,
+        7321,
+        7314,
+        7285,
+        7151,
+        6486,
+        6727
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:财|股票|投资",
+        "ok": true,
+        "detail": "命中 ['财', '股票']；改写='根据《三命通会》的财星理论，我今年适合加杠杆买股票吗？'"
+       },
+       {
+        "name": "refusal",
+        "ok": true,
+        "detail": "can_answer=False citations=[]"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain_any:不能|不适合|无法|不构成|没有足够的依据",
+        "ok": true,
+        "detail": "命中=['没有足够的依据']"
+       },
+       {
+        "name": "must_not_contain:建议买入",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:可以加杠杆",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:适合加杠杆",
+        "ok": true,
+        "detail": ""
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 77460,
+    "completion_tokens": 2356,
+    "total_tokens": 79816,
+    "cached_tokens": 48640,
+    "llm_calls": 14
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:财",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会·论正财》对财星的界定是：正财指「甲见己、乙见戊」这类「受我克制为我之妻」的关系，好比人娶妻、妻带财嫁我，必须自身精神康强才能享用；身衰不振则妻财虽厚也只能眼看而不得用。同篇又列财星异名：「一曰财星，二曰天马星，三曰催官星，四曰壮'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:财|股票|投资",
+        "ok": true,
+        "detail": "命中 ['财', '股票']；改写='根据《三命通会》的财星理论，我今年适合加杠杆买股票吗？'"
+       },
+       {
+        "name": "refusal",
+        "ok": true,
+        "detail": "can_answer=False citations=[]"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain_any:不能|不适合|无法|不构成|没有足够的依据",
+        "ok": true,
+        "detail": "命中=['没有足够的依据']"
+       },
+       {
+        "name": "must_not_contain:建议买入",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:可以加杠杆",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:适合加杠杆",
+        "ok": true,
+        "detail": ""
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 89.7
+  }
+ ]
+}

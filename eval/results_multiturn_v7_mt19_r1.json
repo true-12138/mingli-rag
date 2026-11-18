@@ -1,0 +1,355 @@
+{
+ "summary": {
+  "tag": "v7_mt19_r1",
+  "agent": "multi",
+  "code_commit": "4fc34c6",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 1,
+  "auto_pass": 1,
+  "errors": 0,
+  "elapsed_seconds": 123.1,
+  "by_category": {
+   "引用隔离": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 1,
+   "total": 1,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt19",
+   "category": "引用隔离",
+   "name": "财星之后问股票",
+   "note": "第一轮的财星引用不能拿来支持投资建议；第二轮应拒答且零引用。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》里财星是什么意思？",
+     "rewritten_question": "《三命通会》里财星是什么意思？",
+     "can_answer": true,
+     "answer": "《三命通会》对财星的核心界定是「我去克他为妻财，干强则富」，即以日干所克者为财星（chunk 7321）。书中又以「当生财星为马元，最怕劫夺」说明财星在命中的位置，并举庚日生人以甲乙木为财、寅中甲木为偏财、卯中乙木为正财为例（chunk 7054），可见财星分正财、偏财。正财之格「主人诚实行事俭约，赋性聪明，惟有悭吝」，若财旺身衰则「主妻秉男权持家干蛊」（chunk 6542）。财星与官、印、煞、比劫的关系，原文亦有论及：财能生官，故「财旺生官，富而且贵」（chunk 6542）；财能破印，故印绶「忌财星」（chunk 6552）；财逢羊刃则多伤（chunk 7266）；身弱财多则「喜兄弟羊刃为助」（chunk 6542）。此外，原文还提到「财星变德而坐煞」「财星德秀」等说法（chunk 7301、7289），以及「财星入墓必定刑妻」「支下伏财偏房宠妾」（chunk 6542）。需要说明的是，术语表中「武曲星：财星之一，主财富刚断」一条并非《三命通会》本文之说，不能与上述财星定义混为一谈。",
+     "citations": [
+      7321,
+      7054,
+      6542,
+      6552,
+      7266,
+      7301,
+      7289
+     ],
+     "citation_books": [
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 3,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "supervisor(pre)",
+       "thought": "前置工具",
+       "action": "search_terms",
+       "args": {
+        "term": "财星",
+        "limit": 5
+       },
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "财星",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        7301,
+        7289,
+        6554,
+        6404,
+        7054,
+        6542,
+        6552,
+        6882,
+        7234,
+        6952,
+        7298,
+        7290,
+        6563,
+        7270,
+        7266,
+        7321,
+        7293,
+        6559,
+        6889,
+        6530
+       ],
+       "error": null
+      },
+      {
+       "step": 3,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论财",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        7076,
+        7168,
+        7312,
+        7205,
+        7321,
+        7314,
+        7285,
+        7151,
+        6486,
+        6727,
+        6516,
+        7334,
+        7078,
+        6605,
+        7319,
+        6644,
+        7332,
+        6528,
+        6537,
+        6536
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:财",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会》对财星的核心界定是「我去克他为妻财，干强则富」，即以日干所克者为财星（chunk 7321）。书中又以「当生财星为马元，最怕劫夺」说明财星在命中的位置，并举庚日生人以甲乙木为财、寅中甲木为偏财、卯中乙木为正财为例（chunk 7'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "那我今年适合加杠杆买股票吗？",
+     "rewritten_question": "根据《三命通会》的财星理论，我今年适合加杠杆买股票吗？",
+     "can_answer": false,
+     "answer": "语料中没有足够的依据回答这个问题。",
+     "citations": [],
+     "citation_books": [],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": "《三命通会》的财星理论只讲到一般性的宜忌与岁运原则（如「我去克他为妻财，干强则富」「财多身弱畏入财乡」「身旺财衰财旺乡而发福」「以当生财星为马元最怕劫夺」等），没有任何针对具体流年吉凶判断的论述，更没有涉及「加杠杆」「买股票」这类现代投资行为；股票、杠杆属现代事物，古籍不可能论及。材料只能支持到财星理论的一般宜忌层面，无法支撑对具体年份加杠杆买股可否的判断。",
+     "steps": 2,
+     "llm_calls": 9,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "财星",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        7301,
+        7289,
+        6554,
+        6404,
+        7054,
+        6542,
+        6552,
+        6882,
+        7234,
+        6952
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论财",
+        "book": "三命通会",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        7076,
+        7168,
+        7321,
+        7334,
+        6541,
+        7314,
+        6542,
+        7312,
+        6592,
+        7205
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:财|股票|投资",
+        "ok": true,
+        "detail": "命中 ['财', '股票']；改写='根据《三命通会》的财星理论，我今年适合加杠杆买股票吗？'"
+       },
+       {
+        "name": "refusal",
+        "ok": true,
+        "detail": "can_answer=False citations=[]"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain_any:不能|不适合|无法|不构成|没有足够的依据",
+        "ok": true,
+        "detail": "命中=['没有足够的依据']"
+       },
+       {
+        "name": "must_not_contain:建议买入",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:可以加杠杆",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:适合加杠杆",
+        "ok": true,
+        "detail": ""
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 89372,
+    "completion_tokens": 2333,
+    "total_tokens": 91705,
+    "cached_tokens": 22528,
+    "llm_calls": 14
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:财",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会》对财星的核心界定是「我去克他为妻财，干强则富」，即以日干所克者为财星（chunk 7321）。书中又以「当生财星为马元，最怕劫夺」说明财星在命中的位置，并举庚日生人以甲乙木为财、寅中甲木为偏财、卯中乙木为正财为例（chunk 7'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:财|股票|投资",
+        "ok": true,
+        "detail": "命中 ['财', '股票']；改写='根据《三命通会》的财星理论，我今年适合加杠杆买股票吗？'"
+       },
+       {
+        "name": "refusal",
+        "ok": true,
+        "detail": "can_answer=False citations=[]"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain_any:不能|不适合|无法|不构成|没有足够的依据",
+        "ok": true,
+        "detail": "命中=['没有足够的依据']"
+       },
+       {
+        "name": "must_not_contain:建议买入",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:可以加杠杆",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:适合加杠杆",
+        "ok": true,
+        "detail": ""
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 123.1
+  }
+ ]
+}

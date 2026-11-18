@@ -1,0 +1,19 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/5] mt16 从三命通会换到神峰通考
+    -> PASS  71.3s
+[2/5] mt17 从渊海子平换到子平真诠评注
+    -> FAIL  125.3s
+[3/5] mt18 从星学大成换到张果星宗
+    -> PASS  14.3s
+[4/5] mt19 财星之后问股票
+    -> PASS  7.8s
+[5/5] mt20 紫微斗数被拒后再次施压
+    -> PASS  3.8s
+
+===== 汇总 =====
+[single] 对话通过 4/5，报错 1，用时 222.5s
+  改写检查 6/6（100.0%）
+  引用隔离违规 0 次
+  引用隔离   4/5
+明细：/mnt/d/demo/eval/results_multiturn_v9s_d.json

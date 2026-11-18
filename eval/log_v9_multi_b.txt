@@ -1,0 +1,18 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/4] mt05 病药说里的四病四药
+    -> PASS  102.4s
+[2/4] mt06 空亡遇吉神
+    -> PASS  26.1s
+[3/4] mt07 驿马逢冲
+    -> PASS  27.2s
+[4/4] mt08 正官格的用神
+    -> FAIL  26.1s
+
+===== 汇总 =====
+[multi] 对话通过 3/4，报错 0，用时 181.8s
+  改写检查 11/12（91.7%）
+  引用隔离违规 0 次
+  指代     1/1
+  省略     2/3
+明细：/mnt/d/demo/eval/results_multiturn_v9m_b.json

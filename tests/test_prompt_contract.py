@@ -40,7 +40,7 @@ def test_json_mode_prompts_mention_json(source, name):
 
 
 # 出口拒答判据：有原文证据时，不能仅因「表述不标准 / 没有定义句式」拒答。
-# 它对应的失分是 eval/multiturn.jsonl 的 mt09 / mt17（19/20、18/20 的失分点）。
+# 它对应的失分是 eval/multiturn.jsonl 的 mt17（v6-v8 多轮集里反复出现的失分点）。
 # 这几个 prompt 都能直接决定 can_answer，改措辞时容易把这条一起删掉，所以钉住。
 OVER_REFUSAL_MARKERS = [
     ("rag.py", "SYSTEM_PROMPT", "不算证据不足"),

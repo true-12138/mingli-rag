@@ -1,0 +1,11 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/1] mt17 从渊海子平换到子平真诠评注
+    -> PASS  125.9s
+
+===== 汇总 =====
+[single] 对话通过 1/1，报错 0，用时 126.0s
+  改写检查 2/2（100.0%）
+  引用隔离违规 0 次
+  引用隔离   1/1
+明细：/mnt/d/demo/eval/results_multiturn_v9s_d_mt17.json

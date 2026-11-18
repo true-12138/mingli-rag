@@ -1,0 +1,11 @@
+[provenance] code=4fc34c6 tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/1] mt12 只用穷通宝鉴说丙火
+    -> PASS  78.5s
+
+===== 汇总 =====
+[single] 对话通过 1/1，报错 0，用时 78.5s
+  改写检查 2/2（100.0%）
+  引用隔离违规 0 次
+  跨轮约束   1/1
+明细：/mnt/d/demo/eval/results_multiturn_v7_single_retry.json

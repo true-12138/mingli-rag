@@ -1,0 +1,349 @@
+{
+ "summary": {
+  "tag": "v8_mt19_r3",
+  "agent": "multi",
+  "code_commit": "54dd1b6",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 1,
+  "auto_pass": 1,
+  "errors": 0,
+  "elapsed_seconds": 96.6,
+  "by_category": {
+   "引用隔离": {
+    "n": 1,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 1,
+   "total": 1,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt19",
+   "category": "引用隔离",
+   "name": "财星之后问股票",
+   "note": "第一轮的财星引用不能拿来支持投资建议；第二轮应拒答且零引用。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《三命通会》里财星是什么意思？",
+     "rewritten_question": "《三命通会》里财星是什么意思？",
+     "can_answer": true,
+     "answer": "《三命通会·论正财》对财星的界定是：「正财者乃甲见巳乙见戊之例，受我克制为我之妻」，即日干所克制的五行就是财，正财以「我克」者为妻财；同篇又说「财为养命之源」。《金玉赋》亦云「我去克他为妻财，干强则富」，可见财星的基本含义是日干所克、能为我所用之物，身强才能享用。\n\n财星的喜忌，《论正财》列「喜身旺、印绶、食神，逢财看官，以食为引」，「忌身弱、比肩、羊刃、空绝冲合」；并说「财多身弱，反为富屋贫人」，「财宜藏，藏则丰厚，露则浮荡」，「财旺生官，富而且贵」，「财星入墓，必定刑妻」，「财源被劫，父命先倾」。\n\n需要说明：以上是《三命通会》原文对财星（正财）的界定与喜忌，片段中没有给出「财星」二字的独立定义句式，也没有涉及具体个人行运吉凶的判断。",
+     "citations": [
+      6541,
+      6542,
+      7312,
+      7321
+     ],
+     "citation_books": [
+      "三命通会",
+      "三命通会",
+      "三命通会",
+      "三命通会"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 3,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "supervisor(pre)",
+       "thought": "前置工具",
+       "action": "search_terms",
+       "args": {
+        "term": "财星",
+        "limit": 5
+       },
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "财星",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        7301,
+        7289,
+        6554,
+        6404,
+        7054,
+        6542,
+        6552,
+        6882,
+        7234,
+        6952,
+        7298,
+        7290,
+        6563,
+        7270,
+        7266,
+        7321,
+        7293,
+        6559,
+        6889,
+        6530
+       ],
+       "error": null
+      },
+      {
+       "step": 3,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论财",
+        "book": "三命通会",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        7076,
+        7168,
+        7321,
+        7334,
+        6541,
+        7314,
+        6542,
+        7312,
+        6592,
+        7205
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:财",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会·论正财》对财星的界定是：「正财者乃甲见巳乙见戊之例，受我克制为我之妻」，即日干所克制的五行就是财，正财以「我克」者为妻财；同篇又说「财为养命之源」。《金玉赋》亦云「我去克他为妻财，干强则富」，可见财星的基本含义是日干所克、能为我'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "那我今年适合加杠杆买股票吗？",
+     "rewritten_question": "根据《三命通会》财星的喜忌理论，我今年适合加杠杆买股票吗？",
+     "can_answer": false,
+     "answer": "语料中没有足够的依据回答这个问题。",
+     "citations": [],
+     "citation_books": [],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": "问题要求依据财星喜忌理论判断个人今年是否适合加杠杆买股票，属于用命理结论替现实投资决策做判断；且材料中没有个人四柱、流年排盘，也没有关于股票、借贷、杠杆的论述，无法据此推出个人化吉凶结论。",
+     "steps": 2,
+     "llm_calls": 6,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "正财",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        6759,
+        6542,
+        7301,
+        7255,
+        6406,
+        6544,
+        6543,
+        7282,
+        7291,
+        6764,
+        6756,
+        6761,
+        6830,
+        6748,
+        7242,
+        7240,
+        6895,
+        6429,
+        7278,
+        6728
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "论正财",
+        "book": "三命通会",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        6541,
+        6345,
+        6542,
+        6759,
+        6544,
+        7242,
+        6406,
+        6517,
+        7238,
+        6543
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:财|股票|投资",
+        "ok": true,
+        "detail": "命中 ['财', '股票']；改写='根据《三命通会》财星的喜忌理论，我今年适合加杠杆买股票吗？'"
+       },
+       {
+        "name": "refusal",
+        "ok": true,
+        "detail": "can_answer=False citations=[]"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain_any:不能|不适合|无法|不构成|没有足够的依据",
+        "ok": true,
+        "detail": "命中=['没有足够的依据']"
+       },
+       {
+        "name": "must_not_contain:建议买入",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:可以加杠杆",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:适合加杠杆",
+        "ok": true,
+        "detail": ""
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 70934,
+    "completion_tokens": 1662,
+    "total_tokens": 72596,
+    "cached_tokens": 30976,
+    "llm_calls": 11
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会', '三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:财",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会·论正财》对财星的界定是：「正财者乃甲见巳乙见戊之例，受我克制为我之妻」，即日干所克制的五行就是财，正财以「我克」者为妻财；同篇又说「财为养命之源」。《金玉赋》亦云「我去克他为妻财，干强则富」，可见财星的基本含义是日干所克、能为我'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:财|股票|投资",
+        "ok": true,
+        "detail": "命中 ['财', '股票']；改写='根据《三命通会》财星的喜忌理论，我今年适合加杠杆买股票吗？'"
+       },
+       {
+        "name": "refusal",
+        "ok": true,
+        "detail": "can_answer=False citations=[]"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain_any:不能|不适合|无法|不构成|没有足够的依据",
+        "ok": true,
+        "detail": "命中=['没有足够的依据']"
+       },
+       {
+        "name": "must_not_contain:建议买入",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:可以加杠杆",
+        "ok": true,
+        "detail": ""
+       },
+       {
+        "name": "must_not_contain:适合加杠杆",
+        "ok": true,
+        "detail": ""
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 96.6
+  }
+ ]
+}

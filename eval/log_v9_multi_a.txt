@@ -1,0 +1,17 @@
+[provenance] code=21f3d9b tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/4] mt01 它和阳刃是不是一回事
+    -> PASS  127.9s
+[2/4] mt02 偏官与正官的分工
+    -> PASS  26.3s
+[3/4] mt03 太阴从命宫到身宫
+    -> PASS  29.5s
+[4/4] mt04 甲木从正月到二月
+    -> PASS  20.7s
+
+===== 汇总 =====
+[multi] 对话通过 4/4，报错 0，用时 204.4s
+  改写检查 11/11（100.0%）
+  引用隔离违规 0 次
+  指代     4/4
+明细：/mnt/d/demo/eval/results_multiturn_v9m_a.json

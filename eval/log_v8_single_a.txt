@@ -1,0 +1,19 @@
+[provenance] code=5d2153d tasks=b1462f9efe13
+chunks:8681|embeds shape:(8681, 1024)
+[1/5] mt01 它和阳刃是不是一回事
+    -> PASS  92.4s
+[2/5] mt02 偏官与正官的分工
+    -> PASS  12.3s
+[3/5] mt03 太阴从命宫到身宫
+    -> PASS  20.9s
+[4/5] mt04 甲木从正月到二月
+    -> PASS  12.7s
+[5/5] mt05 病药说里的四病四药
+    -> PASS  22.9s
+
+===== 汇总 =====
+[single] 对话通过 5/5，报错 0，用时 161.2s
+  改写检查 14/14（100.0%）
+  引用隔离违规 0 次
+  指代     5/5
+明细：/mnt/d/demo/eval/results_multiturn_v8_single_a.json

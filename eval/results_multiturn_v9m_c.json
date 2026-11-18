@@ -1,0 +1,1072 @@
+{
+ "summary": {
+  "tag": "v9m_c",
+  "agent": "multi",
+  "code_commit": "21f3d9b",
+  "tasks_sha256": "b1462f9efe13",
+  "total": 4,
+  "auto_pass": 3,
+  "errors": 1,
+  "elapsed_seconds": 391.1,
+  "by_category": {
+   "省略": {
+    "n": 2,
+    "pass": 2
+   },
+   "跨轮约束": {
+    "n": 2,
+    "pass": 1
+   }
+  },
+  "rewrite_accuracy": {
+   "pass": 7,
+   "total": 7,
+   "rate": 1.0
+  },
+  "isolation_violations": 0
+ },
+ "tasks": [
+  {
+   "id": "mt09",
+   "category": "省略",
+   "name": "建日到除日",
+   "note": "「除日呢」必须补回「建除十二神」这个上下文，否则检索会只剩「除」字。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《钦定协纪辨方书》的建除十二神，建日宜做什么？",
+     "rewritten_question": "《钦定协纪辨方书》的建除十二神，建日宜做什么？",
+     "can_answer": true,
+     "answer": "《钦定协纪辨方书》中建日（又称兵福）所宜为：施恩封拜、诏命公卿、招贤举正直、行幸遣使、上官赴任、临政亲民；与天恩并则宜颁诏宣政事；又为兵福，宜安抚边境、选将训兵出师（chunk_id=8213）。书中并说明旧本建日只宜施恩封拜、出行，因举正直与封拜、遣使与行幸事同一例，故增入（chunk_id=8213）。此外，颁诏、施恩封拜、诏命公卿招贤、举正直、宣政事等宜项中亦列有建日（chunk_id=8259）；上官赴任、临政亲民宜项中同样列有建日（chunk_id=8261）。\n\n关于建日的另一面：月建（小时、土府）所忌为祈福求嗣、上册进表章、结婚姻、纳采问名、解除、整容剃头整手足甲、求医疗病、营建宫室、修宫室、缮城郭、兴造动土、竖柱上梁、修仓库、开仓库出货财、修置产室、破屋坏垣、伐木、栽种、破土、安葬、启攒，正月建日又忌出师（chunk_id=8218）。书中还讨论建日吉凶取舍：建日吉多可用（chunk_id=8053）；建日忌结姻亲，因建为月、女壮之象；忌开仓库，犹甲不开仓之意（chunk_id=8053）。又按语称历书建日不利行师，而于兵福又曰利行师，二者看似矛盾，解释为月建所在，我用则我利用之为兵福，若敌在建方则不利行师以伐之（chunk_id=8053）。",
+     "citations": [
+      8213,
+      8259,
+      8261,
+      8218,
+      8053
+     ],
+     "citation_books": [
+      "钦定协纪辨方书",
+      "钦定协纪辨方书",
+      "钦定协纪辨方书",
+      "钦定协纪辨方书",
+      "钦定协纪辨方书"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "建日",
+        "book": "钦定协纪辨方书",
+        "k": 20,
+        "mode": "bm25"
+       },
+       "ok": true,
+       "chunk_ids": [
+        8259,
+        8459,
+        8457,
+        8443,
+        8448,
+        8445,
+        8450,
+        8452,
+        8454,
+        8213,
+        8456,
+        8600,
+        8053,
+        8446,
+        8441,
+        8440,
+        8455,
+        8233,
+        8451,
+        8261
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "建日宜",
+        "book": "钦定协纪辨方书",
+        "k": 20,
+        "mode": "rrf"
+       },
+       "ok": true,
+       "chunk_ids": [
+        8210,
+        8213,
+        8053,
+        8215,
+        8443,
+        8456,
+        8218,
+        8454,
+        8459,
+        8452,
+        8259,
+        8113,
+        8448,
+        8457,
+        8119,
+        8131,
+        8450,
+        8107,
+        8066,
+        8133
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书'] 期望=['钦定协纪辨方书']"
+       },
+       {
+        "name": "must_contain:建日",
+        "ok": true,
+        "detail": "回答前 120 字='《钦定协纪辨方书》中建日（又称兵福）所宜为：施恩封拜、诏命公卿、招贤举正直、行幸遣使、上官赴任、临政亲民；与天恩并则宜颁诏宣政事；又为兵福，宜安抚边境、选将训兵出师（chunk_id=8213）。书中并说明旧本建日只宜施恩封拜、出行，因举正'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "除日呢？",
+     "rewritten_question": "《钦定协纪辨方书》的建除十二神中，除日宜做什么？",
+     "can_answer": true,
+     "answer": "《钦定协纪辨方书》中，除日（又称吉期、兵宝）所宜为：解除、沐浴、整容剃头、整手足甲、求医疗病、扫舍宇；又为吉期，宜施恩封拜、举正直、行幸遣使、上官赴任、临政亲民，十月与天马并则宜诏命公卿招贤（驿马不得与吉期并）；又为兵宝，宜安抚边境、选将训兵出师（chunk_id=8213）。书中按语说明：旧本除日只宜解除、求医疗病、扫舍宇，取「除」义；沐浴等事亦属除旧取新之义，故一并列入；吉期、兵宝义取旺辰，故所宜同建日；旧谓吉期宜兵事，盖为兵宝之误，又谓宜结婚姻，于义无取，故删去（chunk_id=8213）。此外，解除、沐浴、整容剃头、整手足甲、求医疗病等宜项中亦列有除日（chunk_id=8262、chunk_id=8263）。",
+     "citations": [
+      8213,
+      8262,
+      8263
+     ],
+     "citation_books": [
+      "钦定协纪辨方书",
+      "钦定协纪辨方书",
+      "钦定协纪辨方书"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 6,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "除日",
+        "book": "钦定协纪辨方书",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        8459,
+        8443,
+        8457,
+        8448,
+        8445,
+        8450,
+        8452,
+        8454,
+        8455,
+        8262,
+        8446,
+        8441,
+        8440,
+        8239,
+        8213,
+        8456,
+        8451,
+        8263,
+        8439,
+        8444
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "除日宜",
+        "book": "钦定协纪辨方书",
+        "mode": "rrf",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        8217,
+        8610,
+        8445,
+        8448,
+        8443,
+        8210,
+        8457,
+        8213,
+        8450,
+        8454,
+        8452,
+        8247,
+        8459,
+        8456,
+        8208,
+        8440,
+        8263,
+        8204,
+        8203,
+        8109
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:钦定协纪辨方书",
+        "ok": true,
+        "detail": "命中 ['钦定协纪辨方书']；改写='《钦定协纪辨方书》的建除十二神中，除日宜做什么？'"
+       },
+       {
+        "name": "rewrite:建除",
+        "ok": true,
+        "detail": "命中 ['建除']；改写='《钦定协纪辨方书》的建除十二神中，除日宜做什么？'"
+       },
+       {
+        "name": "rewrite:除日",
+        "ok": true,
+        "detail": "命中 ['除日']；改写='《钦定协纪辨方书》的建除十二神中，除日宜做什么？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书'] 期望=['钦定协纪辨方书']"
+       },
+       {
+        "name": "must_contain:除日",
+        "ok": true,
+        "detail": "回答前 120 字='《钦定协纪辨方书》中，除日（又称吉期、兵宝）所宜为：解除、沐浴、整容剃头、整手足甲、求医疗病、扫舍宇；又为吉期，宜施恩封拜、举正直、行幸遣使、上官赴任、临政亲民，十月与天马并则宜诏命公卿招贤（驿马不得与吉期并）；又为兵宝，宜安抚边境、选将训'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 85015,
+    "completion_tokens": 1975,
+    "total_tokens": 86990,
+    "cached_tokens": 23040,
+    "llm_calls": 11
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书'] 期望=['钦定协纪辨方书']"
+       },
+       {
+        "name": "must_contain:建日",
+        "ok": true,
+        "detail": "回答前 120 字='《钦定协纪辨方书》中建日（又称兵福）所宜为：施恩封拜、诏命公卿、招贤举正直、行幸遣使、上官赴任、临政亲民；与天恩并则宜颁诏宣政事；又为兵福，宜安抚边境、选将训兵出师（chunk_id=8213）。书中并说明旧本建日只宜施恩封拜、出行，因举正'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:钦定协纪辨方书",
+        "ok": true,
+        "detail": "命中 ['钦定协纪辨方书']；改写='《钦定协纪辨方书》的建除十二神中，除日宜做什么？'"
+       },
+       {
+        "name": "rewrite:建除",
+        "ok": true,
+        "detail": "命中 ['建除']；改写='《钦定协纪辨方书》的建除十二神中，除日宜做什么？'"
+       },
+       {
+        "name": "rewrite:除日",
+        "ok": true,
+        "detail": "命中 ['除日']；改写='《钦定协纪辨方书》的建除十二神中，除日宜做什么？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['钦定协纪辨方书', '钦定协纪辨方书', '钦定协纪辨方书'] 期望=['钦定协纪辨方书']"
+       },
+       {
+        "name": "must_contain:除日",
+        "ok": true,
+        "detail": "回答前 120 字='《钦定协纪辨方书》中，除日（又称吉期、兵宝）所宜为：解除、沐浴、整容剃头、整手足甲、求医疗病、扫舍宇；又为吉期，宜施恩封拜、举正直、行幸遣使、上官赴任、临政亲民，十月与天马并则宜诏命公卿招贤（驿马不得与吉期并）；又为兵宝，宜安抚边境、选将训'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 202.7
+  },
+  {
+   "id": "mt10",
+   "category": "省略",
+   "name": "命主星到身主星",
+   "note": "「身主星呢」省略了书名；张果星宗「身主」41 条，可答。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "《张果星宗》里命主星怎么定？",
+     "rewritten_question": "《张果星宗》里命主星怎么定？",
+     "can_answer": true,
+     "answer": "《张果星宗·张果星宗三》说：「命主即坐处二十八宿之属是也」，即命主取坐命度数所属的那一宿之星；并强调「星家有命主度主之辩，不可徒以命宫之主为命主论也」，不能只把命宫宫主当作命主。同篇又以州县、人家作比：「宫主者，州也；度主者，县也」「宫主者，由人家也；度主者，由家之主也」，主张「以度主为先，以宫主为次」。同篇还说「以宫为轻，度主为重」，安命「以太阳度为主……逢卯止，即为命宫」，并要兼看命度主、身度主、身主，日生人重命度主，夜生人重身度主。命主合格、忌格见《张果星宗·张果星宗二》，合格如命主得经、居垣、乘旺等，忌格如命主失经、失垣、受克、失令等，属命主吉凶判断，非定义本身。",
+     "citations": [
+      249,
+      252,
+      127,
+      129
+     ],
+     "citation_books": [
+      "张果星宗",
+      "张果星宗",
+      "张果星宗",
+      "张果星宗"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 3,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "supervisor(pre)",
+       "thought": "前置工具",
+       "action": "search_terms",
+       "args": {
+        "term": "命主星",
+        "limit": 5
+       },
+       "ok": true,
+       "chunk_ids": [],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "命主星",
+        "book": "张果星宗",
+        "mode": "bm25",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        129,
+        127,
+        241,
+        305,
+        300,
+        252,
+        182,
+        266,
+        350,
+        217
+       ],
+       "error": null
+      },
+      {
+       "step": 3,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "命主",
+        "book": "张果星宗",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        129,
+        127,
+        249,
+        252,
+        107,
+        108,
+        96,
+        300,
+        245,
+        402
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['张果星宗', '张果星宗', '张果星宗', '张果星宗'] 期望=['张果星宗']"
+       },
+       {
+        "name": "must_contain:命主",
+        "ok": true,
+        "detail": "回答前 120 字='《张果星宗·张果星宗三》说：「命主即坐处二十八宿之属是也」，即命主取坐命度数所属的那一宿之星；并强调「星家有命主度主之辩，不可徒以命宫之主为命主论也」，不能只把命宫宫主当作命主。同篇又以州县、人家作比：「宫主者，州也；度主者，县也」「宫主者'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "身主星呢？",
+     "rewritten_question": "《张果星宗》里身主星怎么定？",
+     "can_answer": true,
+     "answer": "《张果星宗·张果星宗三》说：「身主即月是也，及太阴所躔之度亦是也」，即身主以月亮为身主，太阴所躔的度数也算身主。《张果星宗·张果星宗三》又说「定身主，皆以月为身主」，并列出各宿所属之星：角斗奎、井木，亢牛娄鬼、金，氐女胃柳土，房虚昴星日，心危毕张月，尾室觜翼火，箕壁轸参水。《张果星宗·张果星宗四》〈身度主论〉说：「人之生也有命斯有身，命主既本于太阳则身主当系于太阴，故以月离之度为身度主矣」，即身主系于太阴，以月离之度为身度主；并说「身主切于命主而身度主，尤切于身主也」，即身主比命主更切要，身度主又比身主更切要。《张果星宗·张果星宗三》说「凡身主切于命主，度主切于宫主，夜生人重身度主，日生人重命度主」。《张果星宗·张果星宗四》说「此三主者第一重身主，第二重度主，第三看宫主」，又说「昼生看命度，主夜生看身度」。《张果星宗·张果星宗三》还提出「四主切要，即宫主度主身主身度主者」，并说「兼身命度之主并用，尤为关键」。",
+     "citations": [
+      249,
+      251,
+      298,
+      252,
+      294,
+      250
+     ],
+     "citation_books": [
+      "张果星宗",
+      "张果星宗",
+      "张果星宗",
+      "张果星宗",
+      "张果星宗",
+      "张果星宗"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 6,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "身主",
+        "book": "张果星宗",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        251,
+        299,
+        298,
+        199,
+        249,
+        236,
+        252,
+        287,
+        214,
+        250,
+        228,
+        294,
+        300,
+        231,
+        339,
+        285,
+        198,
+        526,
+        242,
+        518
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "身主",
+        "book": "张果星宗",
+        "mode": "dense",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        299,
+        127,
+        250,
+        300,
+        298,
+        249,
+        199,
+        185,
+        211,
+        251
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:张果星宗",
+        "ok": true,
+        "detail": "命中 ['张果星宗']；改写='《张果星宗》里身主星怎么定？'"
+       },
+       {
+        "name": "rewrite:身主",
+        "ok": true,
+        "detail": "命中 ['身主']；改写='《张果星宗》里身主星怎么定？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['张果星宗', '张果星宗', '张果星宗', '张果星宗', '张果星宗', '张果星宗'] 期望=['张果星宗']"
+       },
+       {
+        "name": "must_contain:身主",
+        "ok": true,
+        "detail": "回答前 120 字='《张果星宗·张果星宗三》说：「身主即月是也，及太阴所躔之度亦是也」，即身主以月亮为身主，太阴所躔的度数也算身主。《张果星宗·张果星宗三》又说「定身主，皆以月为身主」，并列出各宿所属之星：角斗奎、井木，亢牛娄鬼、金，氐女胃柳土，房虚昴星日，心'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 66053,
+    "completion_tokens": 1926,
+    "total_tokens": 67979,
+    "cached_tokens": 20864,
+    "llm_calls": 11
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['张果星宗', '张果星宗', '张果星宗', '张果星宗'] 期望=['张果星宗']"
+       },
+       {
+        "name": "must_contain:命主",
+        "ok": true,
+        "detail": "回答前 120 字='《张果星宗·张果星宗三》说：「命主即坐处二十八宿之属是也」，即命主取坐命度数所属的那一宿之星；并强调「星家有命主度主之辩，不可徒以命宫之主为命主论也」，不能只把命宫宫主当作命主。同篇又以州县、人家作比：「宫主者，州也；度主者，县也」「宫主者'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:张果星宗",
+        "ok": true,
+        "detail": "命中 ['张果星宗']；改写='《张果星宗》里身主星怎么定？'"
+       },
+       {
+        "name": "rewrite:身主",
+        "ok": true,
+        "detail": "命中 ['身主']；改写='《张果星宗》里身主星怎么定？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['张果星宗', '张果星宗', '张果星宗', '张果星宗', '张果星宗', '张果星宗'] 期望=['张果星宗']"
+       },
+       {
+        "name": "must_contain:身主",
+        "ok": true,
+        "detail": "回答前 120 字='《张果星宗·张果星宗三》说：「身主即月是也，及太阴所躔之度亦是也」，即身主以月亮为身主，太阴所躔的度数也算身主。《张果星宗·张果星宗三》又说「定身主，皆以月为身主」，并列出各宿所属之星：角斗奎、井木，亢牛娄鬼、金，氐女胃柳土，房虚昴星日，心'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 25.3
+  },
+  {
+   "id": "mt11",
+   "category": "跨轮约束",
+   "name": "只查三命通会说贵人",
+   "note": "第一轮的「只查三命通会」要在第二轮继续生效；五行精纪是最容易被顺带查的书。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "只查《三命通会》，不要查别的书：天乙贵人的起法是什么？",
+     "rewritten_question": "只查《三命通会》，不要查别的书：天乙贵人的起法是什么？",
+     "can_answer": true,
+     "answer": "《三命通会·论天乙贵人》说：天乙是天上之神，在紫微垣阊阖门外，与太乙并列。其起法分阳贵、阴贵两路。\n\n阳贵起于先天坤位（北方子位），从子上起甲干，甲与己合，不取甲德而取合气，故以己为贵人，阳贵顺行：乙德在丑，乙与庚合，庚以牛为阳贵；丙德在寅，丙与辛合，辛以虎；丁德在卯，丁与壬合，壬以兔；辰为天罗，贵人不临，故戊跳辰；戊与癸合，癸以巳；午与子对冲，名天空，贵人有独无对，故己德跳午在未，己与甲合，甲以羊；庚德在申，庚与乙合，乙以猴；辛德在酉，辛与丙合，丙以鸡；戌为地网，贵人不临，故壬跳戌，德在亥，壬与丁合，丁以猪；子为先天起贵之所，贵人不再临，故癸跳子，德在丑，癸与戊合，戊以牛。由此归结为「甲戊庚牛羊，六辛逢马虎」。\n\n阴贵起于后天坤位（西南申位），从申上起甲干，甲与己合，己以猴，阴贵逆行：乙德在未，乙与庚合，庚以羊；丙德在午，丙与辛合，辛以马；丁德在巳，丁与壬合，壬以蛇；辰为天罗，贵人不临，故戊跳辰，德在卯，戊与癸合，癸以兔；寅与甲对冲，名天空，有独无对，故己德跳寅……（原文此处以下残缺）。\n\n同书另一处（chunk_id=6330）补充说：癸属水，水墓在辰，辰戌为魁罡之地，贵人不临，故寻寄火贵于酉亥、寄水贵于卯巳，皆归根复命之乡；六辛阴金，喜阳火生旺之地，故以马虎为贵。\n\n以上仅为《三命通会》原文所载起法；阴贵部分原文在「己德跳寅」以下残缺，片段中没有后续内容。",
+     "citations": [
+      6328,
+      6330
+     ],
+     "citation_books": [
+      "三命通会",
+      "三命通会"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "天乙贵人",
+        "book": "三命通会",
+        "mode": "bm25",
+        "k": 20
+       },
+       "ok": true,
+       "chunk_ids": [
+        6333,
+        6334,
+        6328,
+        6332,
+        7064,
+        6521,
+        6321,
+        6881,
+        7127,
+        7262,
+        7252,
+        6330,
+        6525,
+        6310,
+        6389,
+        6496,
+        6390,
+        7012,
+        6599,
+        7116
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "天乙贵人",
+        "book": "三命通会",
+        "mode": "dense",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        6328,
+        6334,
+        6333,
+        6607,
+        6332,
+        6521,
+        6680,
+        6820,
+        6819,
+        7261
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:天乙",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会·论天乙贵人》说：天乙是天上之神，在紫微垣阊阖门外，与太乙并列。其起法分阳贵、阴贵两路。\\n\\n阳贵起于先天坤位（北方子位），从子上起甲干，甲与己合，不取甲德而取合气，故以己为贵人，阳贵顺行：乙德在丑，乙与庚合，庚以牛为阳贵；丙德在寅'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "那贵人多的时候为什么反而不贵？",
+     "error": "ConnectionError: HTTPSConnectionPool(host='api.deepseek.com', port=443): Read timed out.",
+     "traceback": "rl, data=data, json=json, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chuchu/miniconda3/envs/happyllm311/lib/python3.11/site-packages/requests/api.py\", line 71, in request\n    return session.request(method=method, url=url, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chuchu/miniconda3/envs/happyllm311/lib/python3.11/site-packages/requests/sessions.py\", line 651, in request\n    resp = self.send(prep, **send_kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chuchu/miniconda3/envs/happyllm311/lib/python3.11/site-packages/requests/sessions.py\", line 827, in send\n    r.content\n  File \"/home/chuchu/miniconda3/envs/happyllm311/lib/python3.11/site-packages/requests/models.py\", line 1042, in content\n    self._content = b\"\".join(self.iter_content(CONTENT_CHUNK_SIZE)) or b\"\"\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chuchu/miniconda3/envs/happyllm311/lib/python3.11/site-packages/requests/models.py\", line 943, in generate\n    raise ConnectionError(e)\nrequests.exceptions.ConnectionError: HTTPSConnectionPool(host='api.deepseek.com', port=443): Read timed out.\n"
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 52663,
+    "completion_tokens": 1866,
+    "total_tokens": 54529,
+    "cached_tokens": 5760,
+    "llm_calls": 10
+   },
+   "judge": {
+    "auto_pass": false,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['三命通会', '三命通会'] 期望=['三命通会']"
+       },
+       {
+        "name": "must_contain:天乙",
+        "ok": true,
+        "detail": "回答前 120 字='《三命通会·论天乙贵人》说：天乙是天上之神，在紫微垣阊阖门外，与太乙并列。其起法分阳贵、阴贵两路。\\n\\n阳贵起于先天坤位（北方子位），从子上起甲干，甲与己合，不取甲德而取合气，故以己为贵人，阳贵顺行：乙德在丑，乙与庚合，庚以牛为阳贵；丙德在寅'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": false,
+      "checks": [],
+      "problems": [
+       "error：ConnectionError: HTTPSConnectionPool(host='api.deepseek.com', port=443): Read timed out."
+      ],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 144.0
+  },
+  {
+   "id": "mt12",
+   "category": "跨轮约束",
+   "name": "只用穷通宝鉴说丙火",
+   "note": "「只用穷通宝鉴」的限制跨轮；三命通会里丙火材料更多，是最容易被拉进来的书。",
+   "turns": [
+    {
+     "turn": 0,
+     "question": "只用《穷通宝鉴》：甲木在十月怎么取用？",
+     "rewritten_question": "只用《穷通宝鉴》：甲木在十月怎么取用？",
+     "can_answer": true,
+     "answer": "《穷通宝鉴·三冬甲木》说：十月甲木，以庚金、丁火为要，丙火次之；忌壬水泛身，须用戊土制之。若庚丁两透，又加戊出干，名曰「去浊留清」，富贵之极；即乏丁火，亦稍有富贵。或甲多制戊、庚金无根，则为平常人。庚戊若透，虽出比劫，必定富而寿。或多比劫，只一庚出干，坐禄逢生，乃为「舍丁从庚」，略富贵。或支见申亥，戊己得所，以救庚丁，可许科甲。若单己透，其力弱小，不过贡监而已。用庚，则土妻金子；用丁，则木妻火子。",
+     "citations": [
+      2758
+     ],
+     "citation_books": [
+      "穷通宝鉴"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 5,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "甲木十月",
+        "book": "穷通宝鉴",
+        "mode": "bm25",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2767,
+        2792,
+        2776,
+        2822,
+        2783,
+        2821,
+        2756,
+        2775,
+        2752
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "十月甲木",
+        "book": "穷通宝鉴",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2756,
+        2757,
+        2751,
+        2776,
+        2752,
+        2753,
+        2755,
+        2792,
+        2767
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "must_contain:甲木",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》说：十月甲木，以庚金、丁火为要，丙火次之；忌壬水泛身，须用戊土制之。若庚丁两透，又加戊出干，名曰「去浊留清」，富贵之极；即乏丁火，亦稍有富贵。或甲多制戊、庚金无根，则为平常人。庚戊若透，虽出比劫，必定富而寿。或多比劫，'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    },
+    {
+     "turn": 1,
+     "question": "丙火呢？",
+     "rewritten_question": "《穷通宝鉴》中甲木在十月取用时，丙火起什么作用？",
+     "can_answer": true,
+     "answer": "《穷通宝鉴·三冬甲木》说：「十月甲木，庚丁为要，丙火次之。」即十月甲木取用，以庚金、丁火为要，丙火居于次要地位。原文只说到这一层，未进一步说明丙火在十月具体如何施用（如解寒、制水等作用机理），片段中没有。",
+     "citations": [
+      2758
+     ],
+     "citation_books": [
+      "穷通宝鉴"
+     ],
+     "invalid_citations": [],
+     "invalid_output": false,
+     "refusal_reason": null,
+     "steps": 2,
+     "llm_calls": 6,
+     "trace": [
+      {
+       "step": 1,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "甲木十月",
+        "book": "穷通宝鉴",
+        "mode": "bm25",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2767,
+        2792,
+        2776,
+        2822,
+        2783,
+        2821,
+        2756,
+        2775,
+        2752
+       ],
+       "error": null
+      },
+      {
+       "step": 2,
+       "agent": "retriever",
+       "thought": null,
+       "action": "search_classics",
+       "args": {
+        "query": "十月甲木",
+        "book": "穷通宝鉴",
+        "mode": "rrf",
+        "k": 10
+       },
+       "ok": true,
+       "chunk_ids": [
+        2758,
+        2756,
+        2757,
+        2751,
+        2776,
+        2752,
+        2753,
+        2755,
+        2792,
+        2767
+       ],
+       "error": null
+      }
+     ],
+     "judge": {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:穷通宝鉴",
+        "ok": true,
+        "detail": "命中 ['穷通宝鉴']；改写='《穷通宝鉴》中甲木在十月取用时，丙火起什么作用？'"
+       },
+       {
+        "name": "rewrite:丙火",
+        "ok": true,
+        "detail": "命中 ['丙火']；改写='《穷通宝鉴》中甲木在十月取用时，丙火起什么作用？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain:丙火",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》说：「十月甲木，庚丁为要，丙火次之。」即十月甲木取用，以庚金、丁火为要，丙火居于次要地位。原文只说到这一层，未进一步说明丙火在十月具体如何施用（如解寒、制水等作用机理），片段中没有。'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    }
+   ],
+   "usage": {
+    "prompt_tokens": 53338,
+    "completion_tokens": 1334,
+    "total_tokens": 54672,
+    "cached_tokens": 27392,
+    "llm_calls": 11
+   },
+   "judge": {
+    "auto_pass": true,
+    "turns": [
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "must_contain:甲木",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》说：十月甲木，以庚金、丁火为要，丙火次之；忌壬水泛身，须用戊土制之。若庚丁两透，又加戊出干，名曰「去浊留清」，富贵之极；即乏丁火，亦稍有富贵。或甲多制戊、庚金无根，则为平常人。庚戊若透，虽出比劫，必定富而寿。或多比劫，'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     },
+     {
+      "checked": true,
+      "pass": true,
+      "checks": [
+       {
+        "name": "rewrite:穷通宝鉴",
+        "ok": true,
+        "detail": "命中 ['穷通宝鉴']；改写='《穷通宝鉴》中甲木在十月取用时，丙火起什么作用？'"
+       },
+       {
+        "name": "rewrite:丙火",
+        "ok": true,
+        "detail": "命中 ['丙火']；改写='《穷通宝鉴》中甲木在十月取用时，丙火起什么作用？'"
+       },
+       {
+        "name": "expected_books",
+        "ok": true,
+        "detail": "引用书=['穷通宝鉴'] 期望=['穷通宝鉴']"
+       },
+       {
+        "name": "forbidden_books",
+        "ok": true,
+        "detail": "违规引用=[] 禁止=['三命通会']"
+       },
+       {
+        "name": "must_contain:丙火",
+        "ok": true,
+        "detail": "回答前 120 字='《穷通宝鉴·三冬甲木》说：「十月甲木，庚丁为要，丙火次之。」即十月甲木取用，以庚金、丁火为要，丙火居于次要地位。原文只说到这一层，未进一步说明丙火在十月具体如何施用（如解寒、制水等作用机理），片段中没有。'"
+       }
+      ],
+      "problems": [],
+      "needs_human": false
+     }
+    ],
+    "needs_human": false
+   },
+   "seconds": 19.1
+  }
+ ]
+}
