@@ -1079,6 +1079,36 @@ button {
   cursor: default;
 }
 
+.source-quote__fav {
+  padding: 1px 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: transparent;
+  font-family: var(--sans);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.source-quote__fav:hover {
+  border-color: rgba(150, 50, 42, 0.4);
+  color: var(--cinnabar);
+}
+
+.source-quote__fav.is-saved {
+  border-color: rgba(150, 50, 42, 0.45);
+  background: rgba(150, 50, 42, 0.05);
+  color: var(--cinnabar-deep);
+}
+
+.source-quote__fav:disabled {
+  color: var(--faint);
+  border-color: var(--rule);
+  cursor: default;
+}
+
 /* ---------- 注记 ---------- */
 
 .note {
@@ -2931,6 +2961,181 @@ button {
   font-size: 11px;
   line-height: 1.9;
   color: var(--faint);
+}
+
+/* ---------- 素材 ---------- */
+
+.mat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mat-toolbar__tip {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--faint);
+}
+
+.mat-export {
+  padding: 5px 14px;
+  border: 1px solid rgba(150, 50, 42, 0.45);
+  border-radius: 2px;
+  background: rgba(150, 50, 42, 0.05);
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--cinnabar-deep);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.mat-export:hover {
+  border-color: var(--cinnabar);
+  background: rgba(150, 50, 42, 0.09);
+}
+
+.mat-export:disabled {
+  border-color: var(--rule);
+  background: transparent;
+  color: var(--faint);
+  cursor: default;
+}
+
+.mat-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.mat {
+  position: relative;
+  padding: 18px 74px 18px 2px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.mat__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.mat__title {
+  font-family: var(--serif);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.mat__meta {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.mat__when {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.mat__text {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 14.5px;
+  line-height: 1.9;
+  color: #3d3830;
+  white-space: pre-wrap;
+}
+
+.mat__loc {
+  margin: 7px 0 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--faint);
+  word-break: break-all;
+}
+
+.mat__note-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 11px;
+}
+
+.mat__note {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: transparent;
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.mat__note:focus {
+  outline: none;
+  border-color: rgba(150, 50, 42, 0.45);
+}
+
+.mat__note::placeholder {
+  color: var(--faint);
+}
+
+.mat__save {
+  padding: 4px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: transparent;
+  font-size: 11.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.mat__save:hover {
+  border-color: rgba(150, 50, 42, 0.4);
+  color: var(--cinnabar);
+}
+
+.mat__save:disabled {
+  border-color: var(--rule);
+  color: var(--faint);
+  cursor: default;
+}
+
+.mat__del {
+  position: absolute;
+  right: 0;
+  top: 16px;
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--faint);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.mat__del:hover {
+  border-color: rgba(150, 50, 42, 0.3);
+  color: var(--cinnabar);
+}
+
+.mat__del--armed {
+  border-color: rgba(150, 50, 42, 0.45);
+  background: rgba(150, 50, 42, 0.06);
+  color: var(--cinnabar);
 }
 
 /* ---------- 移动端 ---------- */

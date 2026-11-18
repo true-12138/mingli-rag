@@ -415,6 +415,61 @@ export function lookupChunks(ids: number[]): Promise<Chunk[]> {
   });
 }
 
+// ---------- 素材收藏 ----------
+
+export interface Favorite {
+  id: number;
+  chunk_id: number;
+  book: string;
+  volume: string;
+  chapter: string;
+  title: string;
+  text: string;
+  line_start: number | null;
+  line_end: number | null;
+  sourcefile: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export function listFavorites(chunkId?: number): Promise<Favorite[]> {
+  const query = chunkId != null ? `?chunk_id=${chunkId}` : "";
+  return request<Favorite[]>(`/v1/favorites${query}`);
+}
+
+// 同一段重复收藏只会更新笔记：后端按 (用户, chunk_id) 幂等。
+export function saveFavorite(chunkId: number, note?: string | null): Promise<Favorite> {
+  return request<Favorite>("/v1/favorites", {
+    method: "POST",
+    body: JSON.stringify({ chunk_id: chunkId, note: note ?? null }),
+  });
+}
+
+export function deleteFavorite(id: number): Promise<void> {
+  return request<void>(`/v1/favorites/${id}`, { method: "DELETE" });
+}
+
+// 导出是附件下载，不走 request 的 JSON 解析：直接取 blob，文件名读响应头。
+export async function exportFavorites(): Promise<{ blob: Blob; filename: string }> {
+  const resp = await fetch(`${BASE}/v1/favorites/export.md`, {
+    headers: { "X-Anonymous-Id": anonymousId() },
+  });
+  if (!resp.ok) {
+    throw new ApiError(`导出失败（${resp.status}）`, resp.status);
+  }
+  let filename = "问古素材.md";
+  const disposition = resp.headers.get("Content-Disposition") || "";
+  const match = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1]);
+    } catch {
+      /* 留着默认文件名 */
+    }
+  }
+  return { blob: await resp.blob(), filename };
+}
+
 // ---------- 解读层 ----------
 
 export interface ChunkInterpretation {

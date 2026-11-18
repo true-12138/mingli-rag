@@ -3,16 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 import { Sidebar, type View } from "./components/Sidebar";
 import { ChatPage } from "./pages/ChatPage";
 import { FortunePage } from "./pages/FortunePage";
+import { MaterialsPage } from "./pages/MaterialsPage";
 import { MemoryPage } from "./pages/MemoryPage";
 import type { FortuneChart, Mode } from "./api";
 import { useChat } from "./useChat";
 
-// 轻量 hash 路由：#/chat、#/fortune、#/memory。
-// 不用 react-router——三个页面还不值得引一个路由库。
+// 轻量 hash 路由：#/chat、#/fortune、#/memory、#/materials。
+// 不用 react-router——四个页面还不值得引一个路由库。
 function readView(): View {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "fortune") return "fortune";
   if (hash === "memory") return "memory";
+  if (hash === "materials") return "materials";
   return "chat";
 }
 
@@ -87,6 +89,9 @@ export default function App() {
         )}
         {view === "memory" && (
           <MemoryPage onOpenDrawer={() => setDrawer((open) => !open)} />
+        )}
+        {view === "materials" && (
+          <MaterialsPage onOpenDrawer={() => setDrawer((open) => !open)} />
         )}
       </main>
     </div>

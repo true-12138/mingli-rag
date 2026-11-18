@@ -2,7 +2,7 @@
 """业务表结构测试：不连真实数据库、不调模型。
 
 只验证三件事：
-1. 7 张表能建出来；
+1. 10 张表能建出来；
 2. 外键和关系能正常用；
 3. 删除会话时，消息 / 运行 / 工具调用 / 反馈会跟着删。
 """
@@ -51,7 +51,7 @@ def _conversation(session: Session, user: User) -> Conversation:
     return conv
 
 
-def test_creates_nine_business_tables(session):
+def test_creates_ten_business_tables(session):
     assert set(Base.metadata.tables) == {
         "users",
         "conversations",
@@ -62,6 +62,7 @@ def test_creates_nine_business_tables(session):
         "quota_ledger",
         "user_memories",
         "pending_actions",
+        "favorites",
     }
 
 

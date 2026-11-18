@@ -65,6 +65,12 @@ class User(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    favorites = relationship(
+        "Favorite",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class Conversation(Base):
@@ -325,6 +331,31 @@ class PendingAction(Base):
     expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, index=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class Favorite(Base):
+    """素材收藏：一段语料原文 + 用户自己的笔记。
+
+    只存 chunk_id 和笔记，正文每次按 chunk_id 回语料取：
+    原文只有一份，改了语料这里跟着变，不会出现两份不一致的「原文」。
+    同一用户同一段只留一条（重复收藏 = 改笔记）。
+    """
+
+    __tablename__ = "favorites"
+    __table_args__ = (
+        UniqueConstraint("user_id", "chunk_id", name="uq_favorites_user_chunk"),
+        Index("idx_favorites_user_created", "user_id", "created_at"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    chunk_id = Column(Integer, nullable=False)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+    user = relationship("User", back_populates="favorites")
 
 
 class QuotaLedger(Base):

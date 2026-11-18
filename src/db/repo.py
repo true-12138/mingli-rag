@@ -16,12 +16,13 @@ import secrets
 import uuid
 from datetime import timedelta, timezone
 
-from sqlalchemy import func, select, update
+from sqlalchemy import desc, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .models import (
     Conversation,
+    Favorite,
     Feedback,
     Message,
     PendingAction,
@@ -926,3 +927,75 @@ def mark_summary(
     session.flush()
     if commit:
         session.commit()
+
+
+# ---------- 素材收藏 ----------
+
+def list_favorites(
+    session: Session,
+    user_id: int,
+    *,
+    chunk_id: int | None = None,
+    limit: int = 200,
+) -> list[Favorite]:
+    """按收藏时间倒序取素材；传 chunk_id 时只看这一段。"""
+    stmt = select(Favorite).where(Favorite.user_id == user_id)
+    if chunk_id is not None:
+        stmt = stmt.where(Favorite.chunk_id == chunk_id)
+    stmt = stmt.order_by(desc(Favorite.created_at), desc(Favorite.id)).limit(limit)
+    return list(session.scalars(stmt).all())
+
+
+def upsert_favorite(
+    session: Session, user_id: int, chunk_id: int, note: str | None = None
+) -> Favorite:
+    """收藏一段原文；已经收藏过就更新笔记，不重复建行。会 commit。
+
+    唯一约束兜底：两个标签页同时收藏同一段时，后提交的那个会 IntegrityError，
+    回滚后重读已有行再更新笔记。
+    """
+    note = (note or "").strip() or None
+
+    def _update(fav: Favorite) -> Favorite:
+        fav.note = note
+        session.add(fav)
+        session.commit()
+        return fav
+
+    favorite = session.scalar(
+        select(Favorite).where(
+            Favorite.user_id == user_id, Favorite.chunk_id == chunk_id
+        )
+    )
+    if favorite is not None:
+        return _update(favorite)
+
+    favorite = Favorite(user_id=user_id, chunk_id=chunk_id, note=note)
+    session.add(favorite)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        favorite = session.scalar(
+            select(Favorite).where(
+                Favorite.user_id == user_id, Favorite.chunk_id == chunk_id
+            )
+        )
+        if favorite is None:  # 理论上到不了这里
+            raise
+        return _update(favorite)
+    return favorite
+
+
+def delete_favorite(session: Session, user_id: int, favorite_id: int) -> bool:
+    """删除一条素材；只能删自己的。会 commit。"""
+    favorite = session.scalar(
+        select(Favorite).where(
+            Favorite.id == favorite_id, Favorite.user_id == user_id
+        )
+    )
+    if favorite is None:
+        return False
+    session.delete(favorite)
+    session.commit()
+    return True

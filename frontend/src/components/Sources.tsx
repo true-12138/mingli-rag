@@ -6,7 +6,12 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { Chunk, ChunkInterpretation, ChunkSegmentation } from "../api";
-import { segmentChunks } from "../api";
+import {
+  deleteFavorite,
+  listFavorites,
+  saveFavorite,
+  segmentChunks,
+} from "../api";
 import { loadInterpretation } from "../interpretCache";
 
 interface Focus {
@@ -105,6 +110,7 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
             <span className="source-quote__note">
               {tab === "origin" ? "引用以原样原文为准" : "译文仅辅助阅读，不算引用依据"}
             </span>
+            <FavoriteButton chunkId={open} />
           </div>
           {tab === "origin" ? (
             <OriginBody key={open} chunk={chunks[open]} />
@@ -121,6 +127,72 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
 
 function shortBook(chunk: Chunk): string {
   return chunk.book || "古籍";
+}
+
+/**
+ * 引用卡的收藏开关：只记 chunk_id，笔记在素材页写。
+ * 挂载时查一次这段是否已收藏；重复收藏由后端按 (用户, chunk_id) 幂等。
+ */
+function FavoriteButton({ chunkId }: { chunkId: number }) {
+  const [state, setState] = useState<"loading" | "idle" | "saved" | "saving">("loading");
+  const [favoriteId, setFavoriteId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setState("loading");
+    listFavorites(chunkId)
+      .then((items) => {
+        if (!alive) return;
+        const hit = items[0];
+        setFavoriteId(hit ? hit.id : null);
+        setState(hit ? "saved" : "idle");
+      })
+      .catch(() => {
+        if (alive) setState("idle");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [chunkId]);
+
+  async function toggle() {
+    if (state === "loading" || state === "saving") return;
+    const before = state;
+    setState("saving");
+    try {
+      if (before === "saved" && favoriteId != null) {
+        await deleteFavorite(favoriteId);
+        setFavoriteId(null);
+        setState("idle");
+      } else {
+        const favorite = await saveFavorite(chunkId);
+        setFavoriteId(favorite.id);
+        setState("saved");
+      }
+    } catch {
+      // 失败就回到原来的状态，不给假成功。
+      setState(before);
+    }
+  }
+
+  const label =
+    state === "saved" ? "已收藏" : state === "saving" ? "保存中…" : state === "loading" ? "…" : "收藏";
+
+  return (
+    <button
+      type="button"
+      className={`source-quote__fav${state === "saved" ? " is-saved" : ""}`}
+      onClick={() => void toggle()}
+      disabled={state === "loading" || state === "saving"}
+      title={
+        state === "saved"
+          ? "再点一次取消收藏；笔记在「素材」页写"
+          : "把这段原文存进「素材」，可导出 Markdown"
+      }
+    >
+      {label}
+    </button>
+  );
 }
 
 type SegmentState = ChunkSegmentation | "loading";

@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent
 import agent_multi
+import materials
 import memory
 import rag
 import usage
@@ -238,6 +239,28 @@ class RunOut(BaseModel):
 class RunDetailOut(RunOut):
     tool_calls: list[ToolCallOut] = Field(default_factory=list)
     feedback: list[FeedbackOut] = Field(default_factory=list)
+
+
+class FavoriteIn(BaseModel):
+    chunk_id: int = Field(ge=1)
+    note: str | None = Field(default=None, max_length=materials.MAX_NOTE_CHARS)
+
+
+class FavoriteOut(BaseModel):
+    """一条素材：语料原文 + 用户笔记，原文来自 corpus，不经过模型改写。"""
+
+    id: int
+    chunk_id: int
+    book: str
+    volume: str = ""
+    chapter: str = ""
+    title: str
+    text: str
+    line_start: int | None = None
+    line_end: int | None = None
+    sourcefile: str | None = None
+    note: str | None = None
+    created_at: datetime
 
 
 # ConversationDetailOut 引用了后定义的 RunOut，这里显式解析一次，
@@ -562,6 +585,86 @@ def delete_memory(
     if not repo.delete_memory(session, user.id, memory_id):
         raise HTTPException(status_code=404, detail="记忆不存在")
     return Response(status_code=204)
+
+
+# ---------- 素材收藏 ----------
+
+def _favorite_out(favorite: Any) -> dict[str, Any]:
+    out = materials.favorite_out(favorite)
+    if out is None:
+        # 语料重编号后旧收藏会指空；宁可说「原文已不在这版语料里」，
+        # 也不要拿错位的 id 显示另一本书。
+        raise HTTPException(status_code=410, detail="这段原文已不在当前语料里")
+    return out
+
+
+@router.get("/favorites", response_model=list[FavoriteOut])
+def list_favorites(
+    chunk_id: int | None = Query(default=None, ge=1),
+    limit: int = Query(default=200, ge=1, le=500),
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> list[dict[str, Any]]:
+    """列出当前匿名用户的素材，最新收藏在前。
+
+    传 `chunk_id` 时只查这一段——引用卡据此判断「已收藏」状态。
+    """
+    user = repo.get_or_create_user(session, anonymous_id)
+    out = []
+    for favorite in repo.list_favorites(
+        session, user.id, chunk_id=chunk_id, limit=limit
+    ):
+        item = materials.favorite_out(favorite)
+        if item is not None:
+            out.append(item)
+    return out
+
+
+@router.post("/favorites", response_model=FavoriteOut)
+def save_favorite(
+    req: FavoriteIn,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """收藏一段原文；同一段重复收藏只更新笔记，不重复建行。"""
+    if materials.chunk_of(req.chunk_id) is None:
+        raise HTTPException(status_code=404, detail="这段原文不在语料里")
+    user = repo.get_or_create_user(session, anonymous_id)
+    favorite = repo.upsert_favorite(session, user.id, req.chunk_id, req.note)
+    return _favorite_out(favorite)
+
+
+@router.delete("/favorites/{favorite_id}", status_code=204)
+def delete_favorite(
+    favorite_id: int,
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> Response:
+    """删除一条素材；只能删自己的。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    if not repo.delete_favorite(session, user.id, favorite_id):
+        raise HTTPException(status_code=404, detail="素材不存在")
+    return Response(status_code=204)
+
+
+@router.get("/favorites/export.md")
+def export_favorites(
+    anonymous_id: str = Depends(current_anonymous_id),
+    session: Session = Depends(get_session),
+) -> Response:
+    """导出全部素材为 Markdown 附件：原文用引用块，笔记单独一行。"""
+    user = repo.get_or_create_user(session, anonymous_id)
+    items = [
+        item
+        for favorite in repo.list_favorites(session, user.id, limit=500)
+        if (item := materials.favorite_out(favorite)) is not None
+    ]
+    body = materials.render_markdown(items)
+    return Response(
+        content=body.encode("utf-8"),
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": materials.content_disposition()},
+    )
 
 
 @router.get("/actions", response_model=list[PendingActionOut])
