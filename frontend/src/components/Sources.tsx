@@ -147,6 +147,11 @@ function GlossBody({ chunkId }: { chunkId: number }) {
       {item.truncated && (
         <p className="source-quote__hint">原文较长，译文只覆盖开头一段；完整原文见「原文」。</p>
       )}
+      {item.warnings && item.warnings.length > 0 && (
+        <p className="source-quote__hint">
+          自检提示：{item.warnings.join("；")}。以原文为准。
+        </p>
+      )}
     </>
   );
 }

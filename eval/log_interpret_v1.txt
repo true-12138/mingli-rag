@@ -1,0 +1,52 @@
+chunks:8681|embeds shape:(8681, 1024)
+[1/30] chunk 1414 《千里命稿》 hard=0 judge=无
+[2/30] chunk 2800 《穷通宝鉴》 hard=0 judge=译文基本照抄原文，仅将「遂成」改为「便成」，未真正译成现代汉语。
+[3/30] chunk 2157 《滴天髓阐微》 hard=0 judge=无
+[4/30] chunk 42 《乾元秘旨》 hard=0 judge=译文基本照抄原文，仅个别处微调（如「其用不同」改为「它们的用途各不相同」），整体
+[5/30] chunk 1415 《命理探源》 hard=0 judge=无
+[6/30] chunk 2545 《神峰通考》 hard=0 judge=无
+[7/30] chunk 1641 《徐氏珞琭子赋注》 hard=0 judge=无
+[8/30] chunk 1100 《兰台妙选》 hard=0 judge=无
+[9/30] chunk 1631 《子平真诠评注》 hard=0 judge=无
+[10/30] chunk 533 《五行精纪》 hard=0 judge=译文基本逐句直译，但大量照搬「画墁」「闾族党党」「殷俊秀选造」「笄俪」「机缄」等
+[11/30] chunk 2251 《玉照神应真经》 hard=0 judge=无
+[12/30] chunk 1871 《渊海子平》 hard=0 judge=译文逐句对应原文，仅将文言虚词「兮」「乃」「是以」等译为现代汉语，未增删信息，无
+[13/30] chunk 478 《张果星宗》 hard=0 judge=无
+[14/30] chunk 2305 《珞琭子三命消息赋注》 hard=0 judge=无
+[15/30] chunk 1710 《李虚中命书》 hard=0 judge=译文基本照抄原文，仅替换少量虚词（如「岂专神煞」改为「岂专论神煞」），未真正译成
+[16/30] chunk 1649 《月谈赋》 hard=0 judge=无
+[17/30] chunk 1318 《千里命稿》 hard=0 judge=无
+[18/30] chunk 2777 《穷通宝鉴》 hard=1 judge=干支清单和「十二月丙火」整段文言均照抄原文，未译成现代汉语
+[19/30] chunk 2108 《滴天髓阐微》 hard=0 judge=无
+[20/30] chunk 14 《乾元秘旨》 hard=0 judge=无
+[21/30] chunk 1417 《命理探源》 hard=0 judge=无
+[22/30] chunk 2618 《神峰通考》 hard=0 judge=无
+[23/30] chunk 1640 《徐氏珞琭子赋注》 hard=0 judge=无
+[24/30] chunk 1114 《兰台妙选》 hard=0 judge=无
+[25/30] chunk 1627 《子平真诠评注》 hard=0 judge=无
+[26/30] chunk 809 《五行精纪》 hard=0 judge=无
+[27/30] chunk 2236 《玉照神应真经》 hard=1 judge=译文逐字照抄原文，仅保留原标点，未作任何现代汉语翻译，且含乱码句，不通顺。
+[28/30] chunk 1809 《渊海子平》 hard=0 judge=无
+[29/30] chunk 254 《张果星宗》 hard=0 judge=无
+[30/30] chunk 2297 《珞琭子三命消息赋注》 hard=0 judge=无
+
+== 汇总 ==
+n_translated: 30
+n_failed: 0
+rule_hard_rate: 0.067
+judge_n: 30
+judge_fail_rate: 0.167
+judge_untranslated: 5
+judge_added: 0
+judge_dropped: 0
+judge_advice: 0
+规则明细: {"causal_added": 0, "contrast_dropped": 4, "copied_source": 2, "explained": 0, "omission_suspect": 0, "second_person": 0, "term_dropped": 2}
+写入 eval/results_interpret_20261118.json
+
+== 评委判为不忠实的段落 ==
+- chunk 2800 《穷通宝鉴》：译文基本照抄原文，仅将「遂成」改为「便成」，未真正译成现代汉语。
+- chunk 42 《乾元秘旨》：译文基本照抄原文，仅个别处微调（如「其用不同」改为「它们的用途各不相同」），整体未真正译成现代汉语。
+- chunk 1710 《李虚中命书》：译文基本照抄原文，仅替换少量虚词（如「岂专神煞」改为「岂专论神煞」），未真正译成现代汉语。
+- chunk 2777 《穷通宝鉴》：干支清单和「十二月丙火」整段文言均照抄原文，未译成现代汉语
+- chunk 2236 《玉照神应真经》：译文逐字照抄原文，仅保留原标点，未作任何现代汉语翻译，且含乱码句，不通顺。
+EXIT=0

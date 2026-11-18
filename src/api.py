@@ -202,6 +202,8 @@ class InterpretItem(BaseModel):
     cached: bool = False
     truncated: bool = False
     error: str | None = None
+    # 自检提示（如「译文补出了原文没有的因果」）。只是提示，不阻断阅读。
+    warnings: list[str] = []
 
 
 class InterpretResponse(BaseModel):

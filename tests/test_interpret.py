@@ -52,6 +52,25 @@ def test_miss_then_cache_hit(tmp_path, monkeypatch):
     assert set(row) == {"key", "chunk_id", "version", "translation"}
 
 
+def test_cached_copy_is_not_served(tmp_path, monkeypatch):
+    """规则上线前缓存下来的「照搬译文」不能再原样返回，要当作未命中重译。"""
+    cache_file = tmp_path / "interpret_cache.jsonl"
+    monkeypatch.setenv("MINGLI_INTERPRET_CACHE", str(cache_file))
+    text = _chunks()[0]["text"]
+    cache_file.write_text(json.dumps({
+        "key": interpret._key(text), "chunk_id": 11,
+        "version": interpret.CACHE_VERSION, "translation": text,
+    }, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    items, misses = interpret.prepare(_chunks())
+    assert items[0]["translation"] is None
+    assert len(misses) == 1, "照搬的旧译文应视为未命中"
+
+    monkeypatch.setenv("MINGLI_INTERPRET_CHECK", "0")
+    items2, misses2 = interpret.prepare(_chunks())
+    assert items2[0]["cached"] is True, "关掉检查时保持旧的缓存行为"
+
+
 def test_force_bypasses_cache(tmp_path, monkeypatch):
     monkeypatch.setenv("MINGLI_INTERPRET_CACHE", str(tmp_path / "c.jsonl"))
     monkeypatch.setattr(interpret, "translate", lambda text, api_key=None: "译文")
@@ -109,6 +128,21 @@ def test_fill_records_per_item_error(tmp_path, monkeypatch):
     interpret.fill(items, misses)
     assert items[0]["translation"] is None
     assert "释义生成失败" in items[0]["error"]
+
+
+def test_fill_marks_copy_as_untranslatable(tmp_path, monkeypatch):
+    """模型照搬原文时给「无法对译」，不要把照搬失败说成上游故障。"""
+    monkeypatch.setenv("MINGLI_INTERPRET_CACHE", str(tmp_path / "c.jsonl"))
+
+    def copy(text, api_key=None):
+        raise interpret.CopyNotTranslated("模型没有真正翻译（照搬原文）")
+
+    monkeypatch.setattr(interpret, "translate", copy)
+    items, misses = interpret.prepare(_chunks())
+    interpret.fill(items, misses)
+    assert items[0]["translation"] is None
+    assert items[0]["error"] == "这段原文暂时无法对译，可用原文阅读"
+    assert interpret.cache_path().exists() is False
 
 
 @pytest.fixture()

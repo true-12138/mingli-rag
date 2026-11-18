@@ -425,6 +425,8 @@ export interface ChunkInterpretation {
   /** 原文超过后端上限，译文只覆盖前一段。 */
   truncated: boolean;
   error: string | null;
+  /** 自检提示：译文可能补出了原文没有的因果、人称或讲解语。 */
+  warnings?: string[];
 }
 
 /**

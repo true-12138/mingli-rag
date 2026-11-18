@@ -18,10 +18,11 @@ import threading
 from pathlib import Path
 from typing import Any
 
+import interpret_check
 import rag
 
 # prompt 或输出格式变了就 +1，旧缓存自动失效。
-CACHE_VERSION = "v1"
+CACHE_VERSION = "v2"
 # 单段最多送这么多字；超出的部分不翻，接口用 truncated 标出来。
 MAX_CHARS = 1500
 
@@ -41,6 +42,11 @@ INTERPRET_PROMPT = """你在做古籍阅读的「白话释义」，不是问答�
 5. 原文有残缺、异体字或明显错字时，按上下文直译，必要时在译文末尾用
    「（原文此处残缺）」标出。
 6. 译文只是辅助阅读，不构成引用依据；不要在译文里加引用编号。
+7. 因果和条件只能照译：原文没有「故、因、若、则」这类表达时，译文不得自己
+   补出「因为、所以、如果、导致」。原文的转折与让步（虽、然、但）必须译出来，
+   不能为了让译文通顺而抹平。
+8. 面向读者说话的口吻一律不要：不出现「你、您」，也不出现「也就是说、
+   意思是」这类讲解语。
 
 只输出 JSON，不要输出 JSON 以外的任何文字。JSON 格式：
 {"translation": "白话译文"}
@@ -48,9 +54,17 @@ INTERPRET_PROMPT = """你在做古籍阅读的「白话释义」，不是问答�
 整段无法成句翻译（例如只有目录、乱码）时，translation 返回空字符串。
 """
 
+class CopyNotTranslated(ValueError):
+    """模型把原文原样返回，没有真正翻译。调用方应展示「无法对译」而不是原文。"""
+
+
 _CACHE: dict[str, str] = {}
 _LOADED_PATH: Path | None = None
 _LOCK = threading.Lock()
+
+
+def _env_flag(name: str, default: str = "1") -> bool:
+    return (os.environ.get(name) or default).strip().lower() not in ("0", "false", "off", "no")
 
 
 def cache_path() -> Path:
@@ -127,6 +141,9 @@ def prepare(chunks: list[dict[str, Any]], force: bool = False) -> tuple[list[dic
             "cached": False,
             "truncated": len(text) > MAX_CHARS,
             "error": None,
+            # 缓存里只存译文，不存检查结论：命中缓存时提示随源码版本走，
+            # 旧译文在下次强制重译前没有结论，明确给空数组而不是 None。
+            "warnings": [],
         }
         items.append(item)
         if not text:
@@ -134,6 +151,9 @@ def prepare(chunks: list[dict[str, Any]], force: bool = False) -> tuple[list[dic
             continue
         key = _key(text)
         hit = None if force else _CACHE.get(key)
+        if hit and _is_copy(text, hit):
+            # 规则上线前缓存下来的照搬译文不能再返回；当作未命中，重新译一次。
+            hit = None
         if hit:
             item["translation"] = hit
             item["cached"] = True
@@ -149,6 +169,10 @@ def fill(items: list[dict[str, Any]], misses: list[tuple[dict, str, str]],
     for item, text, key in misses:
         try:
             translation = translate(text, api_key=api_key)
+        except CopyNotTranslated:
+            # 这不是故障，是策略：宁可说「不能对译」，也不拿原文冒充译文。
+            item["error"] = "这段原文暂时无法对译，可用原文阅读"
+            continue
         except Exception as exc:  # noqa: BLE001 - 一条失败不该让整组引用都不可读
             item["error"] = "释义生成失败：{}".format(str(exc)[:160])
             continue
@@ -156,26 +180,100 @@ def fill(items: list[dict[str, Any]], misses: list[tuple[dict, str, str]],
             item["error"] = "这段原文无法成句对译"
             continue
         item["translation"] = translation
+        # 检查是确定性的、不调模型：在返回前再算一遍，命中就随译文一起给前端提示。
+        item["warnings"] = warnings_for(text, translation)
         _store(path, key, item["chunk_id"], translation)
 
 
-def translate(text: str, api_key: str | None = None) -> str:
-    """调一次模型，返回白话译文。空串表示原文无法成句翻译。"""
-    messages = [
-        {"role": "system", "content": INTERPRET_PROMPT},
-        {"role": "user", "content": "【原文】\n{}".format(text)},
-    ]
-    raw = rag._chat(messages, api_key=api_key)
+def _is_copy(text: str, translation: str) -> bool:
+    if not _env_flag("MINGLI_INTERPRET_CHECK"):
+        return False
+    return any(h["rule"] == "copied_source" for h in _checks(text, translation))
+
+
+def _checks(text: str, translation: str) -> list[dict[str, Any]]:
+    return interpret_check.check(text, translation, terms=interpret_check.source_terms(text))
+
+
+def warnings_for(text: str, translation: str) -> list[str]:
+    """给这段译文配的自检提示；关闭检查时返回空列表。"""
+    if not _env_flag("MINGLI_INTERPRET_CHECK"):
+        return []
+    return interpret_check.summarize(_checks(text, translation))
+
+
+def _parse(raw: str) -> str:
     data = rag._parse_json(raw)
     translation = data.get("translation")
     if not isinstance(translation, str):
         raise ValueError("模型没有返回 translation 字段")
-    translation = translation.strip()
+    return translation.strip()
+
+
+def _ask(text: str, api_key: str | None) -> str:
+    messages = [
+        {"role": "system", "content": INTERPRET_PROMPT},
+        {"role": "user", "content": "【原文】\n{}".format(text)},
+    ]
+    return rag._chat(messages, api_key=api_key)
+
+
+def _repair(text: str, translation: str, hits: list[dict[str, Any]],
+            api_key: str | None) -> str:
+    """带着一处具体违规重译一次。
+
+    只作为兜底：不改规则、不加示例，只把命中的那句话摆给模型看。
+    重译本身仍可能违规——调用方保留更差的那版就等于白花一次调用，
+    所以这里只负责再要一版，选哪版由 translate 决定。
+    """
+    reasons = "；".join(h["detail"] for h in hits)
+    messages = [
+        {"role": "system", "content": INTERPRET_PROMPT},
+        {"role": "user", "content": "【原文】\n{}".format(text)},
+        {"role": "assistant", "content": json.dumps(
+            {"translation": translation}, ensure_ascii=False)},
+        {"role": "user", "content": (
+            "上面的译文有一处不合规则：{}。请只修正这一点，其余部分照旧，"
+            "把整段重新翻译一遍。仍然只输出 JSON，格式："
+            '{{"translation": "白话译文"}}'
+        ).format(reasons)},
+    ]
+    return rag._chat(messages, api_key=api_key)
+
+
+def translate(text: str, api_key: str | None = None) -> str:
+    """调一次模型，返回白话译文。空串表示原文无法成句翻译。
+
+    拿到译文后跑一次确定性检查（`interpret_check`）；命中「硬伤」时带着
+    那一条重译一次，只在重译确实减少了硬伤时才采用。这层不保证忠实，
+    只把最常见的越界（补因果、第二人称、写成讲解）挡在缓存之前。
+    """
+    translation = _parse(_ask(text, api_key))
     if not translation:
         return ""
     # 粗校验：译文长度明显超过原文时，多半是模型在讲解而不是对译。
     if len(translation) > max(600, len(text) * 4):
         raise ValueError("译文长度异常（{} 字 → {} 字）".format(len(text), len(translation)))
+
+    if not _env_flag("MINGLI_INTERPRET_CHECK"):
+        return translation
+
+    hard = interpret_check.hard_rules(_checks(text, translation))
+    if hard and _env_flag("MINGLI_INTERPRET_RETRY"):
+        candidate = ""
+        try:
+            candidate = _parse(_repair(text, translation, hard, api_key))
+        except Exception:  # noqa: BLE001 - 重译失败就保留原稿，不让整个请求失败
+            candidate = ""
+        if not candidate or len(candidate) > max(600, len(text) * 4):
+            candidate = ""
+        if candidate and len(interpret_check.hard_rules(_checks(text, candidate))) < len(hard):
+            translation = candidate
+    # 照搬原文的「译文」不能当白话释义展示：读者会以为这就是翻译。
+    # 重译一次仍照搬，就明确报错，让前端显示「暂时无法对译」，原文页签仍然可读。
+    # 这一步不受 RETRY 开关控制：关掉重译可以，把原文冒充译文不行。
+    if _is_copy(text, translation):
+        raise CopyNotTranslated("模型没有真正翻译（照搬原文）")
     return translation
 
 

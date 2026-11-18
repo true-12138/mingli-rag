@@ -1,0 +1,48 @@
+chunks:8681|embeds shape:(8681, 1024)
+[1/30] chunk 1414 《千里命稿》 hard=0 judge=无
+[2/30] chunk 2800 《穷通宝鉴》 hard=0 judge=无
+[3/30] chunk 2157 《滴天髓阐微》 hard=0 judge=无
+[4/30] chunk 42 《乾元秘旨》 hard=0 judge=无
+[5/30] chunk 1415 《命理探源》 hard=0 judge=无
+[6/30] chunk 2545 《神峰通考》 hard=0 judge=无
+[7/30] chunk 1641 《徐氏珞琭子赋注》 hard=0 judge=无
+[8/30] chunk 1100 《兰台妙选》 hard=0 judge=无
+[9/30] chunk 1631 《子平真诠评注》 hard=0 judge=无
+[10/30] chunk 533 《五行精纪》 hard=0 judge=译文基本逐句直译，但多处照搬原文结构导致语句不通（如「马本来不可以澄清期求军制于
+[11/30] chunk 2251 《玉照神应真经》 hard=0 judge=无
+[12/30] chunk 1871 《渊海子平》 hard=0 judge=无
+[13/30] chunk 478 《张果星宗》 hard=0 judge=无
+[14/30] chunk 2305 《珞琭子三命消息赋注》 hard=0 judge=无
+[15/30] chunk 1710 《李虚中命书》 hard=0 judge=首句「至于贵神当位……岂专神煞」及末段「噫造化廖廓……修身以俟命」等大量句子照抄
+[16/30] chunk 1649 《月谈赋》 hard=0 judge=无
+[17/30] chunk 1318 《千里命稿》 hard=0 judge=无
+[18/30] chunk 2777 失败：ValueError: 模型没有真正翻译（照搬原文）
+[19/30] chunk 2108 《滴天髓阐微》 hard=0 judge=无
+[20/30] chunk 14 《乾元秘旨》 hard=0 judge=无
+[21/30] chunk 1417 《命理探源》 hard=0 judge=无
+[22/30] chunk 2618 《神峰通考》 hard=0 judge=无
+[23/30] chunk 1640 《徐氏珞琭子赋注》 hard=0 judge=无
+[24/30] chunk 1114 《兰台妙选》 hard=0 judge=无
+[25/30] chunk 1627 《子平真诠评注》 hard=0 judge=无
+[26/30] chunk 809 《五行精纪》 hard=0 judge=无
+[27/30] chunk 2236 《玉照神应真经》 hard=0 judge=无
+[28/30] chunk 1809 《渊海子平》 hard=0 judge=无
+[29/30] chunk 254 《张果星宗》 hard=0 judge=无
+[30/30] chunk 2297 《珞琭子三命消息赋注》 hard=0 judge=无
+
+== 汇总 ==
+n_translated: 29
+n_failed: 1
+rule_hard_rate: 0.0
+judge_n: 29
+judge_fail_rate: 0.034
+judge_untranslated: 1
+judge_added: 0
+judge_dropped: 0
+judge_advice: 0
+规则明细: {"causal_added": 0, "contrast_dropped": 4, "copied_source": 0, "explained": 0, "near_copy": 5, "omission_suspect": 0, "second_person": 0, "term_dropped": 2}
+写入 eval/results_interpret_20261118.json
+
+== 评委判为不忠实的段落 ==
+- chunk 1710 《李虚中命书》：首句「至于贵神当位……岂专神煞」及末段「噫造化廖廓……修身以俟命」等大量句子照抄原文，未译成现代汉语。
+EXIT=0
