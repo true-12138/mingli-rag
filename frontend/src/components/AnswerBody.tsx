@@ -9,7 +9,7 @@
 // 所以卡片底部单独写了这句。
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import Markdown, { type Components } from "react-markdown";
+import Markdown, { type Components, type Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import type { TermHit } from "../api";
@@ -123,8 +123,14 @@ function walkTerms(node: MdNode, terms: string[], hits: TermHit[]): void {
   node.children = next;
 }
 
-/** remark 插件：词典里的词在正文里一律变成 #term-<序号> 链接。 */
-function remarkTerms(terms: string[], hits: TermHit[]) {
+/** remark 插件：词典里的词在正文里一律变成 #term-<序号> 链接。
+ *
+ *  必须写成「插件（接收 options、返回 transformer）」，不能把 transformer 直接塞进
+ *  remarkPlugins：react-markdown 在挂载时就会调用一次插件函数，直接传 transformer
+ *  会让它的第一个参数（tree）变成 undefined，回答一渲染整页白屏。
+ */
+function remarkTerms(options: { terms: string[]; hits: TermHit[] }) {
+  const { terms, hits } = options;
   return (tree: MdNode): void => walkTerms(tree, terms, hits);
 }
 
@@ -217,8 +223,11 @@ export function AnswerBody({ text, onCite, terms, chunkLabels }: Props) {
     });
   }, [terms]);
   const termNames = useMemo(() => termHits.map((hit) => hit.term), [termHits]);
-  const plugins = useMemo(
-    () => (termNames.length > 0 ? [remarkGfm, remarkTerms(termNames, termHits)] : [remarkGfm]),
+  const plugins = useMemo<NonNullable<Options["remarkPlugins"]>>(
+    () =>
+      termNames.length > 0
+        ? [remarkGfm, [remarkTerms, { terms: termNames, hits: termHits }]]
+        : [remarkGfm],
     [termNames, termHits],
   );
 

@@ -26,7 +26,6 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
   const unique = Array.from(new Set(ids)).filter((id) => Number.isFinite(id));
   const [open, setOpen] = useState<number | null>(null);
   const [tab, setTab] = useState<"origin" | "gloss">("origin");
-  const [gloss, setGloss] = useState<Record<number, Gloss>>({});
   const quoteRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -39,20 +38,6 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
     const el = quoteRefs.current[open];
     if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [open, focus]);
-
-  // 只有打开了「白话释义」才请求；切到别的段落时按 chunk_id 复用结果。
-  useEffect(() => {
-    if (open == null || tab !== "gloss") return;
-    if (gloss[open] !== undefined) return;
-    let alive = true;
-    setGloss((prev) => ({ ...prev, [open]: "loading" }));
-    loadInterpretation(open).then((item) => {
-      if (alive) setGloss((prev) => ({ ...prev, [open]: item }));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [open, tab, gloss]);
 
   if (unique.length === 0) return null;
 
@@ -122,7 +107,9 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
               {chunks[open] ? chunks[open].text : "原文还在取，稍等片刻。"}
             </p>
           ) : (
-            <GlossBody item={gloss[open]} />
+            // key=chunk_id：换一段就重新挂载，请求状态跟着这一段走，
+            // 不在父组件里维护一份「正在生成」的字典（那样切换时会漏掉回调）。
+            <GlossBody key={open} chunkId={open} />
           )}
         </div>
       )}
@@ -134,8 +121,21 @@ function shortBook(chunk: Chunk): string {
   return chunk.book || "古籍";
 }
 
-function GlossBody({ item }: { item: Gloss | undefined }) {
-  if (item === undefined || item === "loading") {
+function GlossBody({ chunkId }: { chunkId: number }) {
+  const [item, setItem] = useState<Gloss>("loading");
+
+  useEffect(() => {
+    let alive = true;
+    setItem("loading");
+    loadInterpretation(chunkId).then((result) => {
+      if (alive) setItem(result);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [chunkId]);
+
+  if (item === "loading") {
     return <p className="source-quote__hint">正在生成白话释义…</p>;
   }
   if (!item.translation) {

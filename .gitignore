@@ -50,3 +50,6 @@ api.log
 
 # 解读层译文缓存（运行时生成，按原文哈希去重）
 data/interpret_cache.jsonl
+
+# 迁移前的手工备份
+data/*.sqlite3.bak-*
