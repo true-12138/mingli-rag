@@ -49,6 +49,13 @@ OVER_REFUSAL_MARKERS = [
     ("agent_multi.py", "SYNTHESIZER_PROMPT", "不等于材料不足"),
     # 校验员这一侧守的是「对象有、清单类属性不全 → 先补检索，别直接判不足」
     ("agent_multi.py", "VERIFIER_PROMPT", "属性词"),
+    # mt17（v8 多 Agent 挂、单 Agent 过）：「原文只讲义理和用法，没有『甲见辛之类』
+    # 那种形式化定义」被读成证据不足，整题拒答。定义类问题必须认义理/作用/分类/取舍。
+    ("rag.py", "SYSTEM_PROMPT", "形式化定义"),
+    ("agent.py", "SYSTEM_PROMPT", "形式化定义"),
+    ("agent.py", "FUNCTION_SYSTEM_PROMPT", "形式化定义"),
+    ("agent_multi.py", "SYNTHESIZER_PROMPT", "形式化定义"),
+    ("agent_multi.py", "VERIFIER_PROMPT", "形式化定义"),
 ]
 
 
