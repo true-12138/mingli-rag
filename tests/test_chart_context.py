@@ -112,7 +112,7 @@ def _fake_retrieve(hits):
 def test_rag_answer_puts_chart_in_prompt_and_keeps_citations(monkeypatch):
     seen = {}
 
-    def fake_chat(messages, temperature=0.0, api_key=None):
+    def fake_chat(messages, temperature=0.0, api_key=None, **kwargs):
         seen["messages"] = messages
         return '{"can_answer": true, "answer": "甲木日主，见羊刃 [1]", "citations": [1]}'
 
@@ -137,7 +137,7 @@ def test_rag_answer_puts_chart_in_prompt_and_keeps_citations(monkeypatch):
 def test_rag_answer_without_chart_is_unchanged(monkeypatch):
     seen = {}
 
-    def fake_chat(messages, temperature=0.0, api_key=None):
+    def fake_chat(messages, temperature=0.0, api_key=None, **kwargs):
         seen["messages"] = messages
         return '{"can_answer": true, "answer": "甲木 [1]", "citations": [1]}'
 
@@ -226,7 +226,7 @@ def _rag_result():
 def test_chat_passes_chart_through(client, monkeypatch):
     seen = {}
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, chart=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, chart=None, tier="auto"):
         seen["chart"] = chart
         return _rag_result()
 
@@ -240,7 +240,7 @@ def test_cache_disabled_when_chart_attached(client, monkeypatch):
     """同一句问题配不同的盘，答案必须不同——缓存 key 里没有盘，所以不能缓存。"""
     calls = []
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, chart=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, chart=None, tier="auto"):
         calls.append(chart["day_master"] if chart else None)
         out = _rag_result()
         out["answer"] = "日主 {}".format(chart["day_master"]) if chart else "无盘"
@@ -257,7 +257,7 @@ def test_cache_disabled_when_chart_attached(client, monkeypatch):
 def test_cache_still_works_without_chart(client, monkeypatch):
     calls = []
 
-    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, chart=None):
+    def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None, chart=None, tier="auto"):
         calls.append(question)
         return _rag_result()
 

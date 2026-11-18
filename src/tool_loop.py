@@ -118,7 +118,8 @@ def _parse_args(raw):
 
 def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
         on_call=None, counter=None, max_rounds=MAX_ROUNDS,
-        max_tokens=None, allow_side_effects=False, approve=None):
+        max_tokens=None, allow_side_effects=False, approve=None,
+        model=None, thinking=None, reasoning_effort=None):
     """跑 tool-calling 循环，直到模型不再调用工具。
 
     messages 会被原地追加（assistant/tool 轮次）。返回 (最终 content, messages, 已用调用数)。
@@ -140,6 +141,9 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
             tools=schemas if with_tools else None,
             api_key=api_key,
             tool_choice="auto" if with_tools else None,
+            model=model,
+            thinking=thinking,
+            reasoning_effort=reasoning_effort,
         )
         if counter is not None:
             counter["llm_calls"] = counter.get("llm_calls", 0) + 1
@@ -205,7 +209,8 @@ def run(messages, *, api_key=None, max_calls, schemas, prepare=None,
 
 async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
                on_call=None, on_delta=None, counter=None, max_rounds=MAX_ROUNDS,
-               client=None, max_tokens=None, allow_side_effects=False, approve=None):
+               client=None, max_tokens=None, allow_side_effects=False, approve=None,
+               model=None, thinking=None, reasoning_effort=None):
     """`run()` 的异步版：用 llm.stream() 逐 token 下发，工具层协议不变。
 
     `on_delta(text)` 只收最终正文的增量；工具轮如果模型同时吐了正文，
@@ -225,6 +230,9 @@ async def arun(messages, *, api_key=None, max_calls, schemas, prepare=None,
             tools=schemas if with_tools else None,
             tool_choice="auto" if with_tools else None,
             response_format=None if with_tools else {"type": "json_object"},
+            model=model,
+            thinking=thinking,
+            reasoning_effort=reasoning_effort,
         ):
             if event["type"] == "delta":
                 if on_delta is not None:

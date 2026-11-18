@@ -56,6 +56,19 @@ export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: P
   const finished = turn.status !== "streaming";
   const refusal = turn.canAnswer === false;
 
+  // 路由徽标：只说明这一轮用了哪一档，不抢正文注意力。
+  const route = turn.route;
+  const routeLabel = !route
+    ? ""
+    : route.escalated
+      ? "速答 → 精答"
+      : route.tier === "large"
+        ? "精答"
+        : "速答";
+  const routeTitle = route
+    ? [route.model, route.reason, route.forced ? "手动指定" : ""].filter(Boolean).join(" · ")
+    : "";
+
   // 边流边标会把半句话切成词条，也会每帧打一次接口；等写完再标。
   const [terms, setTerms] = useState<TermHit[]>([]);
   useEffect(() => {
@@ -146,6 +159,14 @@ export function TurnView({ turn, chunks, streaming, busy, onAsk, onContinue }: P
 
           {finished && turn.answer && (
             <div className="turn__meta">
+              {routeLabel && (
+                <span
+                  className={`turn__tier${route?.escalated ? " turn__tier--escalated" : ""}`}
+                  title={routeTitle}
+                >
+                  {routeLabel}
+                </span>
+              )}
               {turn.elapsedMs != null && <span>{(turn.elapsedMs / 1000).toFixed(1)} 秒</span>}
               {turn.llmCalls != null && turn.llmCalls > 0 && <span>{turn.llmCalls} 次模型调用</span>}
               {turn.citationIds.length > 0 && <span>{turn.citationIds.length} 处引用</span>}

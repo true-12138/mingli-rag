@@ -165,6 +165,13 @@ class Run(Base):
     total_tokens = Column(Integer, nullable=False, default=0)
     cost_usd = Column(Float, nullable=False, default=0.0)
 
+    # 路由结果：刷新页面后还能看到这一轮走的是小模型还是大模型。
+    # tier 只存最终档位（small/large）；escalated 表示小模型输出不可用后升过大模型。
+    tier = Column(String(10), nullable=True)
+    model = Column(String(80), nullable=True)
+    escalated = Column(Boolean, nullable=False, default=False)
+    route_reason = Column(Text, nullable=True)
+
     error = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow, index=True)
     finished_at = Column(DateTime(timezone=True), nullable=True)

@@ -64,7 +64,11 @@ class FakeAPI:
         self.replies = list(replies)
 
     def __call__(self, messages, tools=None, temperature=0.0, api_key=None,
-                 tool_choice=None):
+                 tool_choice=None, model=None, thinking=None,
+                 reasoning_effort=None):
+        self.last_kwargs = {
+            "model": model, "thinking": thinking, "reasoning_effort": reasoning_effort,
+        }
         return self.replies.pop(0)
 
 
@@ -160,7 +164,7 @@ def _chat_with_pending(client, monkeypatch, anon="anon-1", pending=None,
     }]
 
     def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None,
-                   chart=None):
+                   chart=None, tier="auto"):
         return _agent_result(pending_actions=pending)
 
     monkeypatch.setattr(api_conversations.agent, "agent_answer", fake_agent)
@@ -541,7 +545,7 @@ def test_chat_passes_one_time_approval_callback_to_agent(client, monkeypatch):
     seen = []
 
     def fake_agent(question, max_steps=6, api_key=None, history=None, memories=None,
-                   approvals=None, chart=None):
+                   approvals=None, chart=None, tier="auto"):
         assert approvals is not None
         seen.append(approvals("mcp__remote__delete_all", {"book": "全部"}))
         seen.append(approvals("mcp__remote__delete_all", {"book": "全部"}))
@@ -572,7 +576,7 @@ def test_chat_stream_done_contains_pending_actions_with_id(client, monkeypatch):
 
     async def fake_stream(question, max_steps=6, api_key=None, history=None,
                           memories=None, on_delta=None, on_step=None, client=None,
-                          chart=None):
+                          chart=None, tier="auto"):
         on_delta("测试回答")
         return _agent_result(pending_actions=[{
             "tool": "mcp__remote__delete_all",

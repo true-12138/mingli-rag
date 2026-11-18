@@ -71,6 +71,21 @@ export interface CitationRef {
   chunk_id: number;
 }
 
+export interface RouteInfo {
+  tier: "small" | "large";
+  model: string;
+  reason: string;
+  score?: number;
+  signals?: string[];
+  forced?: boolean;
+  enabled?: boolean;
+  initial_tier?: "small" | "large";
+  small_model?: string;
+  large_model?: string;
+  escalated?: boolean;
+  escalation_reason?: string;
+}
+
 export interface RunSummary {
   id: string;
   conversation_id: string;
@@ -87,6 +102,11 @@ export interface RunSummary {
   elapsed_ms: number | null;
   llm_calls: number;
   total_tokens: number;
+  // 历史回放用：runs 表里落的路由结果，没有 route 明细，只有这几个字段
+  tier: "small" | "large" | null;
+  model: string | null;
+  escalated: boolean;
+  route_reason: string | null;
   error: string | null;
   created_at: string;
   finished_at: string | null;
@@ -578,6 +598,8 @@ export interface DonePayload extends Record<string, unknown> {
   llm_calls: number;
   mode: Mode;
   pending_actions?: PendingAction[];
+  /** 这一轮走的是小模型还是大模型，以及为什么。老版本后端没有这一项。 */
+  route?: RouteInfo | null;
 }
 
 export interface StreamHandlers {

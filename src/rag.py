@@ -10,6 +10,7 @@ import requests
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from retrieval import retrieve_one
 from conversation import history_block, memory_block, normalize_history, rewrite_question
+import router
 import usage
 DEEPSEEK_URL = os.environ.get("MINGLI_LLM_URL", "https://api.deepseek.com/chat/completions")
 MODEL = os.environ.get("MINGLI_LLM_MODEL", "deepseek-chat")
@@ -116,17 +117,24 @@ def _post_chat(body, api_key=None):
     return resp
 
 
-def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choice=None):
+def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choice=None,
+                  model=None, thinking=None, reasoning_effort=None):
     """调一次模型，返回完整的 message 对象（而不是只取 content）。
 
     function calling 需要拿到 tool_calls 和每个调用的 id，所以单独开这个口子；
     不带 tools 时仍然用 response_format=json_object，行为和原来的 _chat 一致。
+    model / thinking / reasoning_effort 由 router 按题目的难度传入；不传时
+    沿用原来的全局 MODEL，老调用方的行为不变。
     """
     body = {
-        "model": MODEL,
+        "model": model or MODEL,
         "messages": messages,
         "temperature": temperature,
     }
+    if thinking in ("enabled", "disabled"):
+        body["thinking"] = {"type": thinking}
+        if thinking == "enabled" and reasoning_effort:
+            body["reasoning_effort"] = reasoning_effort
     if tools:
         body["tools"] = tools
         if tool_choice:
@@ -154,23 +162,112 @@ def _chat_message(messages, tools=None, temperature=0.0, api_key=None, tool_choi
     return message
 
 
-def _chat(messages, temperature=0.0, api_key=None):
-    msg = _chat_message(messages, temperature=temperature, api_key=api_key)
+def _chat(messages, temperature=0.0, api_key=None, model=None, thinking=None,
+          reasoning_effort=None):
+    msg = _chat_message(
+        messages,
+        temperature=temperature,
+        api_key=api_key,
+        model=model,
+        thinking=thinking,
+        reasoning_effort=reasoning_effort,
+    )
     return msg.get("content") or ""
+
+
+def _usage_delta(before, after):
+    """两次 usage.snapshot 的差值：用来把 token 账单归到具体哪个档位。
+
+    调用方没有 reset 时也能算对；after 为空（脚本 / 测试没开采集）则返回 None。
+    """
+    if not after:
+        return None
+    before = before or {}
+    keys = ("prompt_tokens", "completion_tokens", "total_tokens", "cached_tokens",
+            "llm_calls")
+    return {k: int(after.get(k, 0) or 0) - int(before.get(k, 0) or 0) for k in keys}
+
+
+def _rag_messages(hits, user, chart):
+    import chart_context
+
+    return [
+        {"role": "system", "content": chart_context.system_prompt(SYSTEM_PROMPT, chart)},
+        {"role": "user", "content": user},
+    ]
+
+
+def _generate_rag(messages, api_key, spec, counter):
+    """用指定档位的模型生成并解析，最多试两次 JSON。"""
+    data = None
+    last_raw = ""
+    before = usage.snapshot()
+    for _ in range(2):  # JSON 解析失败重试一次
+        last_raw = _chat(
+            messages,
+            api_key=api_key,
+            model=spec.model,
+            **spec.request_fields(),
+        )
+        counter["llm_calls"] += 1
+        try:
+            data = _parse_json(last_raw)
+            break
+        except json.JSONDecodeError:
+            data = None
+    return data, last_raw, _usage_delta(before, usage.snapshot())
+
+
+def _failure_rag(hits, standalone, history, counter, last_raw):
+    return {
+        "can_answer": None,
+        "answer": "",
+        "citations": [],
+        "citations_chunk_ids": [],
+        "invalid_citations": [],
+        "invalid_output": True,
+        "error": "JSON 解析失败",
+        "raw": last_raw,
+        "retrieved_chunk_ids": [h["chunk_id"] for h in hits],
+        "rewritten_question": standalone,
+        "history_turns": len(history),
+        "llm_calls": counter["llm_calls"],
+    }
+
+
+def _attach_route(out, route, attempts, escalated=False, escalation_reason=""):
+    info = route.as_dict()
+    final = attempts[-1] if attempts else None
+    if final:
+        info["tier"] = final["tier"]
+        info["model"] = final["model"]
+        info["thinking"] = final.get("thinking")
+        info["effort"] = final.get("effort")
+    info["escalated"] = escalated
+    info["attempts"] = attempts
+    if escalated:
+        info["escalation_reason"] = escalation_reason
+        info["reason"] = "{}；{}".format(route.reason, escalation_reason)
+    out["route"] = info
+    return out
+
+
 def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None,
-           chart=None):
+           chart=None, tier="auto"):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
     can_answer=False 才算一次拒答。
     api_key 用于公网访客自带 key 的场景，不传就读环境变量。
     history 是多轮对话历史；memories 是长期偏好/事实。两者都只用于理解问题，
     不作为回答证据。
     chart 是用户在排盘页算好的盘面；它进 prompt 但也**不是**引用依据。
+    tier 是请求级档位：auto（按难度路由）/ small / large。
     """
     import chart_context
 
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
+    route = router.decide(standalone, history=history, chart=chart, tier=tier, mode="rag")
     search_query = chart_context.retrieval_query(chart, standalone)
     hits = retrieve_one(search_query, top_k=top_k, mode=mode)
     hist = history_block(history)
@@ -179,38 +276,46 @@ def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=N
     user = (ctx + "\n\n" if ctx else "") + (hist + "\n\n" if hist else "") + \
         (mem + "\n\n" if mem else "") + \
         "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), standalone)
-    data = None
-    last_raw = ""
-    for _ in range(2):  # JSON 解析失败重试一次
-        last_raw = _chat(
-            [
-                {"role": "system", "content": chart_context.system_prompt(SYSTEM_PROMPT, chart)},
-                {"role": "user", "content": user},
-            ],
-            api_key=api_key,
-        )
-        counter["llm_calls"] += 1
-        try:
-            data = _parse_json(last_raw)
-            break
-        except json.JSONDecodeError:
-            data = None
+    messages = _rag_messages(hits, user, chart)
+
+    attempts = []
+
+    def attempt(spec):
+        data, raw, used = _generate_rag(messages, api_key, spec, counter)
+        attempts.append({
+            "tier": spec.tier,
+            "model": spec.model,
+            "thinking": spec.thinking,
+            "effort": spec.effort,
+            "ok": data is not None,
+            "usage": used,
+        })
+        return data, raw
+
+    data, last_raw = attempt(route.spec)
     if data is None:
-        return {
-            "can_answer": None,
-            "answer": "",
-            "citations": [],
-            "citations_chunk_ids": [],
-            "invalid_citations": [],
-            "invalid_output": True,
-            "error": "JSON 解析失败",
-            "raw": last_raw,
-            "retrieved_chunk_ids": [h["chunk_id"] for h in hits],
-            "rewritten_question": standalone,
-            "history_turns": len(history),
-            "llm_calls": counter["llm_calls"],
-        }
-    return _finalize_rag(data, hits, standalone, history, counter)
+        out = _failure_rag(hits, standalone, history, counter, last_raw)
+    else:
+        out = _finalize_rag(data, hits, standalone, history, counter)
+
+    escalated = False
+    escalation_reason = ""
+    # 不要求 data 非空：JSON 连续解析失败（data is None）正是最该升级的情况。
+    # 但也只有「小模型起手」才谈得上升级：auto 已经把题判成大模型时再升级，
+    # 只会拿同一档模型重答一遍，白花钱还多等一轮。
+    if not route.forced and route.initial_tier != router.LARGE:
+        need, why = router.needs_escalation(out, hits=hits)
+        if need:
+            escalated = True
+            escalation_reason = why
+            large_spec = router.spec_for(router.LARGE)
+            data2, raw2 = attempt(large_spec)
+            if data2 is None:
+                out = _failure_rag(hits, standalone, history, counter, raw2)
+            else:
+                out = _finalize_rag(data2, hits, standalone, history, counter)
+
+    return _attach_route(out, route, attempts, escalated, escalation_reason)
 
 
 def _finalize_rag(data, hits, standalone, history, counter):
@@ -242,20 +347,61 @@ def _finalize_rag(data, hits, standalone, history, counter):
     return data
 
 
+async def _stream_generate(client, messages, api_key, spec, counter, on_delta,
+                           allow_delta):
+    """用指定模型流式生成一次；返回 (data, raw, 是否已下发过正文)。"""
+    from answer_stream import AnswerExtractor
+
+    streamed = False
+    last_raw = ""
+    data = None
+    for _ in range(2):  # JSON 解析失败重试一次；已下发过正文则不再重放
+        use_delta = on_delta if (on_delta is not None and not streamed and allow_delta) else None
+        extractor = AnswerExtractor()
+        parts = []
+        async for event in client.stream(
+            messages,
+            api_key=api_key,
+            model=spec.model,
+            response_format={"type": "json_object"},
+            **spec.request_fields(),
+        ):
+            if event["type"] == "delta":
+                parts.append(event["text"])
+                if use_delta is not None:
+                    text = extractor.feed(event["text"])
+                    if text:
+                        use_delta(text)
+                        streamed = True
+            else:
+                used = event.get("usage")
+                if used:
+                    counter.setdefault("usage", []).append(used)
+        counter["llm_calls"] += 1
+        last_raw = "".join(parts)
+        try:
+            data = _parse_json(last_raw)
+            break
+        except json.JSONDecodeError:
+            data = None
+    return data, last_raw, streamed
+
+
 async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=None,
                         memories=None, on_delta=None, on_step=None, client=None,
-                        chart=None):
+                        chart=None, tier="auto"):
     """RAG 模式的流式版：检索照旧，生成逐 token 下发。
 
     检索是同步 numpy 计算，丢线程池；生成走 `llm` 异步客户端 +
     `AnswerExtractor` 从流式 json_object 里增量解出 answer 字段。
     `on_delta` 是预览，调用方以返回值的 answer 为准（拒答归一化会改正文）。
+    路由在生成前决定；只有小模型一个字都没下发且输出不可用时才升级，
+    避免把已经展示给用户的预览再重放一遍。
     """
     import asyncio
 
     import chart_context
     import llm
-    from answer_stream import AnswerExtractor
     from conversation import arewrite_question
 
     client = client or llm.default_client()
@@ -263,6 +409,7 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
     history = normalize_history(history)
     standalone = await arewrite_question(question, history, api_key=api_key,
                                          counter=counter, client=client)
+    route = router.decide(standalone, history=history, chart=chart, tier=tier, mode="rag")
     search_query = chart_context.retrieval_query(chart, standalone)
     hits = await asyncio.to_thread(retrieve_one, search_query, top_k=top_k, mode=mode)
     if on_step is not None:
@@ -281,56 +428,51 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
     user = ((ctx + "\n\n") if ctx else "") + ((hist + "\n\n") if hist else "") + \
         ((mem + "\n\n") if mem else "") + \
         "【片段】\n{}\n\n【问题】\n{}".format(build_context(hits), standalone)
-    messages = [
-        {"role": "system", "content": chart_context.system_prompt(SYSTEM_PROMPT, chart)},
-        {"role": "user", "content": user},
-    ]
+    messages = _rag_messages(hits, user, chart)
 
-    streamed = False
-    last_raw = ""
-    data = None
-    for _ in range(2):  # JSON 解析失败重试一次；已下发过正文则不再重放
-        use_delta = on_delta if (on_delta is not None and not streamed) else None
-        extractor = AnswerExtractor()
-        parts = []
-        async for event in client.stream(messages, api_key=api_key,
-                                         response_format={"type": "json_object"}):
-            if event["type"] == "delta":
-                parts.append(event["text"])
-                if use_delta is not None:
-                    text = extractor.feed(event["text"])
-                    if text:
-                        use_delta(text)
-                        streamed = True
-            else:
-                usage = event.get("usage")
-                if usage:
-                    counter.setdefault("usage", []).append(usage)
-        counter["llm_calls"] += 1
-        last_raw = "".join(parts)
-        try:
-            data = _parse_json(last_raw)
-            break
-        except json.JSONDecodeError:
-            data = None
-    if data is None:
-        return {
-            "can_answer": None,
-            "answer": "",
-            "citations": [],
-            "citations_chunk_ids": [],
-            "invalid_citations": [],
-            "invalid_output": True,
-            "error": "JSON 解析失败",
-            "raw": last_raw,
-            "retrieved_chunk_ids": [h["chunk_id"] for h in hits],
-            "rewritten_question": standalone,
-            "history_turns": len(history),
-            "llm_calls": counter["llm_calls"],
+    attempts = [
+        {
+            "tier": route.spec.tier,
+            "model": route.spec.model,
+            "thinking": route.spec.thinking,
+            "effort": route.spec.effort,
         }
-    out = _finalize_rag(data, hits, standalone, history, counter)
+    ]
+    data, last_raw, streamed = await _stream_generate(
+        client, messages, api_key, route.spec, counter, on_delta, allow_delta=True
+    )
+    attempts[0]["ok"] = data is not None
+
+    if data is None:
+        out = _failure_rag(hits, standalone, history, counter, last_raw)
+    else:
+        out = _finalize_rag(data, hits, standalone, history, counter)
+
+    escalated = False
+    escalation_reason = ""
+    if not streamed and not route.forced and route.initial_tier != router.LARGE:
+        need, why = router.needs_escalation(out, hits=hits)
+        if need:
+            escalated = True
+            escalation_reason = why
+            large_spec = router.spec_for(router.LARGE)
+            attempts.append({
+                "tier": large_spec.tier,
+                "model": large_spec.model,
+                "thinking": large_spec.thinking,
+                "effort": large_spec.effort,
+            })
+            data2, raw2, _ = await _stream_generate(
+                client, messages, api_key, large_spec, counter, on_delta, allow_delta=True
+            )
+            attempts[-1]["ok"] = data2 is not None
+            if data2 is None:
+                out = _failure_rag(hits, standalone, history, counter, raw2)
+            else:
+                out = _finalize_rag(data2, hits, standalone, history, counter)
+
     out["usage"] = llm.merge_usage(counter.get("usage"))
-    return out
+    return _attach_route(out, route, attempts, escalated, escalation_reason)
 
 
 if __name__ == "__main__":

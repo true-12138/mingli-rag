@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import llm
+import router
 import tool_loop
 import tool_schema
 import tools
@@ -243,7 +244,7 @@ def step_event(agent_name, name, args, result):
 
 
 def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=None,
-                           memories=None, approvals=None, chart=None):
+                           memories=None, approvals=None, chart=None, tier="auto"):
     """原生 function calling 版：模型直接返回 tool_calls，不再自己拼 JSON 动作。
 
     `approvals(name, args) -> bool` 是接口层解析一次性令牌后构造的授权回调；
@@ -254,6 +255,7 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
     counter = {"llm_calls": 0}
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
+    route = router.decide(standalone, history=history, chart=chart, tier=tier, mode="agent")
     trace, seen = [], set()
     pending_actions = []
     hist = history_block(history)
@@ -288,6 +290,8 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
             on_call=record,
             counter=counter,
             approve=approvals,
+            model=route.spec.model,
+            **route.spec.request_fields(),
         )
         try:
             data = _parse_json(raw)
@@ -341,12 +345,21 @@ def _agent_answer_function(question, max_steps=MAX_STEPS, api_key=None, history=
     out["pending_actions"] = pending_actions
     # 本次运行实际花掉的模型 token（含追问改写与重跑），便于成本核算与预算调优
     out["tokens_used"] = counter.get("tokens_used", 0)
+    info = route.as_dict()
+    info["attempts"] = [{
+        "tier": route.spec.tier,
+        "model": route.spec.model,
+        "thinking": route.spec.thinking,
+        "effort": route.spec.effort,
+        "ok": out.get("can_answer") is not None,
+    }]
+    out["route"] = info
     return out
 
 
 async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, history=None,
                               memories=None, on_delta=None, on_step=None, client=None,
-                              approvals=None, chart=None):
+                              approvals=None, chart=None, tier="auto"):
     """单 Agent 的流式版：正文逐 token 通过 `on_delta` 下发，返回结构与 `agent_answer` 一致。
 
     和同步版的差异只有三处：
@@ -364,6 +377,7 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     history = normalize_history(history)
     standalone = await arewrite_question(question, history, api_key=api_key,
                                          counter=counter, client=client)
+    route = router.decide(standalone, history=history, chart=chart, tier=tier, mode="agent")
     trace, seen = [], set()
     pending_actions = []
     hist = history_block(history)
@@ -409,6 +423,8 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
             counter=counter,
             client=client,
             approve=approvals,
+            model=route.spec.model,
+            **route.spec.request_fields(),
         )
         try:
             data = _parse_json(raw)
@@ -464,11 +480,20 @@ async def agent_answer_stream(question, max_steps=MAX_STEPS, api_key=None, histo
     out["tokens_used"] = counter.get("tokens_used", 0)
     # 流式路径不用全局 usage 累加器：并发请求会互相污染，每请求自己记账
     out["usage"] = llm.merge_usage(counter.get("usage"))
+    info = route.as_dict()
+    info["attempts"] = [{
+        "tier": route.spec.tier,
+        "model": route.spec.model,
+        "thinking": route.spec.thinking,
+        "effort": route.spec.effort,
+        "ok": out.get("can_answer") is not None,
+    }]
+    out["route"] = info
     return out
 
 
 def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memories=None,
-                 approvals=None, chart=None):
+                 approvals=None, chart=None, tier="auto"):
     """跑一次 agent 循环。返回结构与 rag.answer() 兼容，额外带 trace / steps。
 
     api_key 用于公网访客自带 key 的场景；不传则读 DEEPSEEK_API_KEY。
@@ -486,7 +511,7 @@ def agent_answer(question, max_steps=MAX_STEPS, api_key=None, history=None, memo
         )
     return _agent_answer_function(
         question, max_steps=max_steps, api_key=api_key,
-        history=history, memories=memories, approvals=approvals, chart=chart,
+        history=history, memories=memories, approvals=approvals, chart=chart, tier=tier,
     )
 
 

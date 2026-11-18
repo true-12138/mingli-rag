@@ -96,7 +96,7 @@ def test_answer_retrieves_with_standalone_and_isolates_citations(monkeypatch):
         seen_questions.append(question)
         return hits
 
-    def fake_chat(messages, temperature=0.0, api_key=None):
+    def fake_chat(messages, temperature=0.0, api_key=None, **kwargs):
         if "改写器" in messages[0]["content"]:
             return '{"standalone": "《渊海子平》怎么看正官"}'
         return '{"can_answer": true, "answer": "正官为……", "citations": [1]}'

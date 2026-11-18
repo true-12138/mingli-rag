@@ -111,6 +111,8 @@ class ChatRequest(BaseModel):
     # 排盘页算好的盘面（bazi / astro / tarot）。只作上下文，不作引用依据；
     # 合法性由 chart_context.normalize 再拦一道，这里不写死字段结构。
     chart: dict[str, Any] | None = None
+    # auto=按难度自动路由；small/large=本次请求强制某一档（评测与排障用）
+    tier: Literal["auto", "small", "large"] = "auto"
 
     @field_validator("question")
     @classmethod
@@ -142,6 +144,8 @@ class ChatResponse(BaseModel):
     llm_calls: int = 0
     usage: dict[str, Any] | None = None
     trace: list[dict[str, Any]] = Field(default_factory=list)
+    # 本次实际走的档位、模型、难度信号，以及是否由小模型升级
+    route: dict[str, Any] | None = None
     steps: int | None = None
 
 
@@ -606,7 +610,9 @@ def chat(
     key = _api_key(x_deepseek_key)
     usage.reset()
 
-    cache_ok = _cache_allowed(req, history, key, x_no_cache)
+    # 强制档位的请求不进语义缓存：缓存按 question/mode/top_k 命中，
+    # 不区分 tier，会把「小模型答的」直接返给「强制大模型」的请求。
+    cache_ok = req.tier == "auto" and _cache_allowed(req, history, key, x_no_cache)
     cached: dict[str, Any] | None = None
     query_vec = None
     if cache_ok:
@@ -634,12 +640,12 @@ def chat(
         if req.mode == "rag":
             result = rag.answer(
                 req.question, top_k=req.top_k, api_key=key, history=history,
-                chart=req.chart,
+                chart=req.chart, tier=req.tier,
             )
         elif req.mode == "agent":
             result = agent.agent_answer(
                 req.question, max_steps=req.max_steps, api_key=key, history=history,
-                chart=req.chart,
+                chart=req.chart, tier=req.tier,
             )
         else:
             result = agent_multi.agent_answer(
@@ -715,7 +721,8 @@ async def chat_stream(
     queue: "asyncio.Queue[str | None]" = asyncio.Queue()
     client = llm.default_client()
 
-    cache_ok = _cache_allowed(req, history, key, x_no_cache)
+    # 同同步接口：强制档位不复用语义缓存，避免档位串味。
+    cache_ok = req.tier == "auto" and _cache_allowed(req, history, key, x_no_cache)
     cached: dict[str, Any] | None = None
     query_vec = None
     if cache_ok:
@@ -774,13 +781,13 @@ async def chat_stream(
                 result = await rag.answer_stream(
                     req.question, top_k=req.top_k, api_key=key, history=history,
                     on_delta=on_delta, on_step=on_step, client=client,
-                    chart=req.chart,
+                    chart=req.chart, tier=req.tier,
                 )
             elif req.mode == "agent":
                 result = await agent.agent_answer_stream(
                     req.question, max_steps=req.max_steps, api_key=key,
                     history=history, on_delta=on_delta, on_step=on_step, client=client,
-                    chart=req.chart,
+                    chart=req.chart, tier=req.tier,
                 )
             else:
                 result = await agent_multi.agent_answer_stream(

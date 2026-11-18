@@ -197,8 +197,13 @@ class LLMClient:
 
     @staticmethod
     def _payload(messages, *, tools=None, tool_choice=None, temperature=0.0,
-                 response_format=None, stream=False) -> dict:
-        body = {"model": MODEL, "messages": messages, "temperature": temperature}
+                 response_format=None, stream=False, model=None, thinking=None,
+                 reasoning_effort=None) -> dict:
+        body = {"model": model or MODEL, "messages": messages, "temperature": temperature}
+        if thinking in ("enabled", "disabled"):
+            body["thinking"] = {"type": thinking}
+            if thinking == "enabled" and reasoning_effort:
+                body["reasoning_effort"] = reasoning_effort
         if tools:
             body["tools"] = tools
             if tool_choice:
@@ -213,12 +218,16 @@ class LLMClient:
 
     async def complete(self, messages, *, api_key: str | None = None, tools=None,
                        tool_choice=None, temperature: float = 0.0,
-                       response_format: dict | None = None) -> tuple[dict, dict | None]:
+                       response_format: dict | None = None, model: str | None = None,
+                       thinking: str | None = None,
+                       reasoning_effort: str | None = None) -> tuple[dict, dict | None]:
         """非流式调用，返回 (message, usage)。"""
         key = self._pick_key(api_key)
         tried = {key}
         body = self._payload(messages, tools=tools, tool_choice=tool_choice,
-                             temperature=temperature, response_format=response_format)
+                             temperature=temperature, response_format=response_format,
+                             model=model, thinking=thinking,
+                             reasoning_effort=reasoning_effort)
         last: httpx.Response | None = None
         async with self._client() as client:
             for attempt in range(RETRY_ATTEMPTS):
@@ -260,7 +269,8 @@ class LLMClient:
 
     async def stream(self, messages, *, api_key: str | None = None, tools=None,
                      tool_choice=None, temperature: float = 0.0,
-                     response_format: dict | None = None):
+                     response_format: dict | None = None, model: str | None = None,
+                     thinking: str | None = None, reasoning_effort: str | None = None):
         """流式调用。yield delta 事件，最后 yield 完整 message。
 
         重试只发生在「还没吐出任何 delta」时；已经下发正文后再断流，
@@ -270,7 +280,8 @@ class LLMClient:
         tried = {key}
         body = self._payload(messages, tools=tools, tool_choice=tool_choice,
                              temperature=temperature, response_format=response_format,
-                             stream=True)
+                             stream=True, model=model, thinking=thinking,
+                             reasoning_effort=reasoning_effort)
         content: list[str] = []
         calls: dict[int, dict] = {}
         usage: dict | None = None

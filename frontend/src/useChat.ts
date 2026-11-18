@@ -19,6 +19,7 @@ import {
   type FortuneChart,
   type Mode,
   type PendingAction,
+  type RouteInfo,
   type RunSummary,
   type StageEvent,
   type StepEvent,
@@ -43,6 +44,8 @@ export interface Turn {
   error: string | null;
   elapsedMs: number | null;
   llmCalls: number | null;
+  // 这一轮走的小/大模型。老对话没有记录，保持 null，不显示徽标。
+  route: RouteInfo | null;
 }
 
 function emptyTurn(key: string, question: string, mode: Mode): Turn {
@@ -63,6 +66,7 @@ function emptyTurn(key: string, question: string, mode: Mode): Turn {
     error: null,
     elapsedMs: null,
     llmCalls: null,
+    route: null,
   };
 }
 
@@ -84,6 +88,15 @@ function turnFromRun(run: RunSummary): Turn {
     error: run.error,
     elapsedMs: run.elapsed_ms,
     llmCalls: run.llm_calls,
+    // 历史里只落了结论字段，没有 signals；徽标只需要 tier/escalated，reason 放 tooltip。
+    route: run.tier
+      ? {
+          tier: run.tier,
+          model: run.model ?? "",
+          reason: run.route_reason ?? "",
+          escalated: Boolean(run.escalated),
+        }
+      : null,
   };
 }
 
@@ -240,6 +253,7 @@ export function useChat() {
                 invalidOutput: Boolean(result.invalid_output),
                 elapsedMs: result.elapsed_ms ?? null,
                 llmCalls: result.llm_calls ?? null,
+                route: result.route ?? turn.route,
               }));
               void hydrate(result.citations_chunk_ids ?? []);
             },

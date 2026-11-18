@@ -235,6 +235,13 @@ def finish_run(
     run.total_tokens = int(usage_data.get("total_tokens") or 0)
     # DeepSeek 价格随时会变，先把 token 记准，成本列留 0，按账单再回填。
     run.cost_usd = 0.0
+
+    route = result.get("route") or {}
+    if isinstance(route, dict) and route:
+        run.tier = route.get("tier")
+        run.model = route.get("model")
+        run.escalated = bool(route.get("escalated"))
+        run.route_reason = route.get("reason")
     run.finished_at = utcnow()
 
     session.flush()

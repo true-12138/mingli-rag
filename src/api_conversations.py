@@ -149,6 +149,8 @@ class ConversationChatRequest(BaseModel):
     # 排盘页算好的盘面（bazi / astro / tarot）。只作上下文，不作引用依据。
     # 盘面不落库，所以前端每次追问都要重新带一遍。
     chart: dict[str, Any] | None = None
+    # auto=按难度自动路由；small/large=本次请求强制某一档（评测与排障用）
+    tier: Literal["auto", "small", "large"] = "auto"
 
     @field_validator("question")
     @classmethod
@@ -183,6 +185,8 @@ class ConversationChatResponse(BaseModel):
     history_turns: int = 0
     llm_calls: int = 0
     usage: dict[str, Any] | None = None
+    # 本次实际走的档位、模型、难度信号，以及是否由小模型升级
+    route: dict[str, Any] | None = None
     memories_used: int = 0
     memories_written: int = 0
     # 本次写入里有多少条是「覆盖已有值」，正在等用户确认
@@ -231,6 +235,11 @@ class RunOut(BaseModel):
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
+    # 路由结果：tier=small/large，model=实际模型名，escalated=是否小→大升级
+    tier: str | None = None
+    model: str | None = None
+    escalated: bool = False
+    route_reason: str | None = None
     error: str | None = None
     created_at: datetime
     finished_at: datetime | None = None
@@ -354,6 +363,10 @@ def _run_out(run, with_tool_calls: bool = False) -> dict[str, Any]:
         "prompt_tokens": run.prompt_tokens,
         "completion_tokens": run.completion_tokens,
         "total_tokens": run.total_tokens,
+        "tier": getattr(run, "tier", None),
+        "model": getattr(run, "model", None),
+        "escalated": bool(getattr(run, "escalated", False)),
+        "route_reason": getattr(run, "route_reason", None),
         "error": run.error,
         "created_at": run.created_at,
         "finished_at": run.finished_at,
@@ -854,7 +867,7 @@ def chat_in_conversation(
         if req.mode == "rag":
             result = rag.answer(
                 req.question, top_k=req.top_k, api_key=key, history=history,
-                memories=memories, chart=req.chart,
+                memories=memories, chart=req.chart, tier=req.tier,
             )
         elif req.mode == "agent":
             agent_kwargs: dict[str, Any] = {
@@ -863,6 +876,7 @@ def chat_in_conversation(
                 "history": history,
                 "memories": memories,
                 "chart": req.chart,
+                "tier": req.tier,
             }
             # 没有令牌时不传 approvals，保持和测试/旧调用方的签名兼容。
             if approval is not None:
@@ -1025,7 +1039,7 @@ async def chat_in_conversation_stream(
                 result = await rag.answer_stream(
                     req.question, top_k=req.top_k, api_key=key, history=history,
                     memories=memories, on_delta=on_delta, on_step=on_step, client=client,
-                    chart=req.chart,
+                    chart=req.chart, tier=req.tier,
                 )
             elif req.mode == "agent":
                 agent_kwargs: dict[str, Any] = {
@@ -1037,6 +1051,7 @@ async def chat_in_conversation_stream(
                     "on_step": on_step,
                     "client": client,
                     "chart": req.chart,
+                    "tier": req.tier,
                 }
                 if approval is not None:
                     agent_kwargs["approvals"] = approval

@@ -1188,6 +1188,20 @@ button {
   color: var(--cinnabar);
 }
 
+/* 档位徽标：常规时不描边，跟其余元信息同一行字；升级过的才用朱砂点一下。 */
+.turn__tier {
+  padding: 0 5px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  color: var(--muted);
+  cursor: help;
+}
+
+.turn__tier--escalated {
+  border-color: rgba(150, 50, 42, 0.28);
+  color: var(--cinnabar-deep);
+}
+
 /* ---------- 待确认动作 ---------- */
 /* 一条待办：左侧色条是状态，正文只放工具、参数、原因和两个决定。 */
 

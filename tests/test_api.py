@@ -67,7 +67,7 @@ def test_chat_routes_to_rag_and_exposes_trace(client, monkeypatch):
     captured = {}
 
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
-                    chart=None):
+                    chart=None, tier="auto"):
         captured.update({
             "question": question, "top_k": top_k, "api_key": api_key, "history": history,
         })
@@ -100,7 +100,7 @@ def test_chat_routes_to_rag_and_exposes_trace(client, monkeypatch):
 def test_chat_routes_to_single_and_multi_agent(client, monkeypatch):
     calls = []
 
-    def fake_agent(question, max_steps=6, api_key=None, history=None, chart=None):
+    def fake_agent(question, max_steps=6, api_key=None, history=None, chart=None, tier="auto"):
         calls.append(("agent", question, max_steps))
         out = _rag_result()
         out["trace"] = [{"step": 1, "action": "search_classics"}]
@@ -163,7 +163,7 @@ def test_validation_and_auth(client, monkeypatch):
 
 def test_chat_reports_token_usage(client, monkeypatch):
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
-                    chart=None):
+                    chart=None, tier="auto"):
         # 模拟 rag._chat 里 usage.add 的旁路采集：两次调用各记一次
         api.usage.add({"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120})
         api.usage.add({
@@ -247,7 +247,7 @@ def _parse_sse(text):
 
 def test_chat_stream_emits_step_delta_done(client, monkeypatch):
     async def fake_stream(question, top_k=5, api_key=None, history=None,
-                          on_delta=None, on_step=None, client=None, chart=None):
+                          on_delta=None, on_step=None, client=None, chart=None, tier="auto"):
         on_step({"agent": "retrieval", "tool": "retrieve", "args": {"query": question},
                  "ok": True, "chunk_ids": [1], "error": None})
         on_delta("测试")
@@ -379,7 +379,7 @@ def test_chat_cache_hit_skips_llm(client, monkeypatch):
     calls = []
 
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
-                    chart=None):
+                    chart=None, tier="auto"):
         calls.append(question)
         return _rag_result()
 
@@ -405,7 +405,7 @@ def test_chat_no_cache_header_bypasses(client, monkeypatch):
     calls = []
 
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
-                    chart=None):
+                    chart=None, tier="auto"):
         calls.append(question)
         return _rag_result()
 
@@ -422,7 +422,7 @@ def test_chat_with_history_is_not_cached(client, monkeypatch):
     calls = []
 
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
-                    chart=None):
+                    chart=None, tier="auto"):
         calls.append(question)
         return _rag_result()
 
@@ -443,7 +443,7 @@ def test_cache_hit_does_not_consume_quota(client, monkeypatch):
     calls = []
 
     def fake_answer(question, top_k=5, mode="rrf", api_key=None, history=None,
-                    chart=None):
+                    chart=None, tier="auto"):
         calls.append(question)
         return _rag_result()
 
@@ -463,7 +463,7 @@ def test_chat_stream_cache_hit_returns_delta_and_done(client, monkeypatch):
     calls = []
 
     async def fake_stream(question, top_k=5, api_key=None, history=None,
-                          on_delta=None, on_step=None, client=None, chart=None):
+                          on_delta=None, on_step=None, client=None, chart=None, tier="auto"):
         calls.append(question)
         on_delta("测试回答")
         return dict(_rag_result(), usage={"total_tokens": 12})

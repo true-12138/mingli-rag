@@ -21,7 +21,8 @@ class FakeAPI:
         self.replies = list(replies)
         self.calls = []
 
-    def __call__(self, messages, tools=None, temperature=0.0, api_key=None, tool_choice=None):
+    def __call__(self, messages, tools=None, temperature=0.0, api_key=None,
+                 tool_choice=None, **kwargs):
         self.calls.append({"messages": [dict(m) for m in messages], "tools": tools})
         return self.replies.pop(0)
 

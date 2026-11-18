@@ -87,6 +87,11 @@ key 的环境变量名沿用 `DEEPSEEK_API_KEYS` / `DEEPSEEK_API_KEY`，换成�
 - **工具调用兼容性**：Agent 模式依赖 `tools` + 流式 `tool_calls` 分片；第二项检查覆盖。
 - **换模型会改答案质量**：`eval/` 的基线是按 DeepSeek 跑的。换供应商后要重跑评测，
   或在 README 的评测表里明确标注模型名，不要把两套结果混在一起。
+- **换供应商时两档都要改**：大小模型路由默认开启，换非 DeepSeek 供应商后如果只改
+  `MINGLI_LLM_MODEL`，大档不会去猜别家的模型名，而是退回跟小档相同（响应里
+  `route.reason` 写「两档模型相同」）。要保留两档，就同时设
+  `MINGLI_TIER_SMALL_MODEL` / `MINGLI_TIER_LARGE_MODEL`；供应商没有两个档位时
+  设 `MINGLI_ROUTER=off`，行为等价于单个模型。
 - **重试预算**：流式路径现在会遵守上游 `Retry-After`（上限 `MINGLI_LLM_RETRY_MAX_WAIT`，
   默认 8s），但持续 429 时重试只会把首 token P95 推高；容量问题仍要靠配额解决。
 
@@ -95,7 +100,14 @@ key 的环境变量名沿用 `DEEPSEEK_API_KEYS` / `DEEPSEEK_API_KEY`，换成�
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `MINGLI_LLM_URL` | DeepSeek 官方 | 完整 chat/completions URL |
-| `MINGLI_LLM_MODEL` | `deepseek-chat` | 模型名 |
+| `MINGLI_LLM_MODEL` | `deepseek-chat` | 模型名（两档路由关闭或两档相同时用） |
+| `MINGLI_ROUTER` | `on` | 大小模型路由开关 |
+| `MINGLI_TIER_SMALL_MODEL` | `deepseek-chat` | 小档模型名，简单题走这一档 |
+| `MINGLI_TIER_LARGE_MODEL` | `deepseek-v4-pro` | 大档模型名；小档不是 `deepseek*` 时默认跟小档相同（不猜模型名） |
+| `MINGLI_ROUTER_THRESHOLD` | `3` | 难度分 ≥ 此值走大档 |
+| `MINGLI_ROUTER_ESCALATE` | `on` | 小档输出不可用时升大档 |
+| `MINGLI_ROUTER_ESCALATE_REFUSAL` | `on` | 小档拒答且检索分高时升大档 |
+| `MINGLI_ROUTER_REFUSAL_MIN_SCORE` | `0.10` | 上面那条的检索分门槛（RRF 分） |
 | `DEEPSEEK_API_KEYS` | 空 | 逗号分隔，优先于单 key |
 | `DEEPSEEK_API_KEY` | 空 | 单 key |
 | `MINGLI_LLM_PER_KEY_CONCURRENCY` | 32 | 每 key 并发上限；**应改成供应商承诺值** |

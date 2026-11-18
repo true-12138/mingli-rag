@@ -1,0 +1,5534 @@
+{
+  "summary": {
+    "generated_at": "2026-11-18T10:30:59+00:00",
+    "code_commit": "546c5a2",
+    "n": 30,
+    "arms": [
+      "small",
+      "large",
+      "auto"
+    ],
+    "top_k": 5,
+    "retrieval_mode": "rrf",
+    "small_model": "deepseek-chat",
+    "large_model": "deepseek-v4-pro",
+    "price_profile": "offpeak",
+    "prices": {
+      "small": {
+        "input": 0.15,
+        "cached_input": 0.003,
+        "output": 0.6
+      },
+      "large": {
+        "input": 0.66,
+        "cached_input": 0.022,
+        "output": 1.98
+      }
+    }
+  },
+  "by_arm": {
+    "small": {
+      "n": 30,
+      "answerable_n": 20,
+      "outside_n": 10,
+      "good_n": 24,
+      "good_rate": 0.8,
+      "answered_rate": 0.95,
+      "gold_hit_rate": 0.7,
+      "refusal_rate": 1.0,
+      "invalid_output": 0,
+      "json_fail": 0,
+      "errors": 0,
+      "escalated": 0,
+      "llm_calls": 30,
+      "prompt_tokens": 72457,
+      "completion_tokens": 5661,
+      "cached_tokens": 66944,
+      "p50_seconds": 1.9,
+      "p95_seconds": 3.99,
+      "cost_usd": 0.004422
+    },
+    "large": {
+      "n": 30,
+      "answerable_n": 20,
+      "outside_n": 10,
+      "good_n": 23,
+      "good_rate": 0.767,
+      "answered_rate": 0.8,
+      "gold_hit_rate": 0.65,
+      "refusal_rate": 1.0,
+      "invalid_output": 3,
+      "json_fail": 3,
+      "errors": 3,
+      "escalated": 0,
+      "llm_calls": 27,
+      "prompt_tokens": 66839,
+      "completion_tokens": 41812,
+      "cached_tokens": 64768,
+      "p50_seconds": 16.5,
+      "p95_seconds": 169.28,
+      "cost_usd": 0.085579
+    },
+    "auto": {
+      "n": 30,
+      "answerable_n": 20,
+      "outside_n": 10,
+      "good_n": 24,
+      "good_rate": 0.8,
+      "answered_rate": 0.95,
+      "gold_hit_rate": 0.7,
+      "refusal_rate": 1.0,
+      "invalid_output": 0,
+      "json_fail": 0,
+      "errors": 0,
+      "escalated": 2,
+      "llm_calls": 32,
+      "prompt_tokens": 77365,
+      "completion_tokens": 11878,
+      "cached_tokens": 71936,
+      "p50_seconds": 2.02,
+      "p95_seconds": 28.16,
+      "cost_usd": 0.017258
+    }
+  },
+  "records": {
+    "small": [
+      {
+        "id": "q01",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我命里带羊刃，这东西还分好几种？白天生和晚上生犯的不一样吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          83
+        ],
+        "seconds": 2.29,
+        "usage": {
+          "prompt_tokens": 2857,
+          "completion_tokens": 225,
+          "total_tokens": 3082,
+          "cached_tokens": 2688,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实把羊刃分成多种，并提到昼夜之分。分类方面：有羊刃、真羊刃、自刃、飞刃、刃头财、刃头鬼 [1]；另有劫财羊刃、护禄淹刃、倒禄羊刃等名目 [2]；《张果星宗》说羊刃之论有六：阴刃、阳刃、飞刃、刃宫、刃星、刃度 [5]。昼夜方面：片段说「昼生忌阳刃，夜生忌阴刃」，并以甲丙戊庚壬生人为阳、乙丁己辛癸生人为阴 [5]。至于具体某人命带羊刃是吉是凶、该如何取舍，片段只给出原则性说法（如「不可便言凶」「最喜身旺坐禄」「羊刃不喜刑冲」等）[2]，不能据此替现实中的个人做判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          905,
+          2444,
+          83
+        ],
+        "retrieved_chunk_ids": [
+          905,
+          2444,
+          908,
+          1491,
+          83
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2857,
+              "completion_tokens": 225,
+              "total_tokens": 3082,
+              "cached_tokens": 2688,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000168
+      },
+      {
+        "id": "q02",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我命里有天官符，还说我犯了两位，这严重吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          900
+        ],
+        "seconds": 1.12,
+        "usage": {
+          "prompt_tokens": 2132,
+          "completion_tokens": 64,
+          "total_tokens": 2196,
+          "cached_tokens": 1920,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户拿命理结论替自己做现实判断（问自己命犯天官符两位是否严重），属于现实决定类问题，整题拒答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          901,
+          900,
+          81,
+          78,
+          902
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2132,
+              "completion_tokens": 64,
+              "total_tokens": 2196,
+              "cached_tokens": 1920,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 7.6e-05
+      },
+      {
+        "id": "q03",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我禄、命、身三样要分开看，这三样分别是怎么定的？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          621
+        ],
+        "seconds": 1.58,
+        "usage": {
+          "prompt_tokens": 2254,
+          "completion_tokens": 155,
+          "total_tokens": 2409,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中「禄、命、身」的定法为：干为禄，定贵贱；支为命，定修短；纳音为身，察盛衰。[1] 也就是说，禄由天干确定，命由地支确定，身由纳音确定。[1] 片段还提到看命时先看干神有无克制、支神有无刑冲、干支纳音有无战斗降伏，并以甲为例说明「甲以寅为禄」等具体推法。[1] 至于禄、命、身各自更细的起例或完整定义，片段中没有。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          676
+        ],
+        "retrieved_chunk_ids": [
+          676,
+          6551,
+          127,
+          6614,
+          128
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2254,
+              "completion_tokens": 155,
+              "total_tokens": 2409,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.00013
+      },
+      {
+        "id": "q04",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "我的八字四个天干都是同一个字，这种命是不是特别贵？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          2513
+        ],
+        "seconds": 4.97,
+        "usage": {
+          "prompt_tokens": 2714,
+          "completion_tokens": 369,
+          "total_tokens": 3083,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实谈到「四个天干都是同一个字」这种格局，称为「天元一气格」，但原文并不认为它一律主贵，而是强调要细别轻重贵贱。\n\n关于贵的一面：古歌说「天元一气，地物相同。人命得此，位列三公」[1]；《三命通会》诗也说「天元一气定尊荣」「生来富贵至公卿」[2]。\n\n但原文同时明确列出不贵甚至凶的情况：四个辛卯「贫夭之命」，四个甲戌「主破家……终不成大器」[1]；《三命通会》逐条区分，如壬寅、辛卯、甲戌「富贵防全」，己巳「亦贵」，戊午、丁未「刃旺性强，虽贵亦多防险尅妻不善终」，庚辰「贵而风流名重利轻」，乙酉「多伤残」，癸亥「多贫薄」[4]。并说「四柱干支一气中间亦有轻重贵贱，须细别之」，要看支内有无财官印食入格、有无伤损、天干有无得令等来定轻重贵贱[4]；又说「不可以比肩论，须详其支神有无生化有无刑尅……不可执定一气皆以贵言」[4]。\n\n所以按片段，四干同字只是构成天元一气格，是否贵要看地支配合与刑冲生克，不能一概说「特别贵」[1][2][4]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2513,
+          6633,
+          6632
+        ],
+        "retrieved_chunk_ids": [
+          2513,
+          6633,
+          2346,
+          6632,
+          626
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2714,
+              "completion_tokens": 369,
+              "total_tokens": 3083,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000252
+      },
+      {
+        "id": "q05",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我甲日主见丙火是食神，可这跟“吃”有什么关系？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1743
+        ],
+        "seconds": 2.33,
+        "usage": {
+          "prompt_tokens": 2805,
+          "completion_tokens": 198,
+          "total_tokens": 3003,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中「食神」的「食」并非指饮食之「吃」。原文对食神的解释是：食神为「我所生，而与我同性者」，如甲木日干见丙火，木能生火，丙为甲木所生且阴阳同性，故丙即甲之食神 [1]。其得名与作用在于：食神所生者为财，是「养命之源」，身与食神有如父子，子旺则生起财来以奉父母，故一名爵星；又食神能制伏七杀，使身得以优游裕余，故又名寿星 [1][3]。片段中食神的能力为「泄身，生财，制杀，损害」 [1]，并未把「食」解释为吃东西。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1193,
+          6568
+        ],
+        "retrieved_chunk_ids": [
+          1193,
+          1761,
+          6568,
+          1195,
+          1194
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2805,
+              "completion_tokens": 198,
+              "total_tokens": 3003,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000163
+      },
+      {
+        "id": "q06",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我小运起得不对，小运到底怎么起？男女一样吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1711
+        ],
+        "seconds": 1.9,
+        "usage": {
+          "prompt_tokens": 2585,
+          "completion_tokens": 161,
+          "total_tokens": 2746,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中关于小运起法的说法：男子一岁起丙寅，女子一岁起壬申，男顺行、女逆行，一年移一位，六十一岁又从头数起 [1][2][3][5]。男女不一样：男起丙寅顺行，女起壬申逆行 [1][2][3][5]。另有说法称小运又名行年，逐太岁交之 [1]；也有以时生起小运、逆顺以年定的说法 [3]。至于你算命先生所说「起得不对」的具体判断，片段中没有涉及。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1052,
+          1711,
+          6273,
+          5205
+        ],
+        "retrieved_chunk_ids": [
+          1052,
+          1711,
+          6273,
+          2312,
+          5205
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2585,
+              "completion_tokens": 161,
+              "total_tokens": 2746,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000127
+      },
+      {
+        "id": "q07",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我走到某个星度会升官，可同一个星度别人走却丢官，为什么？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          27
+        ],
+        "seconds": 2.97,
+        "usage": {
+          "prompt_tokens": 2350,
+          "completion_tokens": 281,
+          "total_tokens": 2631,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实谈到同一星度对不同人吉凶不同，但给出的原因是各人命中的吉凶星与该星度的关会不同，而非星度本身固定主升官或丢官。原文说：现行之度有星无星，总须察其与当生何吉星有关会、何凶星有关会；当生吉星满用，行此星度之年定见荣华；当生凶神有力，行此星度之年立看凋落 [3]。原文还举了同坐金星、同行奎木度而结果相反的例子：甲生人以金为伤官，仕途屡跌；壬年人以金为正财，官级联升 [3]。又举同行丑宫斗木度而结果不同：十一月生人正财火星在斗、太阳在尾火度与太阳通，即入翰林；十月生人正财火星在箕、太阳虽在尾但火度与太阳不通，仅中进士 [3]。所以按片段，星度相同而结果不同，关键在于各人命里当生的吉凶星与所行之度的关会及通与不通 [3]。片段没有给出可以据此判断你个人是否升官的结论。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          27
+        ],
+        "retrieved_chunk_ids": [
+          4459,
+          4337,
+          27,
+          276,
+          6028
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2350,
+              "completion_tokens": 281,
+              "total_tokens": 2631,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000201
+      },
+      {
+        "id": "q08",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我八字官杀混杂，官和杀到底什么时候能一起看，什么时候必须分开？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          2000
+        ],
+        "seconds": 3.17,
+        "usage": {
+          "prompt_tokens": 2839,
+          "completion_tokens": 435,
+          "total_tokens": 3274,
+          "cached_tokens": 2688,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段对「官杀何时可混、何时不可混」有直接论述。原注提出：杀即官也，同流共派者可混；官非杀也，各立门墙者不可混 [3]。具体情形包括：杀重而官从之，非混；官轻而杀助之，非混 [3]。败财与比肩双至者，杀可使官混；比肩与劫财两遇者，官可使杀混 [3]。一官而不有生印者，杀助之，非混；一杀而遇食伤者，官助之，非混 [3]。势在于官、官有根、杀之情依乎官，依官之杀岁助之而混官，不可；势在于杀、杀有权、官之势依乎杀，依杀之官岁扶之而混杀，不可 [3]。藏官露杀、干神助杀、合官留杀，皆成杀气，勿使官混；藏杀露官、干神助官、合杀留官，皆从官象，不可命杀混 [3]。此外，官杀并见之去留列有：嫌其混杂者先谋去之之道，一者既去一者自留；爱其互相协助者不必议去议留，听其自然 [1]。只有食神则去杀留官，只有伤官则去官留杀，食伤并见则官杀皆可去净 [1][5]。甲日并见辛官庚杀又有丙火合辛，为合官留杀 [1][5]。甲日透庚杀又支见酉金，庚杀乘旺，不作官杀混杂，不必议去留 [5]。以上是片段所载的取舍与判断依据；至于个人八字具体属哪种情形，片段没有针对你命局的论断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1317,
+          2000,
+          1318
+        ],
+        "retrieved_chunk_ids": [
+          1317,
+          1561,
+          2000,
+          1781,
+          1318
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2839,
+              "completion_tokens": 435,
+              "total_tokens": 3274,
+              "cached_tokens": 2688,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000292
+      },
+      {
+        "id": "q09",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "有人跟我说甲木是栋梁、乙木是花草，还说我乙木命不如甲木，这说法靠谱吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1894
+        ],
+        "seconds": 2.32,
+        "usage": {
+          "prompt_tokens": 2199,
+          "completion_tokens": 218,
+          "total_tokens": 2417,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "这种说法在片段中得不到支持，反而有原文明确反对。片段[3]说乙木是「活木」「柔木」，「岂栋梁之比哉」，即乙木本就不是栋梁之材；片段[5]则直接批评俗书之谬：「俗书谬论，以甲为大林，盛而宜斩，乙为微苗，脆而莫伤，可为不知阴阳之理者矣」，并指出「以气而论，甲旺于乙；以质而论，乙坚于甲」[5]。所以「甲木是栋梁、乙木是花草」这类说法，片段[5]已斥为不知阴阳之理；至于「乙木命不如甲木」，片段[5]只说到气与质各有偏重（甲旺于乙、乙坚于甲），并未给出乙木命整体不如甲木命的结论，片段中没有依据。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          6219,
+          1499
+        ],
+        "retrieved_chunk_ids": [
+          2676,
+          1457,
+          6219,
+          1138,
+          1499
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2199,
+              "completion_tokens": 218,
+              "total_tokens": 2417,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.00016
+      },
+      {
+        "id": "q10",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "我的八字里有两个地支相冲，怎么知道谁强谁弱？光看生在哪个月够吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1295
+        ],
+        "seconds": 2.81,
+        "usage": {
+          "prompt_tokens": 2361,
+          "completion_tokens": 282,
+          "total_tokens": 2643,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中判断相冲双方强弱，要看本气、时令、多寡三项，不能只看月令。原文说「本气两支相冲，战克不已，当以本气为重」，如子午相冲，子本气水克午本气火，故子胜午败 [2]；又说「时令以本气论虽子可胜午，然如午月火旺，逢子水，子午相冲，午属得令，子属失令，则午胜子败」[2]；还讲多寡：「三午一子，午多子寡，应作午胜」[2]。所以只看出生月份（时令）不够，还要兼看本气与多寡 [2]。此外，两支相冲若一在年一在时，俗名海底冲，「实则地位远隔，全无冲意」；间隔一位则「冲力减轻」；一为日主之旬空，冲力亦减 [1]。至于具体某两个地支谁胜谁败，片段只举了子午、寅申、辰戌丑未、卯酉等例，其余组合片段中没有逐一列出。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1296,
+          1295
+        ],
+        "retrieved_chunk_ids": [
+          1296,
+          1295,
+          1433,
+          6230,
+          2545
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2361,
+              "completion_tokens": 282,
+              "total_tokens": 2643,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000203
+      },
+      {
+        "id": "q11",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "我是乙木，听说乙木的长生位跟甲木正好相反，都是木，为什么反着？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1287
+        ],
+        "seconds": 2.22,
+        "usage": {
+          "prompt_tokens": 2776,
+          "completion_tokens": 227,
+          "total_tokens": 3003,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实谈到乙木与甲木长生位相反，并给出理由。甲木「长生在亥」[2]；乙木「长生在午」[2]。片段解释：甲木生亥，亥有壬水滋甲木；甲木死于午，午中有丁火泄木真精、己土挠屈[1]。乙木生于午，午有丁火泄木精英、己土挠屈；乙木死于亥，亥有壬水反来滋木[1]。也就是说，甲、乙虽同属木，但片段以「六阳死处死真为死」「六阴死处俱为生」区分阴阳干：甲为阳木，亥为生、午为死；乙为阴木，午为生、亥为死，故二者长生位相反[1]。片段还指出「六阴生处，俱为弱」，如乙木生于午[1]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2356,
+          1141
+        ],
+        "retrieved_chunk_ids": [
+          2356,
+          1141,
+          2760,
+          2265,
+          1499
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2776,
+              "completion_tokens": 227,
+              "total_tokens": 3003,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000176
+      },
+      {
+        "id": "q12",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "算命的说我八字里有病有药，反倒是好事，这是什么意思？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          2350
+        ],
+        "seconds": 2.48,
+        "usage": {
+          "prompt_tokens": 2400,
+          "completion_tokens": 291,
+          "total_tokens": 2691,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段原文，「病」指八字中原有所害之神，「药」指八字有所害之字而得一字以去之，即各因其病而药之 [1][3]。所以「有病有药」的意思是：命局中存在被损害的字（病），同时又有能去除该病的一字（药）。片段并说「有病方为贵，无伤不是奇；格中如去病，财禄两相随」 [1][3]，又说「若病而药，大富贵之人也」 [1][2]，并区分「病重而得药大富大贵之人也，病轻而得药略富略贵之人也，无病而无药不富不贵之人也」 [5]。原文还举例如四柱纯土为诸格之病，俱喜木为医药以去其病；用财见比肩为病，喜见官杀为药；用食神伤官以印为病，喜财为药 [1][3]。原文支持到「病药」的所指、举例及病药与富贵的对应说法；至于你个人八字是否真有病有药、是否因此为好事，片段中没有针对具体命例的判断依据。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2350,
+          2351,
+          1520,
+          1521
+        ],
+        "retrieved_chunk_ids": [
+          2350,
+          2351,
+          1520,
+          1990,
+          1521
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2400,
+              "completion_tokens": 291,
+              "total_tokens": 2691,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000215
+      },
+      {
+        "id": "q13",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我的日柱是丁未，碰上癸丑、丁丑、己丑，都算破吗？轻重一样吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          926
+        ],
+        "seconds": 1.83,
+        "usage": {
+          "prompt_tokens": 2505,
+          "completion_tokens": 127,
+          "total_tokens": 2632,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[1]的原文，破的轻重取决于丁未与所遇地支的五行关系：相生者不为破，如丁未破癸丑；同类者作破论，如丁未破丁丑；相克者最为毒，如丁未破己丑。因此，丁未碰上癸丑不算破，碰上丁丑算破，碰上己丑算破且最为严重。原文只列出这三种情形及其轻重判断，未进一步说明其他细节。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          927
+        ],
+        "retrieved_chunk_ids": [
+          927,
+          1125,
+          2045,
+          1308,
+          1986
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2505,
+              "completion_tokens": 127,
+              "total_tokens": 2632,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000113
+      },
+      {
+        "id": "q14",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我的八字是丙子 辛丑 乙未 壬午，有人说子丑合，有人说丑未冲，到底看哪个？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1304
+        ],
+        "seconds": 2.35,
+        "usage": {
+          "prompt_tokens": 2596,
+          "completion_tokens": 182,
+          "total_tokens": 2778,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段[1]中恰好有与您所列完全相同的四柱「丙子辛丑乙未壬午」，原文对此的判定是：「六冲之力，大于六合故作丑未冲论，不作子丑及午未合论。」即当六冲与六合并存时，以冲论，取丑未冲，不取子丑合、午未合。[1] 另可参照[1]中「丙子辛丑甲午辛未」一例：「六害之力，小于六合，故作子丑合，午未合，不作丑午害」，说明原文是按冲、合、害之间力量大小来取舍的。[1] 至于为何冲力大于合力，片段中没有进一步说明。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1304
+        ],
+        "retrieved_chunk_ids": [
+          1304,
+          1150,
+          1967,
+          2223,
+          2610
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2596,
+              "completion_tokens": 182,
+              "total_tokens": 2778,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000141
+      },
+      {
+        "id": "q15",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我是乙木日主，伤官旺、庚金成了病，走壬申癸酉和走丙子丁丑，哪步运好？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          2346
+        ],
+        "seconds": 1.93,
+        "usage": {
+          "prompt_tokens": 2708,
+          "completion_tokens": 166,
+          "total_tokens": 2874,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[2]的原文，乙日干以丙丁火为伤官、伤重时以庚金官星为病；早年行壬申癸酉运「便不是好运」，因为壬癸水盖在申酉头上，是水盖了头，便不好；后行甲戌乙亥运「便好了」，是甲乙木盖了头；又行丙子丁丑「又好」，因丙丁火盖头来克庚，虽下面地支有亥子丑水，其水被丙丁盖了头，亦不能为害。因此就片段所论，丙子丁丑运优于壬申癸酉运。[2]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2346
+        ],
+        "retrieved_chunk_ids": [
+          2021,
+          2346,
+          2195,
+          2018,
+          2417
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2708,
+              "completion_tokens": 166,
+              "total_tokens": 2874,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000129
+      },
+      {
+        "id": "q16",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "男孩，丙午年庚寅月初九午时生，几岁起运？第一步大运是什么？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1450
+        ],
+        "seconds": 1.69,
+        "usage": {
+          "prompt_tokens": 2068,
+          "completion_tokens": 118,
+          "total_tokens": 2186,
+          "cached_tokens": 1920,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[1]所举「丙午年庚寅月九日午时生男」之例：此为阳男，顺数至二月初九日卯时惊蛰节，实历十天欠三时，以三日为一岁折之，是为十岁欠三十天；起运从生月庚寅顺布，始行辛卯。故为十岁起运，第一步大运为辛卯。[1]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1450
+        ],
+        "retrieved_chunk_ids": [
+          1450,
+          1135,
+          1449,
+          973,
+          1052
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2068,
+              "completion_tokens": 118,
+              "total_tokens": 2186,
+              "cached_tokens": 1920,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 9.9e-05
+      },
+      {
+        "id": "q17",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "十二长生前面那几位，一会儿叫绝、胎、养，一会儿又叫受气、受胎、成形，是一回事吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          643,
+          1468
+        ],
+        "seconds": 3.99,
+        "usage": {
+          "prompt_tokens": 2533,
+          "completion_tokens": 315,
+          "total_tokens": 2848,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中确实把十二长生的前几位与「受气」「受胎」「成形」对应起来讲，但不是简单等同，而是同一序列的不同命名。按[2]《三命提要》的次序：一曰受气，又曰绝，曰胞，指万物在地中未有其象，如母腹空未有物；二曰受胎，天地气交氤氲而造物，其物在地中成形，始有其气，如人受父母之气；三曰成形，万物在地中成形，如人在母腹中成形；四曰长生，万物发生而向荣，如人始生而向长。也就是说，[2]把「绝」与「受气」并称，把「受胎」列为第二，把「成形」列为第三，而「长生」是第四位。另[3]对「绝」「胎」「养」的解释是：绝者，前之气已绝，后之气将续也；胎者，后之气续而结聚成胎也；养者，如人养母腹也。片段支持到「受气/绝/胞」「受胎」「成形」与十二长生前段名目存在对应和次序关系，但片段中没有把「成形」直接等同于「胎」或「养」的明文，也没有给出三者完全同一的判定。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          643,
+          1469
+        ],
+        "retrieved_chunk_ids": [
+          1468,
+          643,
+          1469,
+          702,
+          705
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2533,
+              "completion_tokens": 315,
+              "total_tokens": 2848,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.00023
+      },
+      {
+        "id": "q18",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "天乙贵人分白天晚上来取，不同书的配法一样吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          76,
+          753
+        ],
+        "seconds": 2.07,
+        "usage": {
+          "prompt_tokens": 2346,
+          "completion_tokens": 224,
+          "total_tokens": 2570,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中确实谈到天乙贵人分昼夜取用，且不同书的配法并不一致。\n\n《壶中子》只讲原则：昼生遇昼贵人、夜生遇夜贵人者为得力；昼夜以子时为界，子后为昼，午后为夜 [1]。\n\n《三历会同》则给出具体日干配时：甲戊庚旦丑暮未，乙己旦子暮甲，丙丁旦亥暮酉，壬癸旦巳暮卯，六辛旦午暮寅；并说日出后、日入前用旦贵人，日入后、日出前用暮贵人 [1]。\n\n所以按片段所引，两书并非同一套配法：《壶中子》只分昼夜原则，未列日干对应时辰；《三历会同》才列出各日干旦暮所配的具体时辰 [1]。片段中没有其他书对此的配法。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          753
+        ],
+        "retrieved_chunk_ids": [
+          753,
+          8479,
+          8473,
+          8471,
+          8487
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2346,
+              "completion_tokens": 224,
+              "total_tokens": 2570,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000166
+      },
+      {
+        "id": "q19",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "女命伤官那首歌诀，不同书里文字好像对不上，能对一下吗？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          1782,
+          2581
+        ],
+        "seconds": 2.99,
+        "usage": {
+          "prompt_tokens": 2233,
+          "completion_tokens": 484,
+          "total_tokens": 2717,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "可以对照。片段中涉及「女命伤官」的歌诀出现在 [1]、[2]、[4] 三处，文字基本一致，个别字有出入：\n\n- [1]《渊海子平·论妇人总诀》作：「女命伤官福不真，无财无印守孤贫；局中若见伤官透，必作堂前使唤人。」又：「女命伤官格内嫌，带财带印福方坚；伤官旺处伤夫主，破了伤官损寿元。」[1]\n- [2]《三命通会》古歌作：「女命伤官福不真无财无印守孤贫局中若见伤官透必作堂前使唤人」；又：「女命伤官格内嫌带财带印福方坚伤官旺处伤夫主破了伤官损夀元」[2]\n- [4]《神峰通考·女命歌》作：「女命伤官福不真，无财无印受孤贫。局中若见伤官透，必作堂前使唤人。」又：「女命伤官格内嫌，带财带印福方坚。伤官旺处伤夫主，破了伤官损寿元。」[4]\n\n逐句对照可见：前一首第二句 [1][2] 作「守孤贫」，[4] 作「受孤贫」；其余字句三处相同。后一首三处文字一致，仅 [2]「寿元」写作「夀元」，属异体字。[1][2][4]\n\n此外 [3]《渊海子平·滚浪桃花》另有论女命伤官的散文，不作歌诀体，如「伤官不为贵，伤官运复行剋夫」「女命伤官，刑子、剋夫为决」「伤官桃花，为妓女命，或主剋子息」等，与上述歌诀不是同一段文字。[3]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1782,
+          6737,
+          1786,
+          2581
+        ],
+        "retrieved_chunk_ids": [
+          1782,
+          6737,
+          1786,
+          2581,
+          1559
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2233,
+              "completion_tokens": 484,
+              "total_tokens": 2717,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000324
+      },
+      {
+        "id": "q20",
+        "answerable": true,
+        "category": "多跳综合",
+        "question": "我是甲木命，生在正月，八字里没火、水又偏多，是不是不好？",
+        "arm": "small",
+        "gold_chunk_ids": [
+          2750,
+          2751
+        ],
+        "seconds": 2.88,
+        "usage": {
+          "prompt_tokens": 2287,
+          "completion_tokens": 291,
+          "total_tokens": 2578,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[2]《穷通宝鉴·三春甲木》的说法，正月甲木「初春尚有余寒，得丙癸逢，富贵双全」；若「癸藏丙透，名寒木向阳，主大富贵」，即使风水不及也不失儒林俊秀，而「如无丙癸，平常人也」。你问的「没火、水偏多」：片段[2]说正月甲木若「无丙丁，一派壬癸，又无戊己制之，名水泛木浮，死无棺椁」——即缺火而水多、又无土制，原文判为「水泛木浮」；但原文同时强调需有戊己土制，你未说明是否有土，片段只能支持到「无火而水多无制则水泛木浮」这一步。片段[2]另说「一见癸水伤丁，但作厚道迂儒」，是就伤丁火而言。至于「是不是不好」，片段[2]只给出上述吉凶判语，未对「没火、水多」作总体好坏定义，其余片段[1][3][4][5]未直接论正月甲木缺火多水之局。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2751
+        ],
+        "retrieved_chunk_ids": [
+          2688,
+          2751,
+          738,
+          2340,
+          6456
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2287,
+              "completion_tokens": 291,
+              "total_tokens": 2578,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000217
+      },
+      {
+        "id": "n01",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我明年考研，能上岸吗？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.46,
+        "usage": {
+          "prompt_tokens": 1982,
+          "completion_tokens": 86,
+          "total_tokens": 2068,
+          "cached_tokens": 1792,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户以命理结论询问现实考试结果（考研能否上岸），属于用古代命理替现实决定；片段中虽有官星、贵命等命理内容，但科举/功名不等于考研，不能作现代生活类比，故拒答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          2300,
+          4869,
+          5889,
+          3016,
+          2490
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1982,
+              "completion_tokens": 86,
+              "total_tokens": 2068,
+              "cached_tokens": 1792,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.5e-05
+      },
+      {
+        "id": "n02",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我适合考公务员吗？还是去企业？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.52,
+        "usage": {
+          "prompt_tokens": 2578,
+          "completion_tokens": 72,
+          "total_tokens": 2650,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户以命理结论替自己做现实职业决定（考公务员/去企业），属于现代生活类比，古代官星/官贵不等于考公务员，片段不能作为此类现实决策的依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          1316,
+          6538,
+          7313,
+          5331,
+          1392
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2578,
+              "completion_tokens": 72,
+              "total_tokens": 2650,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 7.2e-05
+      },
+      {
+        "id": "n03",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我现在这工作干得憋屈，想辞职，你看我该走吗？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.65,
+        "usage": {
+          "prompt_tokens": 2529,
+          "completion_tokens": 69,
+          "total_tokens": 2598,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户拿命理结论替自己做现实决定（是否辞职），属于整题拒答情形；且片段中驿马/迁移等概念不能直接套用于现代辞职问题。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          2325,
+          7537,
+          2239,
+          1053,
+          1890
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2529,
+              "completion_tokens": 69,
+              "total_tokens": 2598,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.2e-05
+      },
+      {
+        "id": "n04",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我什么时候才能买上房啊？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.63,
+        "usage": {
+          "prompt_tokens": 1886,
+          "completion_tokens": 103,
+          "total_tokens": 1989,
+          "cached_tokens": 1664,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段[5]虽涉及宅舍营造，但讲的是新立宅舍、方道、作方法/作山法等营造宜忌，并非个人何时能买房的命理判断；问题属于用命理结论替现实购房做决定，且古代田宅/营造概念不能直接套现代商品房，片段中没有对应依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          16,
+          3647,
+          5499,
+          5556,
+          8597
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1886,
+              "completion_tokens": 103,
+              "total_tokens": 1989,
+              "cached_tokens": 1664,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.0001
+      },
+      {
+        "id": "n05",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想出国留学，家里不太同意，我适合出去吗？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.56,
+        "usage": {
+          "prompt_tokens": 1962,
+          "completion_tokens": 93,
+          "total_tokens": 2055,
+          "cached_tokens": 1792,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "问题问的是现实中的出国留学决定，片段中虽有驿马、迁移、身命坐隔界等命理内容，但属于古代命理概念，不能直接套用于现代出国留学；且用户要求以命理结论替自己做现实决定，按规则整题拒答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          7142,
+          1879,
+          5386,
+          1121,
+          5108
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1962,
+              "completion_tokens": 93,
+              "total_tokens": 2055,
+              "cached_tokens": 1792,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.7e-05
+      },
+      {
+        "id": "n06",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想改个名字转转运，改什么字好？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.56,
+        "usage": {
+          "prompt_tokens": 2320,
+          "completion_tokens": 79,
+          "total_tokens": 2399,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户问的是现实改名选字，属于用命理结论替自己做现实决定；片段虽涉及命理术语，但没有针对改名选字的原文依据，且不能把古代命理概念直接套用于现代改名转运。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          7126,
+          8327,
+          1042,
+          1543,
+          6919
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2320,
+              "completion_tokens": 79,
+              "total_tokens": 2399,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 7.6e-05
+      },
+      {
+        "id": "n07",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想去割个双眼皮，八字能看出来整完会不会好看吗？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.75,
+        "usage": {
+          "prompt_tokens": 2389,
+          "completion_tokens": 99,
+          "total_tokens": 2488,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段中虽有论相貌、论伤官宜忌、七禄、卜兆等命理内容，但均未涉及现代整形手术（割双眼皮）后效果好坏的问题；且用户以命理结论替现实决定（是否手术、术后是否好看），属于现代生活类比，古代原文无对应依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          268,
+          1511,
+          623,
+          4739,
+          2345
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2389,
+              "completion_tokens": 99,
+              "total_tokens": 2488,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 9.8e-05
+      },
+      {
+        "id": "n08",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我体检查出甲状腺结节，八字里能看出严不严重吗？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.45,
+        "usage": {
+          "prompt_tokens": 2213,
+          "completion_tokens": 81,
+          "total_tokens": 2294,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户以命理结论替自己做现实医疗决定（判断甲状腺结节严重程度），属于整题拒答情形；且片段中未出现甲状腺结节这一对象，仅有古代脏腑病症的泛论，不能作为现代疾病判断依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          6689,
+          1129,
+          4717,
+          1511,
+          6961
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2213,
+              "completion_tokens": 81,
+              "total_tokens": 2294,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 7.9e-05
+      },
+      {
+        "id": "n09",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我手机号尾号四个八，是不是特别旺财？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.49,
+        "usage": {
+          "prompt_tokens": 2578,
+          "completion_tokens": 85,
+          "total_tokens": 2663,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "对象没出现：片段讨论的是八字命理中的八专禄旺、官杀去留、盖头说、财星行运等，未涉及手机号或数字尾号旺财的内容，属于现代生活类比，无古代原文依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          6622,
+          2396,
+          7335,
+          2346,
+          7143
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2578,
+              "completion_tokens": 85,
+              "total_tokens": 2663,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8e-05
+      },
+      {
+        "id": "n10",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我买彩票能中大奖吗？",
+        "arm": "small",
+        "gold_chunk_ids": [],
+        "seconds": 1.48,
+        "usage": {
+          "prompt_tokens": 2472,
+          "completion_tokens": 81,
+          "total_tokens": 2553,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户拿命理结论替自己做现实决定（买彩票能否中奖），属于现实决策类问题，整题拒答；且片段中虽有中奖记载，但那是命例叙述，不能作为预测用户中奖的依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          8666,
+          2678,
+          1388,
+          2307,
+          6154
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "请求指定 小模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2472,
+              "completion_tokens": 81,
+              "total_tokens": 2553,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.1e-05
+      }
+    ],
+    "large": [
+      {
+        "id": "q01",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我命里带羊刃，这东西还分好几种？白天生和晚上生犯的不一样吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          83
+        ],
+        "seconds": 20.75,
+        "usage": {
+          "prompt_tokens": 2933,
+          "completion_tokens": 1476,
+          "total_tokens": 4409,
+          "cached_tokens": 2816,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中羊刃确有多种名目。如《五行精纪》列出真羊刃、自刃、飞刃、刃头财、刃头鬼等 [1]；《神峰通考》提到劫财羊刃、护禄淹刃 [2]；《五行精纪》另有连珠刃、倒羊刃、朝元羊刃等 [3]；《命理探源》说羊刃对宫曰飞刃，又曰唐符 [4]。《张果星宗》将其概括为六种：阴刃、阳刃、飞刃、刃宫、刃星、刃度，并说‘昼生忌阳刃，夜生忌阴刃’，以甲丙戊庚壬生人为阳，乙丁己辛癸生人为阴 [5]。所以白天生和晚上生所忌不同；原文只说昼生忌阳刃、夜生忌阴刃，没有进一步展开各刃具体应事差异 [5]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          905,
+          2444,
+          908,
+          1491,
+          83
+        ],
+        "retrieved_chunk_ids": [
+          905,
+          2444,
+          908,
+          1491,
+          83
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2933,
+              "completion_tokens": 1476,
+              "total_tokens": 4409,
+              "cached_tokens": 2816,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.003062
+      },
+      {
+        "id": "q02",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我命里有天官符，还说我犯了两位，这严重吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          900
+        ],
+        "seconds": 23.82,
+        "usage": {
+          "prompt_tokens": 2208,
+          "completion_tokens": 1305,
+          "total_tokens": 3513,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中有对应：天官符“凡犯一位，主多口面，二位带杀主刑徒，如禄马同宫，却有衣食”，又有“二重犯者主徒流”“一位二位犹轻，三位四位必主刑狱”。所以依原文，犯两位（二重）主徒流或刑徒，但相对三位四位仍属“犹轻”；是否“严重”原文只说到这一层。[2][5]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          900,
+          902
+        ],
+        "retrieved_chunk_ids": [
+          901,
+          900,
+          81,
+          78,
+          902
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2208,
+              "completion_tokens": 1305,
+              "total_tokens": 3513,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.002653
+      },
+      {
+        "id": "q03",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我禄、命、身三样要分开看，这三样分别是怎么定的？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          621
+        ],
+        "seconds": 18.58,
+        "usage": {
+          "prompt_tokens": 2330,
+          "completion_tokens": 1060,
+          "total_tokens": 3390,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "禄由天干（干）定，主贵贱；命由地支（支）定，主修短；身由纳音定，察盛衰。[1] 如甲子金，甲为禄属木，子为命属水，金为身。[2]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          676,
+          6551
+        ],
+        "retrieved_chunk_ids": [
+          676,
+          6551,
+          127,
+          6614,
+          128
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2330,
+              "completion_tokens": 1060,
+              "total_tokens": 3390,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.002167
+      },
+      {
+        "id": "q04",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "我的八字四个天干都是同一个字，这种命是不是特别贵？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          2513
+        ],
+        "seconds": 16.5,
+        "usage": {
+          "prompt_tokens": 2790,
+          "completion_tokens": 891,
+          "total_tokens": 3681,
+          "cached_tokens": 2688,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "古法称四天干相同为“天元一气”格，有“人命得此，位列三公”之说，但并非一概而贵。原文同段即举“四个辛卯，则贫夭之命”“四个甲戌，亦主破家……终不成大器”[1]。《三命通会》更强调“四柱干支一气中间亦有轻重贵贱，须细别之”，如四癸亥多贫薄、四乙酉多伤残，四壬寅、四甲戌等亦有富贵，须看支内财官印食、岁运冲刑制化，“不可执定一气皆以贵言”[4]。所以单凭四个天干相同，不能断定特别贵，要结合具体组合与岁运。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2513,
+          6632
+        ],
+        "retrieved_chunk_ids": [
+          2513,
+          6633,
+          2346,
+          6632,
+          626
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2790,
+              "completion_tokens": 891,
+              "total_tokens": 3681,
+              "cached_tokens": 2688,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.001891
+      },
+      {
+        "id": "q05",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我甲日主见丙火是食神，可这跟“吃”有什么关系？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1743
+        ],
+        "seconds": 29.16,
+        "usage": {
+          "prompt_tokens": 2881,
+          "completion_tokens": 1638,
+          "total_tokens": 4519,
+          "cached_tokens": 2816,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段中出现了甲日主见丙火为食神这一对象，但没有谈到食神与“吃”（饮食）之间的关系或得名缘由，因此无法回答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          1193,
+          1761,
+          6568,
+          1195,
+          1194
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2881,
+              "completion_tokens": 1638,
+              "total_tokens": 4519,
+              "cached_tokens": 2816,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.003348
+      },
+      {
+        "id": "q06",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我小运起得不对，小运到底怎么起？男女一样吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1711
+        ],
+        "seconds": 27.35,
+        "usage": {
+          "prompt_tokens": 2661,
+          "completion_tokens": 1626,
+          "total_tokens": 4287,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "小运起法为：男命一岁起丙寅，顺行；女命一岁起壬申，逆行 [1][2][3][5]。因此男女并不一样 [1][2][5]。小运一年移一位，男顺女逆而行，逐太岁交之；六十一岁又自丙寅或壬申周而复始 [1][2]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1052,
+          1711,
+          6273,
+          5205
+        ],
+        "retrieved_chunk_ids": [
+          1052,
+          1711,
+          6273,
+          2312,
+          5205
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2661,
+              "completion_tokens": 1626,
+              "total_tokens": 4287,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.003342
+      },
+      {
+        "id": "q07",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我走到某个星度会升官，可同一个星度别人走却丢官，为什么？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          27
+        ],
+        "seconds": 34.18,
+        "usage": {
+          "prompt_tokens": 2426,
+          "completion_tokens": 1943,
+          "total_tokens": 4369,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "同一星度之所以有人升官、有人丢官，并不是星度单独决定，而是要结合各人本命的星情来看。《乾元秘旨·限度》说，行限之度有星无星，“总须察其与当生何吉星有关会，何凶星有关会”；本命吉星得力，行至此度之年“定见荣华”，本命凶神有力，则“立看凋落”。其中举例：甲年四月生人与壬年二月生人同行戌宫奎木度，奎木上同坐金星，甲生人以金为伤官，“遂致仕途屡跌”；壬生人以金为正财，“遂致官级联升”。又举辛年十一月、十月生人同行丑宫斗木度，因十一月生人正财火星在斗，与太阳相通而“入翰林”；十月生人火星在箕，与太阳不通而“仅中进士”。所以同一星度的结果因各人命盘中吉凶星与行度会合不同而有别 [3]。《张果星宗》也记载命坐同度、诸星无异，只因太阴位置不同，官品、寿夭、贵贱即有差异，可作为同类佐证 [4]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          27,
+          276
+        ],
+        "retrieved_chunk_ids": [
+          4459,
+          4337,
+          27,
+          276,
+          6028
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2426,
+              "completion_tokens": 1943,
+              "total_tokens": 4369,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.003978
+      },
+      {
+        "id": "q08",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我八字官杀混杂，官和杀到底什么时候能一起看，什么时候必须分开？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          2000
+        ],
+        "seconds": 33.08,
+        "usage": {
+          "prompt_tokens": 2915,
+          "completion_tokens": 2427,
+          "total_tokens": 5342,
+          "cached_tokens": 2816,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中对此有明确区分。可一起看的情况：官杀同流共派，杀即官，可混；日主喜克，官杀并见吉力加增；身弱有印或身强有财，喜官杀并见；杀重官从之、官轻杀助之，不为混杂；官杀互相协助时不必议去留 [1][3]。必须分开/不可混的情况：官非杀、各立门墙者不可混；应用正官见杀混杂或应用七杀见官混杂，命局不清，主磨折奔波；身弱无印、身强有伤食而无财，忌官杀并见；势在官而杀来混官、势在杀而官来混杀，岁运助之不可；用官而杀混无去杀之神、用杀而官混无去官之神，以凶论 [1][3]。分开的具体去留：只有食神则去杀留官，只有伤官则去官留杀，食伤并见可去净；合官留杀、合杀留官等均可去其一 [1][5]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1317,
+          2000,
+          1318
+        ],
+        "retrieved_chunk_ids": [
+          1317,
+          1561,
+          2000,
+          1781,
+          1318
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2915,
+              "completion_tokens": 2427,
+              "total_tokens": 5342,
+              "cached_tokens": 2816,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.004933
+      },
+      {
+        "id": "q09",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "有人跟我说甲木是栋梁、乙木是花草，还说我乙木命不如甲木，这说法靠谱吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1894
+        ],
+        "seconds": 30.15,
+        "usage": {
+          "prompt_tokens": 2275,
+          "completion_tokens": 1798,
+          "total_tokens": 4073,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中虽无“甲木是栋梁、乙木是花草”的原句，但有近似说法并明确批评：“俗书谬论，以甲为大林，盛而宜斩，乙为微苗，脆而莫伤，可为不知阴阳之理者矣。”[5] 同段又指出甲乙木只是天干之气与地支之形的不同：以气而论，甲旺于乙；以质而论，乙坚于甲。[5] 因此“乙木命不如甲木”的说法，片段不支持。另外，片段说乙木为活木柔木，惧阳金斫伐，有“活木连根之本也，岂栋梁之比哉”之语，说明乙木性质与所谓栋梁不同，但不等于低一等。[3] 至于“乙木是花草”这一具体称呼，片段中没有出现。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          6219,
+          1499
+        ],
+        "retrieved_chunk_ids": [
+          2676,
+          1457,
+          6219,
+          1138,
+          1499
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2275,
+              "completion_tokens": 1798,
+              "total_tokens": 4073,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.003673
+      },
+      {
+        "id": "q10",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "我的八字里有两个地支相冲，怎么知道谁强谁弱？光看生在哪个月够吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1295
+        ],
+        "seconds": 151.97,
+        "usage": {
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "total_tokens": 0,
+          "cached_tokens": 0,
+          "llm_calls": 0
+        },
+        "error": "ConnectionError: HTTPSConnectionPool(host='api.deepseek.com', port=443): Read timed out.",
+        "can_answer": null,
+        "invalid_output": true,
+        "gold_hit": false,
+        "citations_chunk_ids": [],
+        "attempts": [],
+        "route": {},
+        "cost_usd": 0.0
+      },
+      {
+        "id": "q11",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "我是乙木，听说乙木的长生位跟甲木正好相反，都是木，为什么反着？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1287
+        ],
+        "seconds": 156.25,
+        "usage": {
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "total_tokens": 0,
+          "cached_tokens": 0,
+          "llm_calls": 0
+        },
+        "error": "ConnectionError: HTTPSConnectionPool(host='api.deepseek.com', port=443): Read timed out.",
+        "can_answer": null,
+        "invalid_output": true,
+        "gold_hit": false,
+        "citations_chunk_ids": [],
+        "attempts": [],
+        "route": {},
+        "cost_usd": 0.0
+      },
+      {
+        "id": "q12",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "算命的说我八字里有病有药，反倒是好事，这是什么意思？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          2350
+        ],
+        "seconds": 28.04,
+        "usage": {
+          "prompt_tokens": 2476,
+          "completion_tokens": 1755,
+          "total_tokens": 4231,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "这是命理中的“病药说”。所谓“病”不是疾病，而是指八字原局中所害之神；“药”是能去掉这个有害之字的字 [1][3]。书中有口诀：“有病方为贵，无伤不是奇；格中如去病，财禄两相随”，意思是八字有病而能得药去病，反而是贵格 [1][3]。按片段所载，病重而得药，大富大贵；病轻而得药，略富略贵；无病而无药，不富不贵 [5]。因此，“有病有药”被看作好事，是因为病可被药除去，命局反而有起发之机，而不是只有缺陷 [1][2][5]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2350,
+          2351,
+          1520,
+          1521
+        ],
+        "retrieved_chunk_ids": [
+          2350,
+          2351,
+          1520,
+          1990,
+          1521
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2476,
+              "completion_tokens": 1755,
+              "total_tokens": 4231,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.003557
+      },
+      {
+        "id": "q13",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我的日柱是丁未，碰上癸丑、丁丑、己丑，都算破吗？轻重一样吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          926
+        ],
+        "seconds": 11.81,
+        "usage": {
+          "prompt_tokens": 2581,
+          "completion_tokens": 792,
+          "total_tokens": 3373,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按《五行精纪·论冲破》所载林开五命：凡相生者不为破，如丁未遇癸丑，属相生，不为破 [1]。同类者作破论，如丁未遇丁丑，作破 [1]。相克者最为毒，如丁未遇己丑，相克最为毒 [1]。所以并非都算破：癸丑不为破，丁丑、己丑作破；轻重不一样，己丑相克最为毒，丁丑为同类破，较己丑轻 [1]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          927
+        ],
+        "retrieved_chunk_ids": [
+          927,
+          1125,
+          2045,
+          1308,
+          1986
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2581,
+              "completion_tokens": 792,
+              "total_tokens": 3373,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001638
+      },
+      {
+        "id": "q14",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我的八字是丙子 辛丑 乙未 壬午，有人说子丑合，有人说丑未冲，到底看哪个？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1304
+        ],
+        "seconds": 5.27,
+        "usage": {
+          "prompt_tokens": 2672,
+          "completion_tokens": 347,
+          "total_tokens": 3019,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "看丑未冲。原文明言此八字“六冲之力，大于六合故作丑未冲论，不作子丑及午未合论”。[1]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1304
+        ],
+        "retrieved_chunk_ids": [
+          1304,
+          1150,
+          1967,
+          2223,
+          2610
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2672,
+              "completion_tokens": 347,
+              "total_tokens": 3019,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000817
+      },
+      {
+        "id": "q15",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我是乙木日主，伤官旺、庚金成了病，走壬申癸酉和走丙子丁丑，哪步运好？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          2346
+        ],
+        "seconds": 14.08,
+        "usage": {
+          "prompt_tokens": 2784,
+          "completion_tokens": 949,
+          "total_tokens": 3733,
+          "cached_tokens": 2688,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "壬申癸酉运不是好运；丙子丁丑运好。[2]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2346
+        ],
+        "retrieved_chunk_ids": [
+          2021,
+          2346,
+          2195,
+          2018,
+          2417
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2784,
+              "completion_tokens": 949,
+              "total_tokens": 3733,
+              "cached_tokens": 2688,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.002002
+      },
+      {
+        "id": "q16",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "男孩，丙午年庚寅月初九午时生，几岁起运？第一步大运是什么？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1450
+        ],
+        "seconds": 10.24,
+        "usage": {
+          "prompt_tokens": 2144,
+          "completion_tokens": 715,
+          "total_tokens": 2859,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "此男孩为丙午年庚寅月初九午时生，属阳男。顺数至惊蛰节，实历十天欠三时，以三日为一岁折之，为十岁欠三十天。大运十岁，扣足欠三十天起运。起运从生月庚寅顺布，始行辛卯，故第一步大运为辛卯。[1]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1450
+        ],
+        "retrieved_chunk_ids": [
+          1450,
+          1135,
+          1449,
+          973,
+          1052
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2144,
+              "completion_tokens": 715,
+              "total_tokens": 2859,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.001524
+      },
+      {
+        "id": "q17",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "十二长生前面那几位，一会儿叫绝、胎、养，一会儿又叫受气、受胎、成形，是一回事吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          643,
+          1468
+        ],
+        "seconds": 169.28,
+        "usage": {
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "total_tokens": 0,
+          "cached_tokens": 0,
+          "llm_calls": 0
+        },
+        "error": "ConnectionError: HTTPSConnectionPool(host='api.deepseek.com', port=443): Read timed out.",
+        "can_answer": null,
+        "invalid_output": true,
+        "gold_hit": false,
+        "citations_chunk_ids": [],
+        "attempts": [],
+        "route": {},
+        "cost_usd": 0.0
+      },
+      {
+        "id": "q18",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "天乙贵人分白天晚上来取，不同书的配法一样吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          76,
+          753
+        ],
+        "seconds": 172.12,
+        "usage": {
+          "prompt_tokens": 2422,
+          "completion_tokens": 12687,
+          "total_tokens": 15109,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中《三历会同》给出的昼夜配法是：甲戊庚旦丑暮未、乙己旦子暮甲（原文如此）、丙丁旦亥暮酉、壬癸旦巳暮卯、六辛旦午暮寅 [1]。而《钦定协纪辨方书》在戊子日十二时中，丑时和申时都列有天乙贵人 [4]。按《壶中子》子后为昼、午后为夜，申属夜，则戊日夜贵在申，与《三历会同》甲戊庚暮未不同。所以两书配法不完全一样。[1][4]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          753,
+          8471
+        ],
+        "retrieved_chunk_ids": [
+          753,
+          8479,
+          8473,
+          8471,
+          8487
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2422,
+              "completion_tokens": 12687,
+              "total_tokens": 15109,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.025249
+      },
+      {
+        "id": "q19",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "女命伤官那首歌诀，不同书里文字好像对不上，能对一下吗？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          1782,
+          2581
+        ],
+        "seconds": 49.03,
+        "usage": {
+          "prompt_tokens": 2309,
+          "completion_tokens": 3754,
+          "total_tokens": 6063,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "能对。片段中“女命伤官”开头的歌诀有两处：\n1. “女命伤官福不真”四句：[1][2] 作“无财无印守孤贫”；[4] 作“无财无印受孤贫”，其余三句“局中若见伤官透，必作堂前使唤人”一致。\n2. “女命伤官格内嫌”四句：[1][4] 作“破了伤官损寿元”；[2] 作“破了伤官损夀元”，“夀”与“寿”写法不同，其余三句一致。\n片段中《三命通会》原文为无标点古歌连排，以上系按原文文字比对。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1782,
+          6737,
+          2581
+        ],
+        "retrieved_chunk_ids": [
+          1782,
+          6737,
+          1786,
+          2581,
+          1559
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2309,
+              "completion_tokens": 3754,
+              "total_tokens": 6063,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.007487
+      },
+      {
+        "id": "q20",
+        "answerable": true,
+        "category": "多跳综合",
+        "question": "我是甲木命，生在正月，八字里没火、水又偏多，是不是不好？",
+        "arm": "large",
+        "gold_chunk_ids": [
+          2750,
+          2751
+        ],
+        "seconds": 28.27,
+        "usage": {
+          "prompt_tokens": 2363,
+          "completion_tokens": 1926,
+          "total_tokens": 4289,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按《穷通宝鉴·三春甲木》，正月甲木初春尚有余寒，以丙、癸配合为贵；若八字中无丙丁火，而壬癸水偏多，又无戊己土来制水，则称为“水泛木浮”，主贫贱，严重者“死无棺椁”[2]。另外《神峰通考》也强调五行不可太盛，水盛则漂木无定，需行土运方可荣显[1]。因此，在片段所论范围内，甲木生正月而无火、水偏多且无土制，可判为不佳；但若水多而有戊己土制，或并非水旺成局，片段未给出进一步判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2688,
+          2751
+        ],
+        "retrieved_chunk_ids": [
+          2688,
+          2751,
+          738,
+          2340,
+          6456
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2363,
+              "completion_tokens": 1926,
+              "total_tokens": 4289,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.003903
+      },
+      {
+        "id": "n01",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我明年考研，能上岸吗？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 4.89,
+        "usage": {
+          "prompt_tokens": 2058,
+          "completion_tokens": 324,
+          "total_tokens": 2382,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "只有现代生活的类比而没有古代原文；科举功名≠考研，命理片段不能用于现实录取决定。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          2300,
+          4869,
+          5889,
+          3016,
+          2490
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2058,
+              "completion_tokens": 324,
+              "total_tokens": 2382,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000693
+      },
+      {
+        "id": "n02",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我适合考公务员吗？还是去企业？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 5.87,
+        "usage": {
+          "prompt_tokens": 2654,
+          "completion_tokens": 386,
+          "total_tokens": 3040,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户问题涉及用古代命理概念（如官贵、财星）指导现代职业选择（考公务员或去企业），属于现代生活类比，且要求做出现实决定，没有古代原文直接支持此类对应关系。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          1316,
+          6538,
+          7313,
+          5331,
+          1392
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2654,
+              "completion_tokens": 386,
+              "total_tokens": 3040,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000883
+      },
+      {
+        "id": "n03",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我现在这工作干得憋屈，想辞职，你看我该走吗？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 8.95,
+        "usage": {
+          "prompt_tokens": 2605,
+          "completion_tokens": 569,
+          "total_tokens": 3174,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户询问是否辞职，属于现代生活现实决定；片段中虽有驿马、迁移等命理概念，但不能直接类比为辞职，且无古代原文对“辞职”的宜忌判断依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          2325,
+          7537,
+          2239,
+          1053,
+          1890
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2605,
+              "completion_tokens": 569,
+              "total_tokens": 3174,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001213
+      },
+      {
+        "id": "n04",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我什么时候才能买上房啊？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 9.6,
+        "usage": {
+          "prompt_tokens": 1962,
+          "completion_tokens": 529,
+          "total_tokens": 2491,
+          "cached_tokens": 1920,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段涉及古代屋宅营造宜忌，但未涉及个人购屋时机的命理推断，且古代田宅/营造不能类比现代商品房购买，属于只有现代生活类比而无古代原文支持。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          16,
+          3647,
+          5499,
+          5556,
+          8597
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1962,
+              "completion_tokens": 529,
+              "total_tokens": 2491,
+              "cached_tokens": 1920,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001117
+      },
+      {
+        "id": "n05",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想出国留学，家里不太同意，我适合出去吗？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 10.53,
+        "usage": {
+          "prompt_tokens": 2038,
+          "completion_tokens": 667,
+          "total_tokens": 2705,
+          "cached_tokens": 1920,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段中只有古代命理的“迁移”“离祖”等概念，与现代“出国留学”决策不同，没有古代原文直接支持此类现实决定。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          7142,
+          1879,
+          5386,
+          1121,
+          5108
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2038,
+              "completion_tokens": 667,
+              "total_tokens": 2705,
+              "cached_tokens": 1920,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001441
+      },
+      {
+        "id": "n06",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想改个名字转转运，改什么字好？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 6.42,
+        "usage": {
+          "prompt_tokens": 2396,
+          "completion_tokens": 308,
+          "total_tokens": 2704,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段中没有出现改名、选字、转运等对象或方法，也没有提供可据以建议改什么字的古代原文依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          7126,
+          8327,
+          1042,
+          1543,
+          6919
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2396,
+              "completion_tokens": 308,
+              "total_tokens": 2704,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000721
+      },
+      {
+        "id": "n07",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想去割个双眼皮，八字能看出来整完会不会好看吗？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 3.27,
+        "usage": {
+          "prompt_tokens": 2465,
+          "completion_tokens": 159,
+          "total_tokens": 2624,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "只有现代生活的类比（割双眼皮整容）而没有古代原文依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          268,
+          1511,
+          623,
+          4739,
+          2345
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2465,
+              "completion_tokens": 159,
+              "total_tokens": 2624,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.00039
+      },
+      {
+        "id": "n08",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我体检查出甲状腺结节，八字里能看出严不严重吗？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 8.46,
+        "usage": {
+          "prompt_tokens": 2289,
+          "completion_tokens": 569,
+          "total_tokens": 2858,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "对象没出现：片段中没有“甲状腺结节”这一现代疾病，且用户拿命理结论做健康判断，按规则整题拒答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          6689,
+          1129,
+          4717,
+          1511,
+          6961
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2289,
+              "completion_tokens": 569,
+              "total_tokens": 2858,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001249
+      },
+      {
+        "id": "n09",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我手机号尾号四个八，是不是特别旺财？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 5.74,
+        "usage": {
+          "prompt_tokens": 2654,
+          "completion_tokens": 312,
+          "total_tokens": 2966,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "对象没出现：片段只讨论八字干支、官杀、财气等命理内容，没有出现“手机号”或“电话号码”这一对象。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          6622,
+          2396,
+          7335,
+          2346,
+          7143
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2654,
+              "completion_tokens": 312,
+              "total_tokens": 2966,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000736
+      },
+      {
+        "id": "n10",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我买彩票能中大奖吗？",
+        "arm": "large",
+        "gold_chunk_ids": [],
+        "seconds": 14.38,
+        "usage": {
+          "prompt_tokens": 2548,
+          "completion_tokens": 900,
+          "total_tokens": 3448,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "问题涉及现代彩票中奖的现实决策，片段仅有古代命理中奖记载，未提供针对提问者本人的命理分析，且不能将古代命例直接套用于现代彩票。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          8666,
+          2678,
+          1388,
+          2307,
+          6154
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "请求指定 大模型",
+          "score": 0,
+          "signals": [],
+          "forced": true,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2548,
+              "completion_tokens": 900,
+              "total_tokens": 3448,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001912
+      }
+    ],
+    "auto": [
+      {
+        "id": "q01",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我命里带羊刃，这东西还分好几种？白天生和晚上生犯的不一样吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          83
+        ],
+        "seconds": 2.65,
+        "usage": {
+          "prompt_tokens": 2857,
+          "completion_tokens": 372,
+          "total_tokens": 3229,
+          "cached_tokens": 2688,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实把羊刃分成多种，并提到昼夜与阴阳刃的对应。\n\n一、羊刃的分类：\n- 《神峰通考》引《三车一览》说羊刃有二：劫财羊刃（甲见乙）、护禄淹刃（甲见卯）[2]。\n- 《张果星宗》说「羊刃者，其论有六，有阴刃，有阳刃，有飞刃，有刃宫，有刃星，有刃度」[5]。\n- 其他片段还列有真羊刃、自刃、飞刃、刃头财、刃头鬼等名目[1]，以及朝元羊刃、倒羊刃[3]。\n\n二、昼夜之分：\n《张果星宗》说「昼生忌阳刃，夜生忌阴刃」，并以甲、丙、戊、庚、壬生人为阳，乙、丁、己、辛、癸生人为阴[5]。也就是说，片段支持「白天生忌阳刃、夜里生忌阴刃」这一说法，但只讲到这一步，没有进一步说明具体如何推断吉凶。\n\n三、片段中没有的内容：\n- 各分类的完整起法清单，片段只零散列出部分（如真羊刃的干支配对[1]、自刃与飞刃的干支[1][5]），其余「片段中没有」。\n- 关于你个人命局是否带刃、带哪一种、吉凶如何，片段没有你的生辰信息，无法判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          905,
+          2444,
+          908,
+          83
+        ],
+        "retrieved_chunk_ids": [
+          905,
+          2444,
+          908,
+          1491,
+          83
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 2 < 阈值 3",
+          "score": 2,
+          "signals": [
+            "比较倾向（弱）：不一样",
+            "较长问题（34字）",
+            "包含 2 个问句",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2857,
+              "completion_tokens": 372,
+              "total_tokens": 3229,
+              "cached_tokens": 2688,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000257
+      },
+      {
+        "id": "q02",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我命里有天官符，还说我犯了两位，这严重吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          900
+        ],
+        "seconds": 28.16,
+        "usage": {
+          "prompt_tokens": 4340,
+          "completion_tokens": 1830,
+          "total_tokens": 6170,
+          "cached_tokens": 4096,
+          "llm_calls": 2
+        },
+        "can_answer": true,
+        "answer": "据片段，天官符犯两位在古籍中有明确论断：二位带杀主刑徒，二重犯者主徒流 [2]。同卷又有“一位二位犹轻，三位四位必主刑狱”之说，亡神（天官符）聚会时，一位二位相对为轻，三位四位才必主刑狱 [5]。因此犯两位虽不是最重，但仍主刑徒、徒流、口面争辩等象；若与禄马同宫，则原文说“却有衣食” [2]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          900,
+          902
+        ],
+        "retrieved_chunk_ids": [
+          901,
+          900,
+          81,
+          78,
+          902
+        ],
+        "error": null,
+        "llm_calls": 2,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "难度 -1 < 阈值 3；检索分数 0.144 达到升级线",
+          "score": -1,
+          "signals": [
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": true,
+          "escalation_reason": "检索分数 0.144 达到升级线",
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2132,
+              "completion_tokens": 66,
+              "total_tokens": 2198,
+              "cached_tokens": 1920,
+              "llm_calls": 1
+            }
+          },
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2208,
+              "completion_tokens": 1764,
+              "total_tokens": 3972,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.003639
+      },
+      {
+        "id": "q03",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我禄、命、身三样要分开看，这三样分别是怎么定的？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          621
+        ],
+        "seconds": 2.05,
+        "usage": {
+          "prompt_tokens": 2254,
+          "completion_tokens": 143,
+          "total_tokens": 2397,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中「禄、命、身」的定法为：干为禄，定贵贱；支为命，定修短；纳音为身，察盛衰。[1] 也就是说，禄看天干，命看地支，身看纳音。[1] 片段还提到看命时先看干神有无克制、支神有无刑冲、干支纳音有无战斗降伏，并以甲为例说「甲以寅为禄」「甲以辛为官」。[1] 片段中没有进一步给出其他定法。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          676
+        ],
+        "retrieved_chunk_ids": [
+          676,
+          6551,
+          127,
+          6614,
+          128
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 -1 < 阈值 3",
+          "score": -1,
+          "signals": [
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2254,
+              "completion_tokens": 143,
+              "total_tokens": 2397,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000123
+      },
+      {
+        "id": "q04",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "我的八字四个天干都是同一个字，这种命是不是特别贵？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          2513
+        ],
+        "seconds": 3.67,
+        "usage": {
+          "prompt_tokens": 2714,
+          "completion_tokens": 451,
+          "total_tokens": 3165,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实谈到「四个天干都是同一个字」这种格局，称为「天元一气格」或「天元一气」，但原文并不认为它一律特别贵，而是强调要细别轻重贵贱。\n\n原文给出的判断要点：\n1. 有贵例：如周益公命庚辰、庚辰、庚辰、庚辰，合此格；古歌也说「天元一气，地物相同，人命得此，位列三公」[1]；《三命通会》诗亦云「天元一气定尊荣」「生来富贵至公卿」[2]。\n2. 但并非四干同字皆贵：原文明确说「四柱干支一气中间亦有轻重贵贱，须细别之」[4]；又说「不可执定一气皆以贵言」[4]。\n3. 具体分字有差别：四辛卯「贫夭之命」[1]，或「身轻福浅……只恐当生寿不坚」[2]；四甲戌「亦主破家」，虽伶俐聪明，行火乡稍可，终不成大器[1]；四庚辰「贵而风流，名重利轻」；四乙酉「多伤残」；四癸亥「多贫薄」；四己巳「主贫困」；四戊午、四丁未「刃旺性强，虽贵亦多风险克妻不善终」[4]。\n4. 还要看支内有无财官印食入格、有无伤损、天干有无得令、上下干支财官印食可化不可化可从不可从，才能定轻重贵贱[4]。\n\n所以按片段，四干同字只是「天元一气」这一格局的构成条件，是否贵要结合地支与整体配置细判，不能仅凭四干同字就断定特别贵。[1][2][4]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2513,
+          6633,
+          6632
+        ],
+        "retrieved_chunk_ids": [
+          2513,
+          6633,
+          2346,
+          6632,
+          626
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2714,
+              "completion_tokens": 451,
+              "total_tokens": 3165,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000301
+      },
+      {
+        "id": "q05",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我甲日主见丙火是食神，可这跟“吃”有什么关系？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1743
+        ],
+        "seconds": 1.8,
+        "usage": {
+          "prompt_tokens": 2805,
+          "completion_tokens": 172,
+          "total_tokens": 2977,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中「食神」的「食」并非指饮食之「吃」。原文对食神的解释是：食神为「我所生，而与我同性者」，如甲木日干见丙火，木能生火，丙为甲木所生且阴阳同性，故丙即甲之食神 [1]。其得名与「吃」无关，而是取「子旺则生起财来，以奉父母」的父子相养之义，故一名爵星、一名寿星 [1][3]。片段中食神的作用为「泄身，生财，制杀，损害」 [1]，亦未提及与饮食、进食相关。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1193,
+          6568
+        ],
+        "retrieved_chunk_ids": [
+          1193,
+          1761,
+          6568,
+          1195,
+          1194
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 -1 < 阈值 3",
+          "score": -1,
+          "signals": [
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2805,
+              "completion_tokens": 172,
+              "total_tokens": 2977,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000148
+      },
+      {
+        "id": "q06",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我小运起得不对，小运到底怎么起？男女一样吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1711
+        ],
+        "seconds": 1.66,
+        "usage": {
+          "prompt_tokens": 2585,
+          "completion_tokens": 146,
+          "total_tokens": 2731,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中关于小运起法的说法：男子一岁起丙寅，女子一岁起壬申，男顺行、女逆行，一年移一位，六十一岁又从头数起 [1][2][3][5]。男女不一样：男起丙寅顺行，女起壬申逆行 [1][2][3][5]。片段还提到小运又名行年，逐太岁交之 [1][3]。至于你个人小运起得对不对，片段没有你的生辰信息，无法判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1052,
+          1711,
+          6273,
+          5205
+        ],
+        "retrieved_chunk_ids": [
+          1052,
+          1711,
+          6273,
+          2312,
+          5205
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "推理/术语：小运",
+            "包含 2 个问句",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2585,
+              "completion_tokens": 146,
+              "total_tokens": 2731,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000118
+      },
+      {
+        "id": "q07",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我走到某个星度会升官，可同一个星度别人走却丢官，为什么？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          27
+        ],
+        "seconds": 2.69,
+        "usage": {
+          "prompt_tokens": 2350,
+          "completion_tokens": 307,
+          "total_tokens": 2657,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实谈到「同一星度、不同人吉凶不同」这一现象，并给出解释：关键在于该星度与各人当生吉星、凶星如何关会，以及各人本命对该星的取用不同。原文说「现行之度有星无星，总须察其与当生何吉星有关会，何凶星有关会」；当生吉星满用，行此星之度之年定见荣华；当生凶神有力，行此星之度之年立看凋落 [3]。原文还举了同坐金星于奎木度而结果相反的例子：甲生人以金为伤官，致仕途屡跌；壬年人以金为正财，致官级联升 [3]。又举同行斗木度而结果不同：十一月生人正财火星在斗、太阳在尾火度与太阳通，即入翰林；十月生人正财火星在箕、太阳虽在尾而火度与太阳不通，仅中进士 [3]。因此，按片段所说，同一星度别人丢官而你升官，差别在于该度与各自当生吉凶星的关系及取用不同，并非星度本身固定主升官或丢官 [3]。片段没有给出判断你个人具体吉凶的方法或结论。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          27
+        ],
+        "retrieved_chunk_ids": [
+          4459,
+          4337,
+          27,
+          276,
+          6028
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [
+            "推理/术语：为什么",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2350,
+              "completion_tokens": 307,
+              "total_tokens": 2657,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000217
+      },
+      {
+        "id": "q08",
+        "answerable": true,
+        "category": "单跳释义",
+        "question": "算命的说我八字官杀混杂，官和杀到底什么时候能一起看，什么时候必须分开？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          2000
+        ],
+        "seconds": 4.6,
+        "usage": {
+          "prompt_tokens": 2839,
+          "completion_tokens": 429,
+          "total_tokens": 3268,
+          "cached_tokens": 2688,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段对「官杀何时可混、何时不可混」有直接论述：原注说「杀即官也，同流共派者可混也；官非杀也，各立门墙者，不可混也」，即同流共派者可混，各立门墙者不可混 [3]。具体情形包括：杀重而官从之、官轻而杀助之，都不算混；败财与比肩双至，杀可使官混；比肩与劫财两遇，官可使杀混；一官无生印者杀助之、一杀遇食伤者官助之，都不算混 [3]。反之，势在官而官有根、依官之杀被岁助而混官，不可；势在杀而杀有权、依杀之官被岁扶而混杀，不可；藏官露杀、干神助杀、合官留杀皆成杀气，勿使官混；藏杀露官、干神助官、合杀留官皆从官象，不可命杀混 [3]。任氏又言身旺者以杀为官、身弱者以官为杀 [3]。此外片段列有去留之法：嫌混杂者先去其一，爱其互相协助者不必议去留；只有食神则去杀留官，只有伤官则去官留杀，食伤并见则官杀皆可去净；甲日并见辛官庚杀而丙火合辛，为合官留杀 [1][5]。片段还举甲日透庚杀又支见酉金为庚杀乘旺、不作官杀混杂、不必议去留 [5]。至于你个人八字是否属于上述哪种情形、具体该混该分，片段只给原则与举例，未涉及你的命局，不能据此替你判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1317,
+          2000,
+          1318
+        ],
+        "retrieved_chunk_ids": [
+          1317,
+          1561,
+          2000,
+          1781,
+          1318
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [
+            "较长问题（35字）",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2839,
+              "completion_tokens": 429,
+              "total_tokens": 3268,
+              "cached_tokens": 2688,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000288
+      },
+      {
+        "id": "q09",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "有人跟我说甲木是栋梁、乙木是花草，还说我乙木命不如甲木，这说法靠谱吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1894
+        ],
+        "seconds": 2.55,
+        "usage": {
+          "prompt_tokens": 2199,
+          "completion_tokens": 264,
+          "total_tokens": 2463,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "这种说法在片段中得不到支持，反而有原文明确反对。片段[3]说乙木是「活木」「柔木」，并说「岂栋梁之比哉」，即乙木本就不是栋梁之材；片段[5]则直接批评「俗书谬论，以甲为大林，盛而宜斩，乙为微苗，脆而莫伤，可为不知阴阳之理者矣」，指出把甲看作大林、乙看作微苗是不懂阴阳之理。片段[5]还从气质上比较：「以气而论，甲旺于乙；以质而论，乙坚于甲」，即论气甲旺于乙，论质乙坚于甲，并非乙木一概不如甲木。片段[3]也说乙木「大喜阳和煦则发荣」，有其发荣之性。因此，片段能支持的是：乙木被描述为柔木、活木，不是栋梁之比；甲、乙各有气与质上的长短，不能简单说乙木命不如甲木。片段中没有直接讨论「乙木命的人命运高低」这一层。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          6219,
+          1499
+        ],
+        "retrieved_chunk_ids": [
+          2676,
+          1457,
+          6219,
+          1138,
+          1499
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "较长问题（35字）"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2199,
+              "completion_tokens": 264,
+              "total_tokens": 2463,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000187
+      },
+      {
+        "id": "q10",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "我的八字里有两个地支相冲，怎么知道谁强谁弱？光看生在哪个月够吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1295
+        ],
+        "seconds": 2.18,
+        "usage": {
+          "prompt_tokens": 2361,
+          "completion_tokens": 247,
+          "total_tokens": 2608,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中确实讨论了地支相冲时如何判断强弱，但并非只看月份。原文给出的判断依据包括：本气、时令、多寡三项。以子午冲为例，按本气论水克火，子胜午败；但若午月火旺，午得令、子失令，则午胜子败；若三午一子，午多子寡，则午胜。所以光看生在哪个月（时令）不够，还要兼看本气与多寡。原文说「然亦须兼看时令与多寡，方可取决耳」，又说「再看时令与多寡，不难立决矣」。此外，冲力还受位置影响：年与时相冲（海底冲）全无冲意；年与日、月与时相隔一位，冲力减轻；一为日主旬空，冲力亦减。至于你具体八字中哪一方强哪一方弱，片段只提供上述判断原则，没有针对你个人八字的结论。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1296,
+          1295,
+          1433
+        ],
+        "retrieved_chunk_ids": [
+          1296,
+          1295,
+          1433,
+          6230,
+          2545
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "包含 2 个问句"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2361,
+              "completion_tokens": 247,
+              "total_tokens": 2608,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000182
+      },
+      {
+        "id": "q11",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "我是乙木，听说乙木的长生位跟甲木正好相反，都是木，为什么反着？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1287
+        ],
+        "seconds": 2.35,
+        "usage": {
+          "prompt_tokens": 2776,
+          "completion_tokens": 321,
+          "total_tokens": 3097,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段确实谈到乙木与甲木长生位相反的问题。按原文：甲木「长生在亥」，乙木「长生在午」[2]；甲木「死于午」，乙木「死于亥」[2]。也就是说，甲、乙同属木，但十二长生起法相反：甲长生在亥、死在午，乙长生在午、死在亥[2]。片段还从义理上解释这种相反：甲为阳木，乙为阴木，二者「在天成象而在地成形」不同，甲乙行乎天、寅卯存乎地，甲乙如官长、寅卯如该管地方[5]；又说「以气而论，甲旺于乙；以质而论，乙坚于甲」[5]。另有片段说「六阴生处，俱为弱」，如乙木生于午，午有丁火泄木之精英、己土为乙木之挠屈；「六阴死处俱为生」，如乙木死于亥，亥有壬水反来滋木[1]。所以片段支持到的是：甲乙虽同属木，但阴阳不同，长生、死位相反，且乙木在午为生处却属弱、在亥为死处却得壬水滋木[1][2][5]。片段没有给出更进一步的统一定义或完整推导。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2356,
+          1141,
+          1499
+        ],
+        "retrieved_chunk_ids": [
+          2356,
+          1141,
+          2760,
+          2265,
+          1499
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [
+            "推理/术语：为什么",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2776,
+              "completion_tokens": 321,
+              "total_tokens": 3097,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000233
+      },
+      {
+        "id": "q12",
+        "answerable": true,
+        "category": "口语改写",
+        "question": "算命的说我八字里有病有药，反倒是好事，这是什么意思？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          2350
+        ],
+        "seconds": 2.42,
+        "usage": {
+          "prompt_tokens": 2400,
+          "completion_tokens": 271,
+          "total_tokens": 2671,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段原文，「病」指八字中原有所害之神，「药」指八字有所害之字而得一字以去之，即各因其病而药之 [1][3]。所以「有病有药」的意思是：命局中存在被损害的字（病），同时又有能去除该病的一字（药）。片段并说「有病方为贵，无伤不是奇；格中如去病，财禄两相随」 [1][3]，又说「若病而药，大富贵之人也」 [1][2]，并称「病重而得药大富大贵之人也，病轻而得药略富略贵之人也，无病而无药不富不贵之人也」 [5]。原文还举例：四柱纯土为诸格之病，俱喜木为医药以去其病；用财见比肩为病，喜见官杀为药；用食神伤官以印为病，喜财为药 [1][3]。原文支持到「病药相配则贵」这一层，但未对具体某人的八字作判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2350,
+          2351,
+          1520,
+          1521
+        ],
+        "retrieved_chunk_ids": [
+          2350,
+          2351,
+          1520,
+          1990,
+          1521
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 -3 < 阈值 3",
+          "score": -3,
+          "signals": [
+            "短定义/起法问题",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2400,
+              "completion_tokens": 271,
+              "total_tokens": 2671,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000203
+      },
+      {
+        "id": "q13",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我的日柱是丁未，碰上癸丑、丁丑、己丑，都算破吗？轻重一样吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          926
+        ],
+        "seconds": 1.58,
+        "usage": {
+          "prompt_tokens": 2505,
+          "completion_tokens": 157,
+          "total_tokens": 2662,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[1]的原文，破的轻重取决于丁未与所逢地支的五行关系：相生者不为破，如丁未破癸丑；同类者作破论，如丁未破丁丑；相克者最为毒，如丁未破己丑。因此，丁未逢癸丑不算破（相生不为破）；丁未逢丁丑算破（同类作破论）；丁未逢己丑算破且最为毒（相克最为毒）。三者轻重并不一样：癸丑不为破，丁丑为一般之破，己丑为最毒之破。[1]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          927
+        ],
+        "retrieved_chunk_ids": [
+          927,
+          1125,
+          2045,
+          1308,
+          1986
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "包含 2 个问句"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2505,
+              "completion_tokens": 157,
+              "total_tokens": 2662,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.000131
+      },
+      {
+        "id": "q14",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我的八字是丙子 辛丑 乙未 壬午，有人说子丑合，有人说丑未冲，到底看哪个？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1304
+        ],
+        "seconds": 1.91,
+        "usage": {
+          "prompt_tokens": 2596,
+          "completion_tokens": 203,
+          "total_tokens": 2799,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[1]的原文，此造地支为子、丑、未、午，原文明确说「六冲之力，大于六合故作丑未冲论，不作子丑及午未合论」[1]，即丑未冲的力量大于六合，因此作丑未冲论，不作子丑合、午未合论。片段[1]中另有一例「丙子辛丑甲午辛未」也说明「六害之力，小于六合，故作子丑合，午未合，不作丑午害」[1]，但该例是论六害与六合取舍，与本题子丑合、丑未冲的取舍不是同一情形；本题所问的合冲取舍，片段[1]给出的规则是六冲大于六合，故作丑未冲论[1]。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1304
+        ],
+        "retrieved_chunk_ids": [
+          1304,
+          1150,
+          1967,
+          2223,
+          2610
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [
+            "较长问题（37字）",
+            "口语化单跳问题"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2596,
+              "completion_tokens": 203,
+              "total_tokens": 2799,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000154
+      },
+      {
+        "id": "q15",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "我是乙木日主，伤官旺、庚金成了病，走壬申癸酉和走丙子丁丑，哪步运好？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          2346
+        ],
+        "seconds": 1.96,
+        "usage": {
+          "prompt_tokens": 2708,
+          "completion_tokens": 185,
+          "total_tokens": 2893,
+          "cached_tokens": 2560,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[2]的原文，乙日干以丙丁火为伤官、伤重者以庚金官星为病；早年行壬申癸酉运「便不是好运」，因为壬癸水盖在申酉头上，是水盖了头；后行甲戌乙亥运「便好了」，是甲乙木盖了头；又行丙子丁丑「又好」，因丙丁火盖头来克庚，虽下面地支有亥子丑水，其水被丙丁盖了头，亦不能为害。因此就片段所论，丙子丁丑运优于壬申癸酉运。原文支持到「盖头」与去病神这一层，未涉及具体吉凶轻重或其他细节。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2346
+        ],
+        "retrieved_chunk_ids": [
+          2021,
+          2346,
+          2195,
+          2018,
+          2417
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "较长问题（34字）"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2708,
+              "completion_tokens": 185,
+              "total_tokens": 2893,
+              "cached_tokens": 2560,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000141
+      },
+      {
+        "id": "q16",
+        "answerable": true,
+        "category": "应用推理",
+        "question": "男孩，丙午年庚寅月初九午时生，几岁起运？第一步大运是什么？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1450
+        ],
+        "seconds": 1.47,
+        "usage": {
+          "prompt_tokens": 2068,
+          "completion_tokens": 135,
+          "total_tokens": 2203,
+          "cached_tokens": 1920,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "按片段[1]所举「丙午年庚寅月九日午时生男」之例：此为阳男，顺数至二月初九日卯时惊蛰节，实历十天欠三时，以三日为一岁折算，为十岁欠三十天；起运从生月庚寅顺布，始行辛卯。故起运为十岁（扣足欠三十天，每逢乙庚之年十二月初九日午时交换），第一步大运为辛卯。[1]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1450
+        ],
+        "retrieved_chunk_ids": [
+          1450,
+          1135,
+          1449,
+          973,
+          1052
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 2 < 阈值 3",
+          "score": 2,
+          "signals": [
+            "推理/术语：大运",
+            "包含 2 个问句"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2068,
+              "completion_tokens": 135,
+              "total_tokens": 2203,
+              "cached_tokens": 1920,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000109
+      },
+      {
+        "id": "q17",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "十二长生前面那几位，一会儿叫绝、胎、养，一会儿又叫受气、受胎、成形，是一回事吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          643,
+          1468
+        ],
+        "seconds": 3.76,
+        "usage": {
+          "prompt_tokens": 2533,
+          "completion_tokens": 544,
+          "total_tokens": 3077,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段中确实把十二长生的前几位与「受气」「受胎」「成形」对应起来讲，但不是简单等同，而是同一套十二位在不同文献中的不同命名与解释。\n\n[2]《五行精纪》列「长生沐浴冠带临官帝旺衰病死墓绝胎养」十二位，并引《三命提要》逐位解释：第一位「一曰受气，又曰绝，曰胞」，即绝、受气、胞是同一位的不同叫法；第二位「二曰受胎」，即胎位；第三位「三曰成形」，即养位（原文未直接写「成形即养」，但按十二位顺序，成形列在受胎之后、长生之前，对应养位）；第四位「四曰长生」，第五位「五曰沐浴，又曰败」，第六位「六曰冠带」，第七位「七曰临官」，第八位「八曰旺」，第九位「九曰衰」，第十位「十曰病」，第十一位「十一曰死」，第十二位「十二曰墓，又曰库」[2]。\n\n[1]《命理探源》则说「长生、沐浴、冠带、临官、帝旺、衰、病、死、墓、绝、胎、养此十干寄临十二名词也」，并引沈孝瞻说这些名「则假借形容之词也」，长生「犹人之初生」，沐浴「犹人既生之后，而沐浴以去垢」，冠带「犹人之年长而冠带」[1]。[3] 继续解释临官、帝旺、衰、病、死、墓、绝、胎、养，如「绝者，前之气已绝，后之气将续也」「胎者，后之气续而结聚成胎也」「养者，如人养母腹也」[3]。\n\n所以按片段：绝、胎、养是十二长生的位名；受气、受胎、成形是《三命提要》对前几位的另一种称法，其中「受气」又曰「绝」，「受胎」即胎位，「成形」列在受胎与长生之间，对应养位。片段支持到「同一套十二位有不同命名与取象解释」这一步，并未给出「完全等同」的形式化定义。[1][2][3]",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1468,
+          643,
+          1469
+        ],
+        "retrieved_chunk_ids": [
+          1468,
+          643,
+          1469,
+          702,
+          705
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "较长问题（40字）"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2533,
+              "completion_tokens": 544,
+              "total_tokens": 3077,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000368
+      },
+      {
+        "id": "q18",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "天乙贵人分白天晚上来取，不同书的配法一样吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          76,
+          753
+        ],
+        "seconds": 12.96,
+        "usage": {
+          "prompt_tokens": 2422,
+          "completion_tokens": 811,
+          "total_tokens": 3233,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段中出现了天乙贵人分昼夜取法，但只列出《三历会同》一种具体配法，未给出其他书的具体昼贵夜贵配法，无法比较不同书配法是否一样。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          753,
+          8479,
+          8473,
+          8471,
+          8487
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "难度 3 ≥ 阈值 3",
+          "score": 3,
+          "signals": [
+            "跨书比较：不同（提到书）"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2422,
+              "completion_tokens": 811,
+              "total_tokens": 3233,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.001734
+      },
+      {
+        "id": "q19",
+        "answerable": true,
+        "category": "跨书对比",
+        "question": "女命伤官那首歌诀，不同书里文字好像对不上，能对一下吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          1782,
+          2581
+        ],
+        "seconds": 42.97,
+        "usage": {
+          "prompt_tokens": 2309,
+          "completion_tokens": 3313,
+          "total_tokens": 5622,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "能对上。片段中《渊海子平·论妇人总诀》《三命通会》《神峰通考·女命歌》三处都载有这两首女命伤官歌 [1][2][4]。第一首：首句“女命伤官福不真”三处一致 [1][2][4]；第二句有异文，《渊海子平》《三命通会》作“无财无印守孤贫” [1][2]，《神峰通考》作“无财无印受孤贫” [4]；后两句“局中若见伤官透，必作堂前使唤人”三处一致 [1][2][4]。第二首：“女命伤官格内嫌”“带财带印福方坚”“伤官旺处伤夫主”三处一致 [1][2][4]；末句《渊海子平》《神峰通考》作“破了伤官损寿元” [1][4]，《三命通会》作“破了伤官损夀元”，只是“寿/夀”异体 [2]。因此片段内实质异文主要是“守/受孤贫”；其余基本相同，只是个别异体字。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          1782,
+          6737,
+          2581
+        ],
+        "retrieved_chunk_ids": [
+          1782,
+          6737,
+          1786,
+          2581,
+          1559
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "难度 3 ≥ 阈值 3",
+          "score": 3,
+          "signals": [
+            "跨书比较：不同（提到书）"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "large"
+        },
+        "attempts": [
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2309,
+              "completion_tokens": 3313,
+              "total_tokens": 5622,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.006614
+      },
+      {
+        "id": "q20",
+        "answerable": true,
+        "category": "多跳综合",
+        "question": "我是甲木命，生在正月，八字里没火、水又偏多，是不是不好？",
+        "arm": "auto",
+        "gold_chunk_ids": [
+          2750,
+          2751
+        ],
+        "seconds": 2.6,
+        "usage": {
+          "prompt_tokens": 2287,
+          "completion_tokens": 217,
+          "total_tokens": 2504,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": true,
+        "answer": "片段[2]对「正月甲木」有直接论述：正月甲木初春尚有余寒，得丙癸相逢则富贵双全；癸藏丙透称「寒木向阳」，主大富贵；若风水不及也不失儒林俊秀；如无丙癸，则平常人也。片段[2]又说：如无丙丁、一派壬癸、又无戊己制之，名为「水泛木浮」，死无棺椁。按原文，正月甲木看重丙癸（尤其丙火），缺火而水多且无土制，原文判为「水泛木浮」这一不利格局；但原文并未对「没火、水偏多」给出统一的吉凶总断，只列出上述条件性判断，且「风水不及亦不失儒林俊秀」说明并非一概断为不好。片段中没有针对你具体八字的完整判断。",
+        "refusal_reason": null,
+        "invalid_output": false,
+        "citations_chunk_ids": [
+          2751
+        ],
+        "retrieved_chunk_ids": [
+          2688,
+          2751,
+          738,
+          2340,
+          6456
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2287,
+              "completion_tokens": 217,
+              "total_tokens": 2504,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": true,
+        "cost_usd": 0.000172
+      },
+      {
+        "id": "n01",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我明年考研，能上岸吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.59,
+        "usage": {
+          "prompt_tokens": 1982,
+          "completion_tokens": 78,
+          "total_tokens": 2060,
+          "cached_tokens": 1792,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "问题问的是现代考研录取，片段中只有古代命理、占卜、星命内容，没有关于考研或现代考试录取的原文；且用户以命理结论替现实决定，整题拒答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          2300,
+          4869,
+          5889,
+          3016,
+          2490
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1982,
+              "completion_tokens": 78,
+              "total_tokens": 2060,
+              "cached_tokens": 1792,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.1e-05
+      },
+      {
+        "id": "n02",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我适合考公务员吗？还是去企业？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.21,
+        "usage": {
+          "prompt_tokens": 2578,
+          "completion_tokens": 91,
+          "total_tokens": 2669,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户以命理结论替自己做现实职业决定（考公务员/去企业），属于规则3所列的现代生活类比，片段中的官星、财官、武备、贸迁等古代概念不能直接套用于现代公务员考试或企业就业，故整题拒答。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          1316,
+          6538,
+          7313,
+          5331,
+          1392
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 1 < 阈值 3",
+          "score": 1,
+          "signals": [
+            "包含 2 个问句"
+          ],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2578,
+              "completion_tokens": 91,
+              "total_tokens": 2669,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.4e-05
+      },
+      {
+        "id": "n03",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我现在这工作干得憋屈，想辞职，你看我该走吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.72,
+        "usage": {
+          "prompt_tokens": 2529,
+          "completion_tokens": 80,
+          "total_tokens": 2609,
+          "cached_tokens": 2304,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户拿命理结论替自己做现实决定（是否辞职），属于整题拒答情形；且片段中虽有驿马、迁移等古代概念，但不能直接套用于现代辞职问题，没有古代原文支持这一现实判断。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          2325,
+          7537,
+          2239,
+          1053,
+          1890
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2529,
+              "completion_tokens": 80,
+              "total_tokens": 2609,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.9e-05
+      },
+      {
+        "id": "n04",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我什么时候才能买上房啊？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.39,
+        "usage": {
+          "prompt_tokens": 1886,
+          "completion_tokens": 101,
+          "total_tokens": 1987,
+          "cached_tokens": 1664,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段[5]虽涉及宅舍营造的方道宜忌，但属于古代营造择方之说，并非预测个人何时能买上现代商品房的依据；其余片段谈星命行限、星宿占候，也未涉及购房时机。问题属于用命理结论替现实决定，且无古代原文对应。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          16,
+          3647,
+          5499,
+          5556,
+          8597
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1886,
+              "completion_tokens": 101,
+              "total_tokens": 1987,
+              "cached_tokens": 1664,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 9.9e-05
+      },
+      {
+        "id": "n05",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想出国留学，家里不太同意，我适合出去吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.64,
+        "usage": {
+          "prompt_tokens": 1962,
+          "completion_tokens": 77,
+          "total_tokens": 2039,
+          "cached_tokens": 1792,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "只有现代生活的类比而没有古代原文：片段中虽有驿马、迁移、身命坐两岐等命理内容，但均未涉及出国留学，不能将古代命理概念套用于现代留学决定。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          7142,
+          1879,
+          5386,
+          1121,
+          5108
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 1962,
+              "completion_tokens": 77,
+              "total_tokens": 2039,
+              "cached_tokens": 1792,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 7.7e-05
+      },
+      {
+        "id": "n06",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想改个名字转转运，改什么字好？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.74,
+        "usage": {
+          "prompt_tokens": 2320,
+          "completion_tokens": 90,
+          "total_tokens": 2410,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段虽涉及命理、星象、大运等古代术数内容，但未出现关于「改名选字」的对象或属性；且用户以命理结论替现实决定（改名转运）求具体用字，属于现代生活类比，无古代原文依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          7126,
+          8327,
+          1042,
+          1543,
+          6919
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2320,
+              "completion_tokens": 90,
+              "total_tokens": 2410,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.2e-05
+      },
+      {
+        "id": "n07",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我想去割个双眼皮，八字能看出来整完会不会好看吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 2.02,
+        "usage": {
+          "prompt_tokens": 2389,
+          "completion_tokens": 101,
+          "total_tokens": 2490,
+          "cached_tokens": 2176,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "片段[1]虽论相貌与命星，但属古代星命相貌推断，不能用于判断现代整容手术效果；其余片段论伤官宜忌、禄命格局、卜兆、动静冲库，均未涉及割双眼皮或整容后是否好看，属现代生活类比而无古代原文依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          268,
+          1511,
+          623,
+          4739,
+          2345
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2389,
+              "completion_tokens": 101,
+              "total_tokens": 2490,
+              "cached_tokens": 2176,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 9.9e-05
+      },
+      {
+        "id": "n08",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我体检查出甲状腺结节，八字里能看出严不严重吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.28,
+        "usage": {
+          "prompt_tokens": 2213,
+          "completion_tokens": 88,
+          "total_tokens": 2301,
+          "cached_tokens": 2048,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户以命理结论替自己做现实医疗决定（判断甲状腺结节严重程度），属于整题拒答情形；且片段[1]虽列甲乙见庚辛申酉多等所主病证，但未涉及甲状腺结节这一对象，不能作为依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          6689,
+          1129,
+          4717,
+          1511,
+          6961
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2213,
+              "completion_tokens": 88,
+              "total_tokens": 2301,
+              "cached_tokens": 2048,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.4e-05
+      },
+      {
+        "id": "n09",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我手机号尾号四个八，是不是特别旺财？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 1.21,
+        "usage": {
+          "prompt_tokens": 2578,
+          "completion_tokens": 92,
+          "total_tokens": 2670,
+          "cached_tokens": 2432,
+          "llm_calls": 1
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "对象没出现：片段讨论的是八字命理中的官星、财气、八专禄旺等概念，没有涉及手机号或数字吉凶；且用户以命理结论替现实问题（是否旺财）作判断，属于现代生活类比，无古代原文依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          6622,
+          2396,
+          7335,
+          2346,
+          7143
+        ],
+        "error": null,
+        "llm_calls": 1,
+        "route": {
+          "tier": "small",
+          "model": "deepseek-chat",
+          "reason": "难度 0 < 阈值 3",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": false,
+          "escalation_reason": null,
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2578,
+              "completion_tokens": 92,
+              "total_tokens": 2670,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 8.4e-05
+      },
+      {
+        "id": "n10",
+        "answerable": false,
+        "category": "语料外",
+        "question": "我买彩票能中大奖吗？",
+        "arm": "auto",
+        "gold_chunk_ids": [],
+        "seconds": 10.12,
+        "usage": {
+          "prompt_tokens": 5020,
+          "completion_tokens": 562,
+          "total_tokens": 5582,
+          "cached_tokens": 4736,
+          "llm_calls": 2
+        },
+        "can_answer": false,
+        "answer": "语料中没有足够的依据回答这个问题。",
+        "refusal_reason": "用户的问题是现代彩票中奖的现实决定，片段中的命理内容不能作为现实生活决策依据。",
+        "invalid_output": false,
+        "citations_chunk_ids": [],
+        "retrieved_chunk_ids": [
+          8666,
+          2678,
+          1388,
+          2307,
+          6154
+        ],
+        "error": null,
+        "llm_calls": 2,
+        "route": {
+          "tier": "large",
+          "model": "deepseek-v4-pro",
+          "reason": "难度 0 < 阈值 3；检索分数 0.136 达到升级线",
+          "score": 0,
+          "signals": [],
+          "forced": false,
+          "escalated": true,
+          "escalation_reason": "检索分数 0.136 达到升级线",
+          "initial_tier": "small"
+        },
+        "attempts": [
+          {
+            "tier": "small",
+            "model": "deepseek-chat",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2472,
+              "completion_tokens": 83,
+              "total_tokens": 2555,
+              "cached_tokens": 2304,
+              "llm_calls": 1
+            }
+          },
+          {
+            "tier": "large",
+            "model": "deepseek-v4-pro",
+            "ok": true,
+            "usage": {
+              "prompt_tokens": 2548,
+              "completion_tokens": 479,
+              "total_tokens": 3027,
+              "cached_tokens": 2432,
+              "llm_calls": 1
+            }
+          }
+        ],
+        "gold_hit": false,
+        "cost_usd": 0.00116
+      }
+    ]
+  },
+  "comparison": {
+    "n": 30,
+    "small_only": [
+      "q10",
+      "q17"
+    ],
+    "large_only": [
+      "q02"
+    ],
+    "both_good": 22,
+    "both_bad": 5,
+    "auto_miss": [
+      {
+        "id": "q18",
+        "auto_tier": "large",
+        "auto_reason": "难度 3 ≥ 阈值 3"
+      }
+    ],
+    "auto_tiers": {
+      "small": 26,
+      "large": 4
+    }
+  }
+}
