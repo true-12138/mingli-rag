@@ -31,6 +31,7 @@ def _prompt(source: str, name: str) -> str:
     ("agent_multi.py", "VERIFIER_PROMPT"),
     ("agent_multi.py", "SYNTHESIZER_PROMPT"),
     ("rag.py", "SYSTEM_PROMPT"),
+    ("interpret.py", "INTERPRET_PROMPT"),
 ])
 def test_json_mode_prompts_mention_json(source, name):
     """这些提示词都会配 response_format=json_object 使用，必须含 json 字样。"""

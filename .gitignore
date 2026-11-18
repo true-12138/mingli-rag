@@ -47,3 +47,6 @@ api.log
 
 # 个人面试准备，不属于公开仓库
 面试准备*.md
+
+# 解读层译文缓存（运行时生成，按原文哈希去重）
+data/interpret_cache.jsonl

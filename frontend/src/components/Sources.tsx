@@ -1,14 +1,18 @@
 // 出处：回答底部的引用条。点编号展开那一节的原文。
 //
 // 正文里的 [n] 点过来时，TurnView 把 chunk_id 塞进 focus，这里负责展开并滚到眼前。
+// 白话释义只在读者点「白话释义」时才请求：默认仍是原文，避免展开一条就多一次模型调用。
 import { useEffect, useRef, useState } from "react";
 
-import type { Chunk } from "../api";
+import type { Chunk, ChunkInterpretation } from "../api";
+import { loadInterpretation } from "../interpretCache";
 
 interface Focus {
   chunkId: number;
   nonce: number;
 }
+
+type Gloss = ChunkInterpretation | "loading";
 
 interface Props {
   ids: number[];
@@ -21,6 +25,8 @@ interface Props {
 export function Sources({ ids, chunks, focus, labels }: Props) {
   const unique = Array.from(new Set(ids)).filter((id) => Number.isFinite(id));
   const [open, setOpen] = useState<number | null>(null);
+  const [tab, setTab] = useState<"origin" | "gloss">("origin");
+  const [gloss, setGloss] = useState<Record<number, Gloss>>({});
   const quoteRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -33,6 +39,20 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
     const el = quoteRefs.current[open];
     if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [open, focus]);
+
+  // 只有打开了「白话释义」才请求；切到别的段落时按 chunk_id 复用结果。
+  useEffect(() => {
+    if (open == null || tab !== "gloss") return;
+    if (gloss[open] !== undefined) return;
+    let alive = true;
+    setGloss((prev) => ({ ...prev, [open]: "loading" }));
+    loadInterpretation(open).then((item) => {
+      if (alive) setGloss((prev) => ({ ...prev, [open]: item }));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open, tab, gloss]);
 
   if (unique.length === 0) return null;
 
@@ -74,9 +94,36 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
             chunk={chunks[open]}
             citationNo={labels?.[open] ?? unique.indexOf(open) + 1}
           />
-          <p className="source-quote__text">
-            {chunks[open] ? chunks[open].text : "原文还在取，稍等片刻。"}
-          </p>
+          <div className="source-quote__bar">
+            <div className="source-quote__tabs" role="tablist" aria-label="原文与白话释义">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === "origin"}
+                className={`source-quote__tab${tab === "origin" ? " is-active" : ""}`}
+                onClick={() => setTab("origin")}
+              >
+                原文
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab === "gloss"}
+                className={`source-quote__tab${tab === "gloss" ? " is-active" : ""}`}
+                onClick={() => setTab("gloss")}
+              >
+                白话释义
+              </button>
+            </div>
+            <span className="source-quote__note">译文仅辅助阅读，不算引用依据</span>
+          </div>
+          {tab === "origin" ? (
+            <p className="source-quote__text">
+              {chunks[open] ? chunks[open].text : "原文还在取，稍等片刻。"}
+            </p>
+          ) : (
+            <GlossBody item={gloss[open]} />
+          )}
         </div>
       )}
     </section>
@@ -85,6 +132,23 @@ export function Sources({ ids, chunks, focus, labels }: Props) {
 
 function shortBook(chunk: Chunk): string {
   return chunk.book || "古籍";
+}
+
+function GlossBody({ item }: { item: Gloss | undefined }) {
+  if (item === undefined || item === "loading") {
+    return <p className="source-quote__hint">正在生成白话释义…</p>;
+  }
+  if (!item.translation) {
+    return <p className="source-quote__hint">{item.error || "这段原文暂时没有释义。"}</p>;
+  }
+  return (
+    <>
+      <p className="source-quote__text source-quote__text--gloss">{item.translation}</p>
+      {item.truncated && (
+        <p className="source-quote__hint">原文较长，译文只覆盖开头一段；完整原文见「原文」。</p>
+      )}
+    </>
+  );
 }
 
 function QuoteHead({ chunk, citationNo }: { chunk: Chunk | undefined; citationNo: number }) {

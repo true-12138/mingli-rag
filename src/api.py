@@ -49,6 +49,7 @@ import agent_multi
 import api_conversations
 import api_fortune
 import gate
+import interpret
 import llm
 import rag
 import retrieval
@@ -188,6 +189,25 @@ class ChunkOut(BaseModel):
     text: str = ""
 
 
+class InterpretRequest(BaseModel):
+    """解读层：给引用到的原文配白话释义。辅助阅读，不算引用依据。"""
+
+    ids: list[int] = Field(min_length=1, max_length=4)
+    force: bool = False
+
+
+class InterpretItem(BaseModel):
+    chunk_id: int
+    translation: str | None = None
+    cached: bool = False
+    truncated: bool = False
+    error: str | None = None
+
+
+class InterpretResponse(BaseModel):
+    items: list[InterpretItem]
+
+
 class TermAnnotateRequest(BaseModel):
     """术语卡：前端把最终正文发过来，后端返回可下划线的词条和区间。"""
 
@@ -268,6 +288,7 @@ def root() -> dict[str, Any]:
             "/chat/stream",
             "/retrieve",
             "/chunks",
+            "/v1/chunks/interpret",
             "/trace/{trace_id}",
             "/v1/conversations",
             "/v1/conversations/{conversation_id}/chat",
@@ -310,6 +331,7 @@ def health() -> dict[str, Any]:
         "streaming": True,
         "trace_cache": len(_TRACES),
         "terms": terms.stats(),
+        "interpret": interpret.stats(),
     }
 
 
@@ -354,6 +376,51 @@ def lookup_chunks(
             "text": str(chunk.get("chunk_text") or "").strip(),
         })
     return out
+
+
+@app.post("/v1/chunks/interpret", response_model=InterpretResponse)
+def interpret_chunks(
+    req: InterpretRequest,
+    x_deepseek_key: str | None = Header(default=None),
+    x_anonymous_id: str | None = Header(default=None, alias="X-Anonymous-Id"),
+    _: None = Depends(_require_token),
+) -> dict[str, Any]:
+    """引用原文的白话释义：辅助阅读，不进引用链。
+
+    同样的原文有缓存，命中时不调模型、不占回答槽、也不扣每日额度；
+    只有真的要去翻才走额度与并发闸门。一次最多 4 段，避免前端一次把
+    整篇回答的引用都翻一遍（那是 4 次以上的模型调用）。
+    """
+    index = _chunk_index()
+    chunks = []
+    for cid in dict.fromkeys(int(i) for i in req.ids):
+        chunk = index.get(cid)
+        if chunk:
+            chunks.append({
+                "chunk_id": cid,
+                "text": str(chunk.get("chunk_text") or "").strip(),
+            })
+    if not chunks:
+        return {"items": []}
+
+    items, misses = interpret.prepare(chunks, force=req.force)
+    if not misses:
+        return {"items": items}
+
+    key = _api_key(x_deepseek_key)
+    check_quota(x_anonymous_id, x_deepseek_key)
+    token = gate.get_gate().try_acquire("answer", gate.answer_limit(), gate.ANSWER_SLOT_TTL)
+    if token is None:
+        raise HTTPException(
+            status_code=429,
+            detail="服务繁忙，请稍后重试",
+            headers={"Retry-After": "2"},
+        )
+    try:
+        interpret.fill(items, misses, api_key=key)
+    finally:
+        gate.get_gate().release("answer", token)
+    return {"items": items}
 
 
 @app.get("/v1/terms")

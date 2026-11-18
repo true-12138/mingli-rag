@@ -415,6 +415,33 @@ export function lookupChunks(ids: number[]): Promise<Chunk[]> {
   });
 }
 
+// ---------- 解读层 ----------
+
+export interface ChunkInterpretation {
+  chunk_id: number;
+  /** 白话译文；为 null 时看 error。 */
+  translation: string | null;
+  cached: boolean;
+  /** 原文超过后端上限，译文只覆盖前一段。 */
+  truncated: boolean;
+  error: string | null;
+}
+
+/**
+ * 给引用原文配白话释义。
+ *
+ * 译文是辅助阅读，不是引用依据：调用方必须在界面上标明这一点，
+ * 也不要把它拼回回答正文。
+ */
+export function interpretChunks(ids: number[]): Promise<ChunkInterpretation[]> {
+  const unique = Array.from(new Set(ids.filter((id) => Number.isFinite(id))));
+  if (unique.length === 0) return Promise.resolve([]);
+  return request<{ items: ChunkInterpretation[] }>("/v1/chunks/interpret", {
+    method: "POST",
+    body: JSON.stringify({ ids: unique.slice(0, 4) }),
+  }).then((res) => res.items);
+}
+
 // ---------- 术语卡 ----------
 
 export interface TermSnippet {
