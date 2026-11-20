@@ -8,9 +8,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# sentence-transformers / torch 的 wheel 已经覆盖常用平台，不需要 build-essential。
+# torch 必须先单独装 CPU 版：PyPI 上的 torch 会连带拖一长串 nvidia-* CUDA 包
+# （cudnn 519MB、cublas 等，合计 3GB+），而推理机没有 GPU，纯属浪费镜像和在港带宽。
+# download.pytorch.org/whl/cpu 只放 CPU wheel，装机实测 ~160MB/s。
+# lunar_python 只有源码包，--no-build-isolation 让它复用镜像里的 setuptools，
+# 否则 pip 会另开隔离环境再下一遍 setuptools，在这个网络下容易整段超时。
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --timeout 60 --retries 5 -U pip setuptools wheel \
+    && pip install --index-url https://download.pytorch.org/whl/cpu \
+         --extra-index-url https://pypi.org/simple "torch==2.2.2+cpu" \
+    && pip install --timeout 120 --retries 10 --prefer-binary --no-build-isolation -r requirements.txt
 
 COPY src ./src
 COPY data ./data
