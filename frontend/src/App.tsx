@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Sidebar, type View } from "./components/Sidebar";
+import { AboutPage } from "./pages/AboutPage";
 import { ChatPage } from "./pages/ChatPage";
 import { FortunePage } from "./pages/FortunePage";
 import { MaterialsPage } from "./pages/MaterialsPage";
@@ -8,22 +9,23 @@ import { MemoryPage } from "./pages/MemoryPage";
 import type { FortuneChart, Mode } from "./api";
 import { useChat } from "./useChat";
 
-// 轻量 hash 路由：#/chat、#/fortune、#/memory、#/materials。
-// 不用 react-router——四个页面还不值得引一个路由库。
+// 轻量 hash 路由：#/chat、#/fortune、#/memory、#/materials、#/about。
+// 不用 react-router——五个页面还不值得引一个路由库。
 function readView(): View {
   const hash = window.location.hash.replace(/^#\/?/, "");
   if (hash === "fortune") return "fortune";
   if (hash === "memory") return "memory";
   if (hash === "materials") return "materials";
+  if (hash === "about") return "about";
   return "chat";
 }
 
 export default function App() {
   // useChat 放在 App：切到排盘页再回来，正在生成的回答不会丢
   const chat = useChat();
-  // 默认用「查证后回答」而不是固定 RAG：三种模式里它最稳，
-  // 固定 RAG 是单次检索、最容易给出「主题相近但答不上」的答案。
-  const [mode, setMode] = useState<Mode>("agent");
+  // 默认用固定 RAG：实测 2.9–3.3s/题，查证后回答（agent）196.8s/题。
+  // 公网工具态先保证「问一句等几秒」；需要多步查证时用户可手动切到「查证后回答」。
+  const [mode, setMode] = useState<Mode>("rag");
   const [view, setView] = useState<View>(readView);
   const [drawer, setDrawer] = useState(false);
 
@@ -92,6 +94,9 @@ export default function App() {
         )}
         {view === "materials" && (
           <MaterialsPage onOpenDrawer={() => setDrawer((open) => !open)} />
+        )}
+        {view === "about" && (
+          <AboutPage onOpenDrawer={() => setDrawer((open) => !open)} />
         )}
       </main>
     </div>

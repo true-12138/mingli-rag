@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Conversation } from "../api";
 import { formatWhen } from "../format";
 
-export type View = "chat" | "fortune" | "memory" | "materials";
+export type View = "chat" | "fortune" | "memory" | "materials" | "about";
 
 interface Props {
   conversations: Conversation[];
@@ -23,6 +23,7 @@ const NAV: { key: View; label: string; mark: string }[] = [
   { key: "fortune", label: "排盘", mark: "盘" },
   { key: "memory", label: "记忆", mark: "忆" },
   { key: "materials", label: "素材", mark: "材" },
+  { key: "about", label: "关于", mark: "述" },
 ];
 
 export function Sidebar({

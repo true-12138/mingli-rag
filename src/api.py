@@ -17,6 +17,8 @@
     MINGLI_API_TOKEN      可选，设置后所有接口要求 Bearer token
     MINGLI_MAX_CONCURRENCY 可选，默认 4
     MINGLI_TRACE_CACHE    可选，内存里保留的 trace 条数，默认 200
+    MINGLI_ENABLE_DOCS    可选，设为 1 才开放 /docs、/redoc、/openapi.json；
+                          默认关闭，线上不要开
 """
 from __future__ import annotations
 
@@ -83,10 +85,23 @@ MAX_TRACES = int(os.environ.get("MINGLI_TRACE_CACHE", "200"))
 _TRACES: "OrderedDict[str, dict[str, Any]]" = OrderedDict()
 _TRACES_LOCK = threading.Lock()
 
+# 接口文档默认关闭。线上 Nginx 会给每个 /api/ 请求注入 Bearer token，
+# 开着 /docs 等于把一套带授权的「试一下」按钮摆在公网——谁点一下都是我们的模型额度。
+# 本地调试设 MINGLI_ENABLE_DOCS=1 打开；线上要保持关闭。
+_DOCS_ON = os.environ.get("MINGLI_ENABLE_DOCS", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
 app = FastAPI(
     title="问古 · 古籍问答 API",
     version=API_VERSION,
     description="45 部古籍 / 8,681 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
+    docs_url="/docs" if _DOCS_ON else None,
+    redoc_url="/redoc" if _DOCS_ON else None,
+    openapi_url="/openapi.json" if _DOCS_ON else None,
 )
 app.include_router(api_conversations.router)
 app.include_router(api_fortune.router)
@@ -304,7 +319,7 @@ def root() -> dict[str, Any]:
     return {
         "service": "mingli-rag-api",
         "version": API_VERSION,
-        "docs": "/docs",
+        "docs": "/docs" if _DOCS_ON else None,
         "endpoints": [
             "/health",
             "/metrics",

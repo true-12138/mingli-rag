@@ -608,6 +608,7 @@ Streamlit 适合演示，不适合被别的服务调用。`src/api.py` 把 RAG /
 
 ```bash
 export DEEPSEEK_API_KEY=sk-xxxx
+export MINGLI_ENABLE_DOCS=1       # 接口文档默认关闭，本地调试才打开
 python src/api.py                 # http://127.0.0.1:8000/docs
 # 或
 uvicorn api:app --app-dir src --host 0.0.0.0 --port 8000
@@ -810,8 +811,16 @@ npm run build      # tsc --noEmit + vite build，产物在 dist/
 Docker：
 
 ```bash
-docker compose up --build       # 页面 http://localhost/，API 文档 http://localhost/api/docs
+docker compose up --build       # 页面 http://localhost/
 ```
+
+接口文档默认关闭：要在浏览器里看 `/api/docs`，在 `.env` 里加 `MINGLI_ENABLE_DOCS=1` 再重建
+`api`。线上别开——Nginx 会给每个 `/api/` 请求注入 Bearer token，开着等于把带授权的
+「试一下」按钮摆在公网。
+
+Nginx 对 `/api/` 有两档限流（`deploy/nginx/default.conf.template`）：整体 60 次/分，
+调模型的接口（对话、检索解读、术语标注、排盘解读）另加 12 次/分；超过返回 429，前端会
+把 `detail` 显示成一句人话。压测请直连 `api:8000`，不要穿过这一层。
 
 compose 会一起起 Postgres、Redis、独立的 embedding 服务和 Nginx（`web`）。Nginx 同源
 提供前端静态页，并把 `/api/` 反代到 FastAPI；设置了 `MINGLI_API_TOKEN` 时，**由 Nginx

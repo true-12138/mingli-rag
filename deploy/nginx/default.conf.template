@@ -4,6 +4,35 @@
 #
 # 上游用 compose 服务名 api；单独跑容器时改成宿主机地址。
 
+# ---------- 限流 ----------
+# 按客户端 IP 计数。nginx 就是边缘，直接取 $binary_remote_addr；
+# 以后若在前面套 CDN / 负载均衡，必须先配 real_ip，否则所有人共用一个 IP 互相拖累。
+#
+# 这里挡的是脚本，不是人：正常问一句要等几秒到几十秒，12 次/分对真人完全无感，
+# 但一个循环调用的脚本几十秒内就会被按住。一个 IP 也可能是整个办公室或校园网，
+# 所以两档都留了余量。
+#
+# 压测请直连后端 api:8000，不要穿过这一层。
+
+# 全部 API：拦无脑扫接口的
+limit_req_zone $binary_remote_addr zone=mingli_api:10m rate=60r/m;
+
+# 只有会调模型、会花钱的接口才进这个 zone。map 默认值是空串，
+# nginx 对空 key 不计账，所以其余接口不受这一档影响。
+map $uri $mingli_llm_key {
+    default                            "";
+    ~^/api/chat                        $binary_remote_addr;
+    ~^/api/v1/conversations/[^/]+/chat $binary_remote_addr;
+    ~^/api/v1/fortune/read             $binary_remote_addr;
+    ~^/api/v1/chunks/interpret         $binary_remote_addr;
+    ~^/api/v1/terms/annotate           $binary_remote_addr;
+    ~^/api/v1/favorites/export\.md     $binary_remote_addr;
+}
+limit_req_zone $mingli_llm_key zone=mingli_llm:10m rate=12r/m;
+
+# limit_req 默认返回 503；这里改成 429，前端会读 detail 显示成一句人话。
+limit_req_status 429;
+
 server {
     listen 80;
     server_name _;
@@ -19,8 +48,19 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # 限流命中的响应：给前端一段能直接显示的 JSON（前端读 detail 字段）
+    error_page 429 = @rate_limited;
+    location @rate_limited {
+        default_type application/json;
+        return 429 '{"detail":"问得太快了，歇几秒再试。"}';
+    }
+
     # API 与 SSE：去掉 /api 前缀后转给 FastAPI
     location /api/ {
+        # 两档同时生效：整体 60/min；调模型的接口再叠一层 12/min（burst 4）。
+        limit_req zone=mingli_api burst=20 nodelay;
+        limit_req zone=mingli_llm burst=4 nodelay;
+
         proxy_pass http://api:8000/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
