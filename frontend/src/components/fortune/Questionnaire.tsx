@@ -95,7 +95,6 @@ export function Questionnaire({
         <button className="btn btn--solid" type="submit" disabled={busy}>
           {busy ? "计算中…" : "继续"}
         </button>
-        <span className="f-ask__hint">只问缺的几项，已有的不会重复问。</span>
       </div>
     </form>
   );

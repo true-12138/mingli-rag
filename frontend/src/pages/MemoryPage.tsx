@@ -85,19 +85,16 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             >
               <MenuIcon />
             </button>
-            <p className="page__kicker">记忆</p>
-            <h1 className="page__title">它记住的，只有你说过的话</h1>
-            <p className="page__lead">
-              跨会话保存的偏好与事实，只用于个性化回答，<strong>不作为引用依据</strong>。
-              身份证、手机号、病史这类敏感信息不会入库。
-            </p>
+            <h1 className="page__title">记忆</h1>
           </div>
-          <div className="page__aside">
-            <span className="page__count">{memories.length}</span>
-            <span className="page__count-label">
-              条记忆{pendingCount > 0 ? ` · ${pendingCount} 条待确认` : ""}
-            </span>
-          </div>
+          {memories.length > 0 && (
+            <div className="page__aside">
+              <span className="page__count">{memories.length}</span>
+              <span className="page__count-label">
+                条记忆{pendingCount > 0 ? ` · ${pendingCount} 条待确认` : ""}
+              </span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -112,15 +109,9 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
           {loading && memories.length === 0 && <p className="mem-tip">正在读取…</p>}
 
           {!loading && memories.length === 0 && (
-            <div className="chart-empty">
-              <span className="chart-empty__seal" aria-hidden="true">
-                忆
-              </span>
-              <p>
-                还没有记忆。在对话里明确说一句「以后优先查《子平真诠》」或「我习惯看原文」，
-                下一轮起就会被记下来。
-              </p>
-            </div>
+            <p className="page-empty">
+              还没有记忆。在对话里明确说一句偏好，下一轮起就会记下来。
+            </p>
           )}
 
           {memories.length > 0 && (
@@ -139,9 +130,7 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
                     <p className="mem__value">{memory.value}</p>
                     {memory.status === "pending" && memory.pending_value && (
                       <div className="mem__pending">
-                        <p className="mem__pending-label">
-                          后来又说要改成（确认前仍按上面的值回答）：
-                        </p>
+                        <p className="mem__pending-label">待确认改为：</p>
                         <p className="mem__pending-value">{memory.pending_value}</p>
                         <div className="mem__pending-actions">
                           <button
@@ -173,10 +162,6 @@ export function MemoryPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
               })}
             </ul>
           )}
-
-          <p className="mem-foot">
-            记忆抽取失败不会影响回答——它是增强，不是主链路。想让它忘掉什么，直接在这里删。
-          </p>
         </div>
       </div>
     </div>

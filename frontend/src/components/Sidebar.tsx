@@ -18,12 +18,12 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-const NAV: { key: View; label: string; mark: string }[] = [
-  { key: "chat", label: "对话", mark: "问" },
-  { key: "fortune", label: "排盘", mark: "盘" },
-  { key: "memory", label: "记忆", mark: "忆" },
-  { key: "materials", label: "素材", mark: "材" },
-  { key: "about", label: "关于", mark: "述" },
+const NAV: { key: View; label: string }[] = [
+  { key: "chat", label: "对话" },
+  { key: "fortune", label: "排盘" },
+  { key: "memory", label: "记忆" },
+  { key: "materials", label: "素材" },
+  { key: "about", label: "关于" },
 ];
 
 export function Sidebar({
@@ -61,13 +61,7 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span className="brand__seal" aria-hidden="true">
-          问
-        </span>
-        <div className="brand__text">
-          <span className="brand__name">问古</span>
-          <span className="brand__sub">古籍问答</span>
-        </div>
+        <span className="brand__name">问古</span>
       </div>
 
       <nav className="nav" aria-label="主导航">
@@ -79,9 +73,6 @@ export function Sidebar({
             onClick={() => onView(item.key)}
             aria-current={view === item.key ? "page" : undefined}
           >
-            <span className="nav__mark" aria-hidden="true">
-              {item.mark}
-            </span>
             {item.label}
           </button>
         ))}
@@ -99,7 +90,7 @@ export function Sidebar({
             <p className="conv-list__tip">正在取会话…</p>
           )}
           {!loading && conversations.length === 0 && (
-            <p className="conv-list__tip">还没有对话。问一句，就从这里开始。</p>
+            <p className="conv-list__tip">还没有对话</p>
           )}
           {conversations.map((conv) => {
             const active = conv.id === activeId;
@@ -134,11 +125,6 @@ export function Sidebar({
         </div>
       )}
 
-      <div className="sidebar__foot">
-        <span>四十五部</span>
-        <span className="dot" aria-hidden="true">·</span>
-        <span>八千六百八十一节</span>
-      </div>
     </aside>
   );
 }

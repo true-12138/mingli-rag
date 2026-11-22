@@ -121,10 +121,7 @@ export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
           {busy ? "排盘中…" : "排盘"}
         </button>
       </form>
-      <p className="f-hint">
-        公历时间，按北京时间排。不确定时辰就填 12:00——时柱会不准，日柱仍然准确。
-        日期没填全也没关系，会只问缺的那几项。
-      </p>
+      <p className="f-hint">公历，按北京时间排；时辰不确定填 12:00。</p>
 
       {error && (
         <p className="note note--error" role="alert">
@@ -139,15 +136,6 @@ export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
           busy={busy}
           onSubmit={(values) => void runIntake({ ...needInput.known, ...values })}
         />
-      )}
-
-      {!chart && !error && !needInput && (
-        <div className="chart-empty">
-          <span className="chart-empty__seal" aria-hidden="true">
-            八
-          </span>
-          <p>填好出生时间，盘会当场算出来。干支、节气、大运都来自历法计算，不经过模型。</p>
-        </div>
       )}
 
       {chart && (
@@ -276,12 +264,14 @@ export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
           </div>
 
           <div className="ask-row">
-            <button type="button" className="btn" onClick={() => onAsk(chart)}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onAsk(chart)}
+              title="盘面会带进对话当已知信息，追问时不必再描述八字"
+            >
               就这个盘继续问
             </button>
-            <span className="ask-row__hint">
-              盘面会带进对话当已知信息，追问时不必再描述八字
-            </span>
           </div>
 
           {params && (

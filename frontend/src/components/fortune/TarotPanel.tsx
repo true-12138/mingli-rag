@@ -65,23 +65,11 @@ export function TarotPanel({ onAsk }: { onAsk: (chart: TarotChart) => void }) {
           {busy ? "生成中…" : chart ? "重新生成牌面" : "生成牌面"}
         </button>
       </form>
-      <p className="f-hint">
-        生成牌面用服务端 seed，同一 seed 永远同一组牌——生成后才解读，解读的就是你眼前这组。
-      </p>
 
       {error && (
         <p className="note note--error" role="alert">
           {error}
         </p>
-      )}
-
-      {!chart && !error && (
-        <div className="chart-empty">
-          <span className="chart-empty__seal" aria-hidden="true">
-            牌
-          </span>
-          <p>选一个牌阵生成牌面。这里不做「抽到满意为止」——想重新生成就整组重来。</p>
-        </div>
       )}
 
       {chart && (
@@ -118,12 +106,14 @@ export function TarotPanel({ onAsk }: { onAsk: (chart: TarotChart) => void }) {
           </div>
 
           <div className="ask-row">
-            <button type="button" className="btn" onClick={() => onAsk(chart)}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onAsk(chart)}
+              title="牌面会带进对话当已知信息，追问时不必再描述抽到了哪几张"
+            >
               就这个牌面继续问
             </button>
-            <span className="ask-row__hint">
-              牌面会带进对话当已知信息，追问时不必再描述抽到了哪几张
-            </span>
           </div>
 
           {params && (

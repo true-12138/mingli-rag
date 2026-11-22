@@ -13,7 +13,6 @@ const TABS: { key: FortuneKind; label: string; hint: string }[] = [
   { key: "astro", label: "星盘", hint: "本命 · 整宫制" },
   { key: "tarot", label: "塔罗", hint: "可复现生成牌面" },
 ];
-
 interface Props {
   onOpenDrawer: () => void;
   // 把当前这张盘挂到对话上并跳过去；盘面只在前端存活，后端不落库。
@@ -35,12 +34,7 @@ export function FortunePage({ onOpenDrawer, onAsk }: Props) {
             >
               <MenuIcon />
             </button>
-            <p className="page__kicker">排盘</p>
-            <h1 className="page__title">先算出盘，再谈解读</h1>
-            <p className="page__lead">
-              干支、行星、牌面都是确定性计算，同样的输入永远同一个结果。
-              解读只解释已经算出来的盘面，不改盘。
-            </p>
+            <h1 className="page__title">排盘</h1>
           </div>
           <nav className="tabs" aria-label="排盘类型">
             {TABS.map((item) => (
@@ -50,9 +44,9 @@ export function FortunePage({ onOpenDrawer, onAsk }: Props) {
                 className={`tabs__item${tab === item.key ? " tabs__item--on" : ""}`}
                 onClick={() => setTab(item.key)}
                 aria-current={tab === item.key ? "page" : undefined}
+                title={item.hint}
               >
                 <span className="tabs__label">{item.label}</span>
-                <span className="tabs__hint">{item.hint}</span>
               </button>
             ))}
           </nav>

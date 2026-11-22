@@ -18,8 +18,7 @@ export function AboutPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             >
               <MenuIcon />
             </button>
-            <p className="page__kicker">关于</p>
-            <h1 className="page__title">古籍问答最危险的错，是答得像真的</h1>
+            <h1 className="page__title">关于</h1>
             <p className="page__lead">
               通用模型遇到语料里没有的问题，会用现代常识补出一段读着像古籍、实际并不存在的原文，
               而使用者很难分辨。这个站把回答限制在 <strong>45 部古籍、约 340 万字</strong>上：
@@ -105,6 +104,7 @@ export function AboutPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
               </li>
               <li>
                 不做预测吉凶、改运、医疗 / 法律 / 投资建议；排盘只做确定性历法计算。
+                本站内容仅供文化研究与娱乐参考，回答请以原文为准。
                 完整 17 条局限清单写在 README 里。
               </li>
             </ul>

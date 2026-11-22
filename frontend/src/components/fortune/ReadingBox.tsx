@@ -137,13 +137,7 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
         </button>
       </div>
       <p className="reading__hint">
-        盘面由程序算出，解读由模型组织语言；它只解释上面的盘面，不重算、不补星体。
-      </p>
-      <p className="reading__hint">
-        正文里的 [n] 是检索到的古籍片段，可点开核对原文；没有引用表示这段只依据盘面。
-      </p>
-      <p className="reading__hint">
-        以下内容为传统文化视角的说明，仅供文化研究与娱乐参考，不构成任何决策建议。
+        解读只解释盘面；[n] 可点开核对原文；仅供文化研究与娱乐参考。
       </p>
 
       {error && (

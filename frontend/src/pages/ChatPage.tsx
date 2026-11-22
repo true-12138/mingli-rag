@@ -106,10 +106,9 @@ export function ChatPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
         <button className="icon-btn drawer-toggle" onClick={onOpenDrawer} aria-label="会话列表">
           <MenuIcon />
         </button>
-        <div className="topbar__title" title={activeTitle}>
+        <div className="topbar__title" title={activeTitle} role="heading" aria-level={1}>
           {activeTitle}
         </div>
-        <div className="topbar__meta">{modeLabel(mode)}</div>
       </header>
 
       {chat.fatal && (
@@ -183,17 +182,6 @@ export function ChatPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
       />
     </>
   );
-}
-
-function modeLabel(mode: Mode): string {
-  switch (mode) {
-    case "agent":
-      return "查证后回答";
-    case "multi":
-      return "多书对照";
-    default:
-      return "原文直答";
-  }
 }
 
 // 顶栏下的一行提示：这一问会带上哪张盘。

@@ -168,9 +168,7 @@ export function AstroPanel({ onAsk }: { onAsk: (chart: AstroChart) => void }) {
           {busy ? "排盘中…" : "排盘"}
         </button>
       </form>
-      <p className="f-hint">
-        东经、北纬为正，按东八区换算。上升与宫位对出生地和分钟很敏感，地点尽量填准。
-      </p>
+      <p className="f-hint">东经、北纬为正，按东八区换算；地点和分钟会影响上升与宫位。</p>
 
       {error && (
         <p className="note note--error" role="alert">
@@ -187,15 +185,6 @@ export function AstroPanel({ onAsk }: { onAsk: (chart: AstroChart) => void }) {
           busy={busy}
           onSubmit={(values) => void runIntake({ ...needInput.known, ...values })}
         />
-      )}
-
-      {!chart && !error && !needInput && (
-        <div className="chart-empty">
-          <span className="chart-empty__seal" aria-hidden="true">
-            星
-          </span>
-          <p>行星位置按地心视黄经计算，上升点用当地恒星时求解。宫位采用整宫制。</p>
-        </div>
       )}
 
       {chart && (
@@ -301,12 +290,14 @@ export function AstroPanel({ onAsk }: { onAsk: (chart: AstroChart) => void }) {
           </div>
 
           <div className="ask-row">
-            <button type="button" className="btn" onClick={() => onAsk(chart)}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onAsk(chart)}
+              title="盘面会带进对话当已知信息，追问时不必再描述出生信息"
+            >
               就这个盘继续问
             </button>
-            <span className="ask-row__hint">
-              盘面会带进对话当已知信息，追问时不必再描述出生信息
-            </span>
           </div>
 
           {params && (

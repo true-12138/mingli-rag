@@ -102,29 +102,7 @@ button {
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
   padding: 22px 18px 6px;
-}
-
-.brand__seal {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  background: var(--cinnabar);
-  color: #fbf7ef;
-  font-family: var(--serif);
-  font-size: 19px;
-  line-height: 1;
-  border-radius: 1px;
-  transform: rotate(-3deg);
-  box-shadow: 0 1px 0 rgba(29, 26, 23, 0.12);
-}
-
-.brand__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
 }
 
 .brand__name {
@@ -132,12 +110,6 @@ button {
   font-size: 17px;
   font-weight: 600;
   letter-spacing: 0.14em;
-}
-
-.brand__sub {
-  font-size: 10.5px;
-  color: var(--faint);
-  letter-spacing: 0.22em;
 }
 
 .new-btn {
@@ -273,21 +245,6 @@ button {
   background: rgba(150, 50, 42, 0.1);
 }
 
-.sidebar__foot {
-  padding: 12px 18px 16px;
-  border-top: 1px solid var(--rule);
-  font-size: 10.5px;
-  color: var(--faint);
-  letter-spacing: 0.08em;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.sidebar__foot .dot {
-  opacity: 0.6;
-}
-
 /* ---------- 顶栏 ---------- */
 
 .topbar {
@@ -308,17 +265,6 @@ button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-.topbar__meta {
-  margin-left: auto;
-  flex: none;
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  padding: 2px 8px;
 }
 
 .icon-btn {
@@ -1575,54 +1521,12 @@ button {
   background: currentColor;
 }
 
-.composer__hint {
-  margin: 8px 2px 0;
-  font-size: 10.5px;
-  color: #a89f8f;
-  letter-spacing: 0.02em;
-}
-
 /* ---------- 空会话 ---------- */
 
 .empty {
   max-width: 620px;
   margin: 0 auto;
-  padding: 11vh 0 0;
-}
-
-.empty__seal {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 20px;
-  display: grid;
-  place-items: center;
-  background: var(--cinnabar);
-  color: #fbf7ef;
-  font-family: var(--serif);
-  font-size: 27px;
-  line-height: 1;
-  border-radius: 2px;
-  transform: rotate(-2.5deg);
-  box-shadow: 0 2px 0 rgba(29, 26, 23, 0.12);
-}
-
-.empty__title {
-  margin: 0 0 12px;
-  font-family: var(--serif);
-  font-size: 27px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-align: center;
-  color: var(--ink);
-}
-
-.empty__lead {
-  max-width: 430px;
-  margin: 0 auto 30px;
-  font-size: 13px;
-  line-height: 1.85;
-  color: var(--muted);
-  text-align: center;
+  padding: 8vh 0 0;
 }
 
 .empty__asks {
@@ -1632,9 +1536,6 @@ button {
 }
 
 .ask {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
   width: 100%;
   padding: 11px 13px;
   background: var(--panel);
@@ -1653,29 +1554,6 @@ button {
   box-shadow: 0 1px 3px rgba(29, 26, 23, 0.05);
 }
 
-.ask__mark {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(150, 50, 42, 0.35);
-  border-radius: 50%;
-  color: var(--cinnabar);
-  font-family: var(--serif);
-  font-size: 10.5px;
-  line-height: 1;
-  transform: translateY(1px);
-}
-
-.empty__foot {
-  margin-top: 22px;
-  font-size: 11.5px;
-  color: var(--faint);
-  text-align: center;
-  letter-spacing: 0.03em;
-}
-
 /* ---------- 主导航 ---------- */
 
 .nav {
@@ -1689,7 +1567,6 @@ button {
 .nav__item {
   display: flex;
   align-items: center;
-  gap: 10px;
   padding: 7px 9px;
   border: 0;
   border-radius: 2px;
@@ -1702,20 +1579,6 @@ button {
   transition: background 0.15s, color 0.15s;
 }
 
-.nav__mark {
-  width: 19px;
-  height: 19px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--rule-strong);
-  border-radius: 50%;
-  color: var(--faint);
-  font-family: var(--serif);
-  font-size: 10.5px;
-  line-height: 1;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
 .nav__item:hover {
   background: rgba(253, 251, 246, 0.6);
   color: var(--ink);
@@ -1724,16 +1587,6 @@ button {
 .nav__item--on {
   color: var(--ink);
   font-weight: 600;
-}
-
-.nav__item--on .nav__mark {
-  background: var(--cinnabar);
-  border-color: var(--cinnabar);
-  color: #fbf7ef;
-}
-
-.sidebar__foot {
-  margin-top: auto;
 }
 
 /* ---------- 页面骨架（排盘 / 记忆） ---------- */
@@ -1764,13 +1617,6 @@ button {
 .page__head-text {
   flex: 1 1 460px;
   min-width: 0;
-}
-
-.page__kicker {
-  margin: 0 0 7px;
-  font-size: 10.5px;
-  letter-spacing: 0.28em;
-  color: var(--cinnabar);
 }
 
 .page__title {
@@ -1841,9 +1687,6 @@ button {
 }
 
 .tabs__item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   padding: 9px 1px 11px;
   margin-bottom: -1px;
   border: 0;
@@ -1861,12 +1704,6 @@ button {
   letter-spacing: 0.08em;
 }
 
-.tabs__hint {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--faint);
-}
-
 .tabs__item:hover {
   color: var(--ink);
 }
@@ -1874,11 +1711,6 @@ button {
 .tabs__item--on {
   color: var(--cinnabar-deep);
   border-bottom-color: var(--cinnabar);
-}
-
-.tabs__item--on .tabs__hint {
-  color: var(--cinnabar);
-  opacity: 0.7;
 }
 
 /* ---------- 表单 ---------- */
@@ -2058,42 +1890,15 @@ button {
   margin-top: 16px;
 }
 
-.f-ask__hint {
-  font-size: 11px;
-  color: var(--faint);
-}
-
 /* ---------- 盘面 ---------- */
 
-.chart-empty {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+/* 页面级空状态：一句话说清楚下一步。 */
+.page-empty {
   margin: 18px 0 10px;
-  padding: 30px 26px;
+  padding: 24px 26px;
   border: 1px dashed var(--rule-strong);
   border-radius: 2px;
   color: var(--muted);
-}
-
-.chart-empty__seal {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(150, 50, 42, 0.4);
-  border-radius: 2px;
-  color: var(--cinnabar);
-  font-family: var(--serif);
-  font-size: 18px;
-  line-height: 1;
-  transform: rotate(-3deg);
-}
-
-.chart-empty p {
-  margin: 0;
-  max-width: 580px;
   font-size: 12.5px;
   line-height: 1.85;
 }
@@ -2123,12 +1928,6 @@ button {
   gap: 12px;
   flex-wrap: wrap;
   margin: -8px 0 20px;
-}
-
-.ask-row__hint {
-  font-size: 11.5px;
-  line-height: 1.7;
-  color: var(--faint);
 }
 
 .chart-kicker {
@@ -2983,15 +2782,9 @@ button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   margin-bottom: 10px;
-}
-
-.mat-toolbar__tip {
-  font-size: 11px;
-  line-height: 1.7;
-  color: var(--faint);
 }
 
 .mat-export {
@@ -3207,16 +3000,8 @@ button {
     padding: 10px 14px 8px;
   }
 
-  .composer__hint {
-    display: none;
-  }
-
   .empty {
     padding-top: 6vh;
-  }
-
-  .empty__title {
-    font-size: 23px;
   }
 
   .progress__step {

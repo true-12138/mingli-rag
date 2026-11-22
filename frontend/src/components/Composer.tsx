@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Mode } from "../api";
 
-const MODES: { value: Mode; label: string; placeholder: string }[] = [
-  { value: "rag", label: "原文直答", placeholder: "问一个概念，或贴一句原文，比如「天乙贵人怎么查」" },
-  { value: "agent", label: "查证后回答", placeholder: "让 Agent 自己翻书，比如「七杀有制和无制差在哪」" },
-  { value: "multi", label: "多书对照", placeholder: "想比较哪几部书，比如「三命通会和滴天髓怎么论格局」" },
+// 模式名够短就直接显示；解释放 title，鼠标悬停和读屏都能拿到。
+const MODES: { value: Mode; label: string; hint: string }[] = [
+  { value: "rag", label: "原文直答", hint: "单轮检索，最快" },
+  { value: "agent", label: "查证后回答", hint: "多步翻书取证，更慢也更全" },
+  { value: "multi", label: "多书对照", hint: "比较多部古籍的说法" },
 ];
+
+const PLACEHOLDER = "输入问题，或贴一段原文";
 
 interface Props {
   mode: Mode;
@@ -21,7 +24,6 @@ interface Props {
 export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Props) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const placeholder = MODES.find((m) => m.value === mode)?.placeholder ?? "";
 
   useEffect(() => {
     const el = inputRef.current;
@@ -51,6 +53,7 @@ export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Prop
               className={`modes__item${mode === item.value ? " modes__item--on" : ""}`}
               onClick={() => onModeChange(item.value)}
               disabled={streaming}
+              title={item.hint}
             >
               {item.label}
             </button>
@@ -62,7 +65,7 @@ export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Prop
             ref={inputRef}
             rows={1}
             value={text}
-            placeholder={placeholder}
+            placeholder={PLACEHOLDER}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key !== "Enter" || event.shiftKey) return;
@@ -71,6 +74,7 @@ export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Prop
               submit();
             }}
             aria-label="输入问题"
+            title="Enter 发送，Shift + Enter 换行"
           />
           {streaming ? (
             <button type="button" className="send send--stop" onClick={onStop}>
@@ -92,8 +96,6 @@ export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Prop
             </button>
           )}
         </div>
-
-        <p className="composer__hint">Enter 发送 · Shift + Enter 换行 · 仅供文化研究与娱乐参考 · 回答请以原文为准</p>
       </div>
     </div>
   );

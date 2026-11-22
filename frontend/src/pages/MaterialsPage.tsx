@@ -100,17 +100,14 @@ export function MaterialsPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             >
               <MenuIcon />
             </button>
-            <p className="page__kicker">素材</p>
-            <h1 className="page__title">把读到的段落攒起来</h1>
-            <p className="page__lead">
-              引用卡上点「收藏」，原文就存到这里；可以写一句自己的批注，
-              再导出 Markdown 贴进稿子。原文与引用用同一份语料，<strong>不经过模型改写</strong>。
-            </p>
+            <h1 className="page__title">素材</h1>
           </div>
-          <div className="page__aside">
-            <span className="page__count">{items.length}</span>
-            <span className="page__count-label">条素材</span>
-          </div>
+          {items.length > 0 && (
+            <div className="page__aside">
+              <span className="page__count">{items.length}</span>
+              <span className="page__count-label">条素材</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -124,9 +121,6 @@ export function MaterialsPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
 
           {items.length > 0 && (
             <div className="mat-toolbar">
-              <span className="mat-toolbar__tip">
-                导出会按收藏时间排序，原文用引用块、笔记单独一行。
-              </span>
               <button
                 type="button"
                 className="mat-export"
@@ -141,14 +135,9 @@ export function MaterialsPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
           {loading && items.length === 0 && <p className="mem-tip">正在读取…</p>}
 
           {!loading && items.length === 0 && (
-            <div className="chart-empty">
-              <span className="chart-empty__seal" aria-hidden="true">
-                材
-              </span>
-              <p>
-                还没有素材。问答里展开一条出处，点「收藏」，这段原文就会出现在这里。
-              </p>
-            </div>
+            <p className="page-empty">
+              还没有素材。展开引用点「收藏」；素材按浏览器保存。
+            </p>
           )}
 
           {items.length > 0 && (
@@ -164,11 +153,6 @@ export function MaterialsPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
               ))}
             </ul>
           )}
-
-          <p className="mem-foot">
-            素材按浏览器匿名身份保存：换浏览器或清掉站点数据就看不到之前的收藏。
-            导出的是纯文本 Markdown，不保证排版样式。
-          </p>
         </div>
       </div>
     </div>
@@ -226,7 +210,7 @@ function MaterialCard({
           value={draft}
           maxLength={2000}
           rows={2}
-          placeholder="写一句批注：这段能用在哪个主题上？"
+          placeholder="批注"
           onChange={(event) => setDraft(event.target.value)}
         />
         <button
