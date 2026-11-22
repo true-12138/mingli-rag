@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import type { Conversation } from "../api";
 import { formatWhen } from "../format";
 
-export type View = "chat" | "fortune" | "memory" | "materials" | "about";
+export type View =
+  | "chart"
+  | "astro"
+  | "physiognomy"
+  | "memory"
+  | "materials"
+  | "about";
 
 interface Props {
   conversations: Conversation[];
@@ -18,9 +24,12 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
+// 问答不再是单独板块：三个术数页面右侧都常驻对话栏，
+// 侧栏的会话列表因此一直显示，切页签也能接着上一轮问。
 const NAV: { key: View; label: string }[] = [
-  { key: "chat", label: "对话" },
-  { key: "fortune", label: "排盘" },
+  { key: "chart", label: "命盘" },
+  { key: "astro", label: "星盘" },
+  { key: "physiognomy", label: "相术" },
   { key: "memory", label: "记忆" },
   { key: "materials", label: "素材" },
   { key: "about", label: "关于" },
@@ -78,52 +87,48 @@ export function Sidebar({
         ))}
       </nav>
 
-      {view === "chat" && (
-        <button type="button" className="new-btn" onClick={onNew} disabled={streaming}>
-          <span aria-hidden="true">＋</span> 新对话
-        </button>
-      )}
+      <button type="button" className="new-btn" onClick={onNew} disabled={streaming}>
+        <span aria-hidden="true">＋</span> 新对话
+      </button>
 
-      {view === "chat" && (
-        <div className="conv-list" role="list">
-          {loading && conversations.length === 0 && (
-            <p className="conv-list__tip">正在取会话…</p>
-          )}
-          {!loading && conversations.length === 0 && (
-            <p className="conv-list__tip">还没有对话</p>
-          )}
-          {conversations.map((conv) => {
-            const active = conv.id === activeId;
-            const confirming = confirmId === conv.id;
-            return (
-              <div
-                key={conv.id}
-                role="listitem"
-                className={`conv${active ? " conv--on" : ""}`}
+      <div className="conv-list" role="list">
+        {loading && conversations.length === 0 && (
+          <p className="conv-list__tip">正在取会话…</p>
+        )}
+        {!loading && conversations.length === 0 && (
+          <p className="conv-list__tip">还没有对话</p>
+        )}
+        {conversations.map((conv) => {
+          const active = conv.id === activeId;
+          const confirming = confirmId === conv.id;
+          return (
+            <div
+              key={conv.id}
+              role="listitem"
+              className={`conv${active ? " conv--on" : ""}`}
+            >
+              <button type="button" className="conv__main" onClick={() => onSelect(conv.id)}>
+                <span className="conv__title">{conv.title || "未命名"}</span>
+                <span className="conv__meta">
+                  {formatWhen(conv.updated_at)} · {conv.message_count} 则
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`conv__del${confirming ? " conv__del--armed" : ""}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  remove(conv.id);
+                }}
+                aria-label={confirming ? "确认删除" : "删除这条会话"}
+                title={confirming ? "再点一次就删" : "删除"}
               >
-                <button type="button" className="conv__main" onClick={() => onSelect(conv.id)}>
-                  <span className="conv__title">{conv.title || "未命名"}</span>
-                  <span className="conv__meta">
-                    {formatWhen(conv.updated_at)} · {conv.message_count} 则
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className={`conv__del${confirming ? " conv__del--armed" : ""}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    remove(conv.id);
-                  }}
-                  aria-label={confirming ? "确认删除" : "删除这条会话"}
-                  title={confirming ? "再点一次就删" : "删除"}
-                >
-                  {confirming ? "删" : "×"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                {confirming ? "删" : "×"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
     </aside>
   );

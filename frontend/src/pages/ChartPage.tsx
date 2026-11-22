@@ -1,29 +1,33 @@
-// 排盘页：八字 / 星盘 / 塔罗三个页签。
-// 页签状态不放进 URL 的 query，但整个页面定位在 #/fortune，刷新还能回到这里。
+// 命盘页：八字与塔罗两个页签，右侧常驻问答栏。
+// 盘一生成就挂到对话上，追问不必换页面。
 import { useState } from "react";
 
-import { AstroPanel } from "../components/fortune/AstroPanel";
+import { ChatColumn } from "../components/ChatColumn";
 import { BaziPanel } from "../components/fortune/BaziPanel";
 import { TarotPanel } from "../components/fortune/TarotPanel";
 import { MenuIcon } from "../components/icons";
-import type { FortuneChart, FortuneKind } from "../api";
+import type { Mode } from "../api";
+import type { useChat } from "../useChat";
 
-const TABS: { key: FortuneKind; label: string; hint: string }[] = [
+const TABS = [
   { key: "bazi", label: "八字", hint: "四柱 · 大运" },
-  { key: "astro", label: "星盘", hint: "本命 · 整宫制" },
   { key: "tarot", label: "塔罗", hint: "可复现生成牌面" },
-];
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
 interface Props {
+  chat: ReturnType<typeof useChat>;
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
   onOpenDrawer: () => void;
-  // 把当前这张盘挂到对话上并跳过去；盘面只在前端存活，后端不落库。
-  onAsk: (chart: FortuneChart) => void;
 }
 
-export function FortunePage({ onOpenDrawer, onAsk }: Props) {
-  const [tab, setTab] = useState<FortuneKind>("bazi");
+export function ChartPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
+  const [tab, setTab] = useState<TabKey>("bazi");
 
   return (
-    <div className="page">
+    <div className="page page--split">
       <header className="page__head">
         <div className="page__head-inner">
           <div className="page__head-text">
@@ -34,9 +38,9 @@ export function FortunePage({ onOpenDrawer, onAsk }: Props) {
             >
               <MenuIcon />
             </button>
-            <h1 className="page__title">排盘</h1>
+            <h1 className="page__title">命盘</h1>
           </div>
-          <nav className="tabs" aria-label="排盘类型">
+          <nav className="tabs" aria-label="命盘类型">
             {TABS.map((item) => (
               <button
                 key={item.key}
@@ -53,12 +57,22 @@ export function FortunePage({ onOpenDrawer, onAsk }: Props) {
         </div>
       </header>
 
-      <div className="page__scroll">
-        <div className="page__inner">
-          {tab === "bazi" && <BaziPanel onAsk={onAsk} />}
-          {tab === "astro" && <AstroPanel onAsk={onAsk} />}
-          {tab === "tarot" && <TarotPanel onAsk={onAsk} />}
+      <div className="workspace">
+        <div className="workspace__panel">
+          <div className="page__inner">
+            {tab === "bazi" ? (
+              <BaziPanel onChart={chat.attachChart} />
+            ) : (
+              <TarotPanel onChart={chat.attachChart} />
+            )}
+          </div>
         </div>
+        <ChatColumn
+          chat={chat}
+          mode={mode}
+          onModeChange={onModeChange}
+          onNew={chat.startNew}
+        />
       </div>
     </div>
   );

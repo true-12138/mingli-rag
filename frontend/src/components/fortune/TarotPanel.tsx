@@ -11,7 +11,7 @@ const SPREADS: { key: TarotInput["spread"]; label: string; count: number }[] = [
   { key: "cross", label: "五张", count: 5 },
 ];
 
-export function TarotPanel({ onAsk }: { onAsk: (chart: TarotChart) => void }) {
+export function TarotPanel({ onChart }: { onChart: (chart: TarotChart) => void }) {
   const [spread, setSpread] = useState<TarotInput["spread"]>("three");
   const [chart, setChart] = useState<TarotChart | null>(null);
   const [lastInput, setLastInput] = useState<TarotInput | null>(null);
@@ -24,7 +24,9 @@ export function TarotPanel({ onAsk }: { onAsk: (chart: TarotChart) => void }) {
     setBusy(true);
     setError(null);
     try {
-      setChart(await drawTarot(input));
+      const next = await drawTarot(input);
+      setChart(next);
+      onChart(next);
       setLastInput(input);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "生成牌面失败了，请再试一次");
@@ -103,17 +105,6 @@ export function TarotPanel({ onAsk }: { onAsk: (chart: TarotChart) => void }) {
                 </figure>
               ))}
             </div>
-          </div>
-
-          <div className="ask-row">
-            <button
-              type="button"
-              className="btn"
-              onClick={() => onAsk(chart)}
-              title="牌面会带进对话当已知信息，追问时不必再描述抽到了哪几张"
-            >
-              就这个牌面继续问
-            </button>
           </div>
 
           {params && (

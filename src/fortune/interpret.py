@@ -86,6 +86,26 @@ def _payload(chart):
         }
     if kind == "tarot":
         return {"牌阵": chart["spread"], "牌面": chart["cards"]}
+    if kind == "physiognomy":
+        # 相术没有程序算出来的盘：进 prompt 的是用户确认过的特征卡。
+        # 字段名带「用户自述」，免得模型把它当成图像识别的结论。
+        subject = str(chart.get("subject") or "").strip()
+        features = chart.get("features")
+        if subject not in ("面相", "手相") or not isinstance(features, dict) or not features:
+            # 空卡等于没带盘：让上游退化成普通问答，比送一张空表进 prompt 好
+            return {}
+        clean = {
+            str(key).strip(): str(value).strip()
+            for key, value in list(features.items())[:16]
+            if str(key).strip() and str(value).strip()
+        }
+        if not clean:
+            return {}
+        return {
+            "类型": subject,
+            "用户自述特征": clean,
+            "补充": str(chart.get("note") or "").strip()[:120],
+        }
     return chart
 
 
@@ -143,6 +163,17 @@ def _retrieval_query(chart, question=None):
             name = str(card.get("name") or "").strip()
             if name:
                 bits.append(name)
+    elif kind == "physiognomy":
+        subject = str(chart.get("subject") or "").strip()
+        if subject:
+            bits.append(subject)
+        features = chart.get("features") or {}
+        if isinstance(features, dict):
+            # 只取前 8 项，特征卡再长也不该把检索问句撑成一段作文
+            for key, value in list(features.items())[:8]:
+                value = str(value or "").strip()
+                if value:
+                    bits.append(f"{key}{value}")
 
     q = str(question or "").strip()
     if q:

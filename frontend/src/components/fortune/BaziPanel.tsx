@@ -21,7 +21,7 @@ const WUXING = [
   { name: "水", cls: "shui" },
 ];
 
-export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
+export function BaziPanel({ onChart }: { onChart: (chart: BaziChart) => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("12:00");
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -43,6 +43,8 @@ export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
       }
       const next = result.chart as BaziChart;
       setChart(next);
+      // 盘一出来就挂到右侧对话上：追问不必再点「继续问」
+      onChart(next);
       setNeedInput(null);
       // 补全的字段回填到表单，避免下面显示的信息和盘对不上
       const { year, month, day, hour, minute, gender: sex } = next.input;
@@ -261,17 +263,6 @@ export function BaziPanel({ onAsk }: { onAsk: (chart: BaziChart) => void }) {
                 </div>
               </dl>
             </details>
-          </div>
-
-          <div className="ask-row">
-            <button
-              type="button"
-              className="btn"
-              onClick={() => onAsk(chart)}
-              title="盘面会带进对话当已知信息，追问时不必再描述八字"
-            >
-              就这个盘继续问
-            </button>
           </div>
 
           {params && (

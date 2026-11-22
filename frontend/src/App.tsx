@@ -2,26 +2,28 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Sidebar, type View } from "./components/Sidebar";
 import { AboutPage } from "./pages/AboutPage";
-import { ChatPage } from "./pages/ChatPage";
-import { FortunePage } from "./pages/FortunePage";
+import { AstroPage } from "./pages/AstroPage";
+import { ChartPage } from "./pages/ChartPage";
 import { MaterialsPage } from "./pages/MaterialsPage";
 import { MemoryPage } from "./pages/MemoryPage";
-import type { FortuneChart, Mode } from "./api";
+import { PhysiognomyPage } from "./pages/PhysiognomyPage";
+import type { Mode } from "./api";
 import { useChat } from "./useChat";
 
-// 轻量 hash 路由：#/chat、#/fortune、#/memory、#/materials、#/about。
-// 不用 react-router——五个页面还不值得引一个路由库。
+// 轻量 hash 路由：#/chart、#/astro、#/physiognomy、#/memory、#/materials、#/about。
+// 问答已并入三个术数页面，旧的 #/chat、#/fortune 落到命盘页，旧链接不作废。
 function readView(): View {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  if (hash === "fortune") return "fortune";
+  if (hash === "astro") return "astro";
+  if (hash === "physiognomy") return "physiognomy";
   if (hash === "memory") return "memory";
   if (hash === "materials") return "materials";
   if (hash === "about") return "about";
-  return "chat";
+  return "chart";
 }
 
 export default function App() {
-  // useChat 放在 App：切到排盘页再回来，正在生成的回答不会丢
+  // useChat 放在 App：切页签时正在生成的回答不会丢，盘面也只挂一份
   const chat = useChat();
   // 默认用固定 RAG：实测 2.9–3.3s/题，查证后回答（agent）196.8s/题。
   // 公网工具态先保证「问一句等几秒」；需要多步查证时用户可手动切到「查证后回答」。
@@ -44,16 +46,7 @@ export default function App() {
     setDrawer(false);
   }, []);
 
-  // 排盘页点「就这个盘继续问」：把盘挂到对话上，再切到对话页。
-  // 盘面只是前端状态，后端不落库——刷新后需要重新带一次。
-  const { attachChart } = chat;
-  const askWithChart = useCallback(
-    (chart: FortuneChart) => {
-      attachChart(chart);
-      go("chat");
-    },
-    [attachChart, go],
-  );
+  const openDrawer = () => setDrawer((open) => !open);
 
   return (
     <div className={`app${drawer ? " app--drawer" : ""}`}>
@@ -78,26 +71,33 @@ export default function App() {
       <div className="scrim" onClick={() => setDrawer(false)} aria-hidden="true" />
 
       <main className="main">
-        {view === "chat" && (
-          <ChatPage
+        {view === "chart" && (
+          <ChartPage
             chat={chat}
             mode={mode}
             onModeChange={setMode}
-            onOpenDrawer={() => setDrawer((open) => !open)}
+            onOpenDrawer={openDrawer}
           />
         )}
-        {view === "fortune" && (
-          <FortunePage onOpenDrawer={() => setDrawer((open) => !open)} onAsk={askWithChart} />
+        {view === "astro" && (
+          <AstroPage
+            chat={chat}
+            mode={mode}
+            onModeChange={setMode}
+            onOpenDrawer={openDrawer}
+          />
         )}
-        {view === "memory" && (
-          <MemoryPage onOpenDrawer={() => setDrawer((open) => !open)} />
+        {view === "physiognomy" && (
+          <PhysiognomyPage
+            chat={chat}
+            mode={mode}
+            onModeChange={setMode}
+            onOpenDrawer={openDrawer}
+          />
         )}
-        {view === "materials" && (
-          <MaterialsPage onOpenDrawer={() => setDrawer((open) => !open)} />
-        )}
-        {view === "about" && (
-          <AboutPage onOpenDrawer={() => setDrawer((open) => !open)} />
-        )}
+        {view === "memory" && <MemoryPage onOpenDrawer={openDrawer} />}
+        {view === "materials" && <MaterialsPage onOpenDrawer={openDrawer} />}
+        {view === "about" && <AboutPage onOpenDrawer={openDrawer} />}
       </main>
     </div>
   );

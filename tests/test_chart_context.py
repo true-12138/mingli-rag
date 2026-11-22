@@ -103,6 +103,46 @@ def test_system_prompt_keeps_base_rules():
     assert chart_context.system_prompt(base, None) == base
 
 
+# ---------- 相术：特征卡是用户自述，不是识图结论 ----------
+
+CARD = {
+    "kind": "physiognomy",
+    "subject": "面相",
+    "features": {"脸型": "方脸", "眉形": "剑眉", "口形": "阔口"},
+    "note": "右眉尾有一道疤",
+}
+
+
+def test_physiognomy_card_roundtrip():
+    assert chart_context.normalize(CARD) is CARD
+    block = chart_context.prompt_block(CARD)
+    assert block.startswith("【盘面】")
+    assert "用户自述" in block
+    assert "不是图像识别结果" in block
+    assert "方脸" in block
+    # 不能照搬「程序按历法算出」的说法
+    assert "历法" not in block
+
+
+def test_physiognomy_card_must_be_non_empty():
+    assert chart_context.normalize({"kind": "physiognomy", "subject": "面相", "features": {}}) is None
+    assert chart_context.normalize({"kind": "physiognomy", "subject": "手相"}) is None
+    assert chart_context.normalize({"kind": "physiognomy", "subject": "八字", "features": {"脸型": "方脸"}}) is None
+
+
+def test_physiognomy_system_prompt_uses_its_own_rule():
+    prompt = chart_context.system_prompt("原有规则", CARD)
+    assert chart_context.PHYSIOGNOMY_RULE in prompt
+    assert chart_context.CHART_RULE not in prompt
+
+
+def test_physiognomy_retrieval_query_carries_features():
+    query = chart_context.retrieval_query(CARD, "我适合做什么")
+    assert "我适合做什么" in query
+    for word in ("面相", "方脸", "剑眉", "阔口"):
+        assert word in query
+
+
 # ---------- RAG：盘面进 prompt，引用仍来自片段 ----------
 
 def _fake_retrieve(hits):

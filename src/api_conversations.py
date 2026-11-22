@@ -146,8 +146,8 @@ class ConversationChatRequest(BaseModel):
     max_steps: int = Field(6, ge=1, le=10)
     # 用户确认动作后拿到的一次性令牌；本次运行只放行与令牌绑定的那一个工具调用。
     approvals: list[str] = Field(default_factory=list, max_length=5)
-    # 排盘页算好的盘面（bazi / astro / tarot）。只作上下文，不作引用依据。
-    # 盘面不落库，所以前端每次追问都要重新带一遍。
+    # 排盘页算好的盘面（bazi / astro / tarot）或相术特征卡（physiognomy）。
+    # 只作上下文，不作引用依据。盘面不落库，所以前端每次追问都要重新带一遍。
     chart: dict[str, Any] | None = None
     # auto=按难度自动路由；small/large=本次请求强制某一档（评测与排障用）
     tier: Literal["auto", "small", "large"] = "auto"

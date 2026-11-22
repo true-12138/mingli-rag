@@ -259,7 +259,16 @@ export interface TarotChart {
   text: string;
 }
 
-export type FortuneChart = BaziChart | AstroChart | TarotChart;
+// 相术：没有历法可算，进对话的是用户自己对照照片选出来的特征卡。
+// subject 只区分面相/手相，features 的键值都是中文，直接进 prompt。
+export interface PhysiognomyChart {
+  kind: "physiognomy";
+  subject: "面相" | "手相";
+  features: Record<string, string>;
+  note?: string;
+}
+
+export type FortuneChart = BaziChart | AstroChart | TarotChart | PhysiognomyChart;
 
 // 排盘信息不够时，后端返回「还缺什么」，由这里渲染成追问表单。
 export interface IntakeField {

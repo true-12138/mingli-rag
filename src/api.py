@@ -123,8 +123,9 @@ class ChatRequest(BaseModel):
     max_steps: int = Field(6, ge=1, le=10)
     # 前端最多带 3 轮；这里放宽到 20 条，normalize_history 会再裁剪
     history: list[HistoryTurn] = Field(default_factory=list, max_length=20)
-    # 排盘页算好的盘面（bazi / astro / tarot）。只作上下文，不作引用依据；
-    # 合法性由 chart_context.normalize 再拦一道，这里不写死字段结构。
+    # 排盘页算好的盘面（bazi / astro / tarot）或相术特征卡（physiognomy）。
+    # 只作上下文，不作引用依据；合法性由 chart_context.normalize 再拦一道，
+    # 这里不写死字段结构。
     chart: dict[str, Any] | None = None
     # auto=按难度自动路由；small/large=本次请求强制某一档（评测与排障用）
     tier: Literal["auto", "small", "large"] = "auto"

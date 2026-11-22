@@ -10,22 +10,34 @@
 
 三条边界写死在代码里：
 
-1. 只收前端传来的固定结构（bazi / astro / tarot），大小有上限；
+1. 只收前端传来的固定结构（bazi / astro / tarot / physiognomy），大小有上限；
 2. 盘面只做压缩后进 prompt，不让模型「重算」或补盘面里没有的星体神煞；
 3. 有盘面时检索问句要带上盘面关键词，否则「我这盘」这类问法检索不到东西。
+
+相术（physiognomy）和三种盘不一样：没有历法可算，进 prompt 的是用户自己
+对照照片选出来的特征卡。规则里写明「用户自述」，模型就不会把它说成识图结论。
 """
 from __future__ import annotations
 
 import json
 
 MAX_CHART_BYTES = 16 * 1024
-KINDS = ("bazi", "astro", "tarot")
+KINDS = ("bazi", "astro", "tarot", "physiognomy")
 
 # 进 system prompt 的一条规则：和原有规则并存，不替换。
 CHART_RULE = (
     "本轮附带【盘面】。盘面是程序算出的既定事实：可以据此说明这张盘的情况，"
     "但不得修改、不得重新推算、不得补充盘面里没有的星体或神煞。"
     "盘面不是出处——引用编号仍然只能来自本轮检索到的片段，不能拿盘面当引用依据。"
+)
+
+# 相术没有程序算出来的盘，特征卡是用户自己对照照片选的。
+# 规则要防两件事：把「自述」说成「我看出来」；以及据此下健康、婚配一类断言。
+PHYSIOGNOMY_RULE = (
+    "本轮附带【盘面】。相术特征卡是用户自述，不是图像识别的结论："
+    "只能按这些特征查古籍说法，不得声称看过照片、不得推断用户外貌，"
+    "也不得补充特征卡里没有的部位。盘面不是出处——引用编号仍然只能来自"
+    "本轮检索到的片段。相术只作古籍知识参考，不涉及健康诊断与婚配断言。"
 )
 
 
@@ -69,11 +81,20 @@ def prompt_block(chart):
     except Exception:
         return ""
     body = json.dumps(payload, ensure_ascii=False, indent=2)
-    return (
-        "【盘面】\n"
-        "（以下由程序按历法算出，是既定事实：可以解释，不能修改或补项；"
-        "盘面本身不是引用依据。）\n" + body
-    )
+    # 相术卡是用户自述，不能照搬「程序按历法算出」的说法
+    if chart.get("kind") == "physiognomy":
+        head = (
+            "【盘面】\n"
+            "（以下是用户自述的相术特征，不是图像识别结果：只能据此查古籍说法，"
+            "不得声称看过照片、不得推断外貌、不得补项；盘面本身不是引用依据。）\n"
+        )
+    else:
+        head = (
+            "【盘面】\n"
+            "（以下由程序按历法算出，是既定事实：可以解释，不能修改或补项；"
+            "盘面本身不是引用依据。）\n"
+        )
+    return head + body
 
 
 def retrieval_query(chart, question):
@@ -95,6 +116,8 @@ def retrieval_query(chart, question):
 
 def system_prompt(base, chart):
     """有盘面时在 system prompt 末尾追加一条规则；没有就原样返回。"""
-    if normalize(chart) is None:
+    chart = normalize(chart)
+    if chart is None:
         return base
-    return base.rstrip() + "\n\n" + CHART_RULE + "\n"
+    rule = PHYSIOGNOMY_RULE if chart.get("kind") == "physiognomy" else CHART_RULE
+    return base.rstrip() + "\n\n" + rule + "\n"
