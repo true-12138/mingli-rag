@@ -67,3 +67,17 @@ def test_schema_props_are_real_params(tools_ast):
         params = {a.arg for a in funcs[fn["name"]].args.args}
         for prop in fn["parameters"].get("properties", {}):
             assert prop in params, "{}: schema 里的 {} 不是函数参数".format(fn["name"], prop)
+
+
+def test_draw_name_wraps_fortune_name(tools_ast):
+    """姓名盘只能有一个实现：tools 里的 draw_name 必须调 fortune.name.build。
+
+    以前姓名是「前端自己能算」的例外，Agent 看不见这张盘；补进工具层以后
+    若有人另写一套笔画/数理逻辑，盘面就会和网页上对不上。
+    """
+    funcs, names = tools_ast
+    assert "draw_name" in names
+    src = ast.get_source_segment(
+        (SRC / "tools.py").read_text(encoding="utf-8"), funcs["draw_name"]
+    )
+    assert "_build_name(" in src

@@ -23,7 +23,7 @@ function levelClass(level: string): string {
   return "mid";
 }
 
-export function NamePanel({ onChart }: { onChart: (chart: NameChart) => void }) {
+export function NamePanel({ onChart, onAsk }: { onChart: (chart: NameChart) => void; onAsk?: (question: string) => void }) {
   const [surname, setSurname] = useState("");
   const [given, setGiven] = useState("");
   const [chart, setChart] = useState<NameChart | null>(null);
@@ -205,6 +205,7 @@ export function NamePanel({ onChart }: { onChart: (chart: NameChart) => void }) 
             kind="name"
             params={{ surname: chart.surname, given: chart.given }}
             resetKey={chart.full}
+            onAsk={onAsk}
           />
         </>
       )}

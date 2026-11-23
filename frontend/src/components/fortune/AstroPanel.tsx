@@ -33,7 +33,7 @@ const CITIES = [
 const ELEMENTS = ["火", "土", "风", "水"];
 const MODALITIES = ["基本", "固定", "变动"];
 
-export function AstroPanel({ onChart }: { onChart: (chart: AstroChart) => void }) {
+export function AstroPanel({ onChart, onAsk }: { onChart: (chart: AstroChart) => void; onAsk?: (question: string) => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("12:00");
   const [city, setCity] = useState(CITIES[0].name);
@@ -291,7 +291,7 @@ export function AstroPanel({ onChart }: { onChart: (chart: AstroChart) => void }
           </div>
 
           {params && (
-            <ReadingBox kind="astro" params={params} resetKey={chart.text} />
+            <ReadingBox kind="astro" params={params} resetKey={chart.text} onAsk={onAsk} />
           )}
         </>
       )}

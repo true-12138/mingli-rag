@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import corpus
 from fortune.astro import natal_chart
 from fortune.bazi import paipan as _paipan_bazi
+from fortune.name import build as _build_name
 from fortune.tarot import draw as _draw_tarot
 from retrieval import bm25, chunks, embeds, encode_query, rrf_k, tokenize
 
@@ -264,6 +265,16 @@ def draw_astro(year, month, day, hour=0, minute=0,
     return {"ok": True, "tool": "draw_astro", "args": args, "result": chart}
 
 
+def draw_name(surname, given):
+    """算姓名五格盘。查康熙笔画与数理表，纯查表，同样输入同样结果。"""
+    args = {"surname": surname, "given": given}
+    try:
+        chart = _build_name(surname, given)
+    except ValueError as exc:
+        return {"ok": False, "tool": "draw_name", "args": args, "error": str(exc)}
+    return {"ok": True, "tool": "draw_name", "args": args, "result": chart}
+
+
 def draw_tarot(n=3, seed=None, spread=None):
     """抽塔罗牌。seed 固定时结果可复现，用于测试。"""
     args = {"n": n, "seed": seed, "spread": spread}
@@ -282,6 +293,7 @@ TOOLS = {
     "draw_bazi": draw_bazi,
     "draw_astro": draw_astro,
     "draw_tarot": draw_tarot,
+    "draw_name": draw_name,
 }
 
 

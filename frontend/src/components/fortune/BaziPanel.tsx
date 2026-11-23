@@ -21,7 +21,7 @@ const WUXING = [
   { name: "水", cls: "shui" },
 ];
 
-export function BaziPanel({ onChart }: { onChart: (chart: BaziChart) => void }) {
+export function BaziPanel({ onChart, onAsk }: { onChart: (chart: BaziChart) => void; onAsk?: (question: string) => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("12:00");
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -266,7 +266,12 @@ export function BaziPanel({ onChart }: { onChart: (chart: BaziChart) => void }) 
           </div>
 
           {params && (
-            <ReadingBox kind="bazi" params={params} resetKey={chart.input.solar + chart.input.gender} />
+            <ReadingBox
+              kind="bazi"
+              params={params}
+              resetKey={chart.input.solar + chart.input.gender}
+              onAsk={onAsk}
+            />
           )}
         </>
       )}

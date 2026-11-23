@@ -6,8 +6,8 @@
 - read         只读取语料 / 算力结果，不改任何状态。失败最多重试一次。
 - side_effect  可能发消息、写日历、建工单、扣款……重复执行有后果。
 
-内置 7 个工具全部是纯函数：检索、读原文、查术语、排盘。同样的输入永远
-同样的输出，所以它们都是 read。
+内置 8 个工具全部是纯函数：检索、读原文、查术语、排盘（八字 / 星盘 /
+塔罗 / 姓名）。同样的输入永远同样的输出，所以它们都是 read。
 
 外部 MCP 工具默认按 side_effect 处理。配置方确认某个工具只读后，在
 `mcp_servers.json` 里用 ``"read_only": ["search", ...]`` 声明，才会放行；
@@ -31,6 +31,7 @@ BUILTIN_TIERS = {
     "draw_bazi": READ,
     "draw_astro": READ,
     "draw_tarot": READ,
+    "draw_name": READ,
 }
 
 

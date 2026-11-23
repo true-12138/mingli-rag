@@ -195,3 +195,47 @@ class TestInterpretCoverage:
         assert "1928" in seen["prompt"]
         assert result["kind"] == "name"
 
+    def test_question_centres_the_prompt(self, monkeypatch):
+        """有具体问题就按问题组织回答，不再附整张盘的固定五节。
+
+        线上踩过：/read 无条件附加 SECTION_HINTS，同一张盘换任何问题都
+        吐同一套小节（三问三同）。这条测试锁住分支。
+        """
+        import sys
+        import types
+
+        from fortune import interpret
+
+        seen = {}
+
+        def fake_chat(messages, **kwargs):
+            seen["prompt"] = messages[-1]["content"]
+            return '{"summary": "s", "sections": [], "citations": [], "disclaimer": "d"}'
+
+        stub = types.ModuleType("rag")
+        stub._chat = fake_chat
+        stub._parse_json = lambda raw: __import__("json").loads(raw)
+
+        payload = dict(
+            kind="bazi", sizhu={}, day_master="甲木", shishen_gan={},
+            shishen_zhi={}, canggan={}, wuxing={}, wuxing_missing=[],
+            nayin={}, qiyun={}, dayun=[], current_dayun={},
+        )
+
+        monkeypatch.setitem(sys.modules, "rag", stub)
+        monkeypatch.setattr(interpret, "_retrieve_fragments", lambda *a, **k: ([], ""))
+
+        interpret.read(payload, question="官星是什么意思")
+        asked = seen["prompt"]
+        assert "【用户的问题】\n官星是什么意思" in asked
+        assert "【回答要求】" in asked
+        # 有问题时刻意不带整盘五节，免得模型又从头讲一遍
+        assert "【希望覆盖的角度】" not in asked
+        assert interpret.SECTION_HINTS["bazi"] not in asked
+
+        interpret.read(payload)
+        overall = seen["prompt"]
+        assert "【希望覆盖的角度】" in overall
+        assert interpret.SECTION_HINTS["bazi"] in overall
+        assert "【回答要求】" not in overall
+

@@ -1,7 +1,6 @@
 // 排盘页：八字 / 星盘 / 姓名 / 塔罗四个页签共用右侧常驻问答栏。
 // 排盘和追问在同一屏完成，盘一生成就挂到对话上。
-import { useEffect, useState } from "react";
-
+import { useCallback, useEffect, useState } from "react";
 import { ChatColumn } from "../components/ChatColumn";
 import { SUGGESTIONS } from "../components/EmptyState";
 import { AstroPanel } from "../components/fortune/AstroPanel";
@@ -60,6 +59,15 @@ export function ChartPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
   const suggestions =
     tab === "astro" ? SUGGESTIONS.astro : tab === "bazi" ? SUGGESTIONS.bazi : undefined;
 
+  // 盘面下的「解读」格子里写了具体问题时，交给右侧对话：
+  // 那条链路才带检索原文、多轮上下文和长期记忆。
+  const ask = useCallback(
+    (question: string) => {
+      void chat.send(question, mode);
+    },
+    [chat, mode],
+  );
+
   return (
     <div className="page page--split">
       <header className="page__head">
@@ -94,10 +102,10 @@ export function ChartPage({ chat, mode, onModeChange, onOpenDrawer }: Props) {
       <div className="workspace">
         <div className="workspace__panel">
           <div className="page__inner">
-            {tab === "bazi" && <BaziPanel onChart={chat.attachChart} />}
-            {tab === "astro" && <AstroPanel onChart={chat.attachChart} />}
-            {tab === "name" && <NamePanel onChart={chat.attachChart} />}
-            {tab === "tarot" && <TarotPanel onChart={chat.attachChart} />}
+            {tab === "bazi" && <BaziPanel onChart={chat.attachChart} onAsk={ask} />}
+            {tab === "astro" && <AstroPanel onChart={chat.attachChart} onAsk={ask} />}
+            {tab === "name" && <NamePanel onChart={chat.attachChart} onAsk={ask} />}
+            {tab === "tarot" && <TarotPanel onChart={chat.attachChart} onAsk={ask} />}
           </div>
         </div>
         <ChatColumn

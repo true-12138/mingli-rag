@@ -1,7 +1,10 @@
-// 解读块：三种盘共用。
+// 解读块：四种盘共用。
 //
-// 盘面在上，这里只负责「把已经算好的盘讲一讲」。
-// 用户可以不填问题直接要整体解读；问题只影响措辞，不影响盘面。
+// 盘面在上，这里负责两件事：
+// 1. 不填问题 → 走 /read 把整张盘讲一遍（固定五节，本来就是整体解读）；
+// 2. 填了问题 → 交给右侧对话（检索 + 引用原文 + 多轮 + 长期记忆）。
+//    以前这里也把问题扔给 /read，但 /read 是「整体解读」，同一张盘换任何
+//    问题都吐同一套小节，线上实测三问三同。具体问题必须走问答链路。
 //
 // 解读会带回收到的古籍片段编号：正文里的 [n] 可以点开原文。
 // 但盘面本身才是主证据——没有引用不代表解读失败。
@@ -25,9 +28,11 @@ interface Props {
   params: Record<string, unknown>;
   /** 换了盘就把上一次的解读清掉，避免解读和盘面对不上。 */
   resetKey: string;
+  /** 有具体问题时交给右侧对话回答；不传就退化成带问题的 /read 解读。 */
+  onAsk?: (question: string) => void;
 }
 
-export function ReadingBox({ kind, params, resetKey }: Props) {
+export function ReadingBox({ kind, params, resetKey, onAsk }: Props) {
   const [question, setQuestion] = useState("");
   const [reading, setReading] = useState<FortuneReading | null>(null);
   const [chunks, setChunks] = useState<Record<number, Chunk>>({});
@@ -78,12 +83,20 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
     }
   };
 
+  const typed = question.trim();
+
   const run = async () => {
     if (busy) return;
+    // 有具体问题时走对话：那边才带检索、原文引用、多轮和长期记忆。
+    if (typed && onAsk) {
+      onAsk(typed);
+      setQuestion("");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const result = await readFortune(kind, params, question.trim() || undefined);
+      const result = await readFortune(kind, params, typed || undefined);
       setReading(result);
       setFocus(null);
       void loadChunks(result.citations_chunk_ids ?? []);
@@ -126,20 +139,22 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
           className="reading__q"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="想问什么？（可不填，直接看整体）"
+          placeholder="想问什么？留空就是整体解读"
           maxLength={500}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.nativeEvent.isComposing) void run();
           }}
         />
         <button type="button" className="btn btn--solid" onClick={run} disabled={busy}>
-          {busy ? "解读中…" : "查看文化视角说明"}
+          {busy ? "解读中…" : typed && onAsk ? "去右侧提问" : "整体解读"}
         </button>
       </div>
       <p className="reading__hint">
-        {kind === "name"
-          ? "姓名解读按康熙笔画与五格剖象表解释；这套体系来自 1928 年，仅供文化参考，不涉及改名与命运断言。"
-          : "解读只解释盘面；[n] 可点开核对原文；仅供文化研究与娱乐参考。"}
+        {typed && onAsk
+          ? "具体问题在右侧对话里回答：带上这张盘检索古籍原文，可多轮追问，也会记住你的偏好。"
+          : kind === "name"
+            ? "姓名解读按康熙笔画与五格剖象表解释；这套体系来自 1928 年，仅供文化参考，不涉及改名与命运断言。"
+            : "解读只解释盘面；[n] 可点开核对原文；仅供文化研究与娱乐参考。"}
       </p>
 
       {error && (

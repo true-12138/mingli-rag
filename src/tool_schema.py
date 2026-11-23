@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""7 个工具的 OpenAI function calling 声明。
+"""8 个工具的 OpenAI function calling 声明。
 
 写成显式 schema 而不是从函数签名反射生成，是为了控制 description——
 模型靠它决定「什么时候该调这个工具、query 写什么」，这层信息签名里没有。
@@ -129,6 +129,25 @@ SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "draw_name",
+            "description": (
+                "算姓名五格盘：康熙笔画、五格三才、81 数理与三大运势。纯查表，"
+                "不是古籍；回答时要说「这套体系」（1928 年熊崎健翁整理），"
+                "不得冒充「古书云」，也不据此下改名或命运断言。"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "surname": {"type": "string", "description": "姓，1–2 字"},
+                    "given": {"type": "string", "description": "名，1–2 字"},
+                },
+                "required": ["surname", "given"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "draw_tarot",
             "description": "抽塔罗牌。seed 固定时结果可复现。",
             "parameters": {
@@ -151,7 +170,7 @@ NAME2SCHEMA = {s["function"]["name"]: s for s in SCHEMAS}
 
 
 def all_schemas():
-    """内置 7 个 + 已挂载的外部 MCP 工具。
+    """内置 8 个 + 已挂载的外部 MCP 工具。
 
     `SCHEMAS` 保持静态，单测和文档都以它为准；外部工具只有在
     `mcp_servers.json` 存在时才会出现，没配置就原样返回。

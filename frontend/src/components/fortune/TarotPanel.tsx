@@ -11,7 +11,7 @@ const SPREADS: { key: TarotInput["spread"]; label: string; count: number }[] = [
   { key: "cross", label: "五张", count: 5 },
 ];
 
-export function TarotPanel({ onChart }: { onChart: (chart: TarotChart) => void }) {
+export function TarotPanel({ onChart, onAsk }: { onChart: (chart: TarotChart) => void; onAsk?: (question: string) => void }) {
   const [spread, setSpread] = useState<TarotInput["spread"]>("three");
   const [chart, setChart] = useState<TarotChart | null>(null);
   const [lastInput, setLastInput] = useState<TarotInput | null>(null);
@@ -108,7 +108,7 @@ export function TarotPanel({ onChart }: { onChart: (chart: TarotChart) => void }
           </div>
 
           {params && (
-            <ReadingBox kind="tarot" params={params} resetKey={String(chart.seed)} />
+            <ReadingBox kind="tarot" params={params} resetKey={String(chart.seed)} onAsk={onAsk} />
           )}
         </>
       )}
