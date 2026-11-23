@@ -54,6 +54,16 @@ SECTION_HINTS = {
     "bazi": "性格底色（日主与十神）、关系与相处方式、事业学业取向、当前大运阶段、需要注意的倾向",
     "astro": "核心人格（太阳/月亮/上升）、情感与关系、事业与表达、盘面张力（四分相/对分相）、成长方向",
     "tarot": "整体氛围、逐张说明它在对应位置的含义、几张牌之间的呼应、可供自我反思的提问",
+    "name": "用字的字义与五行、五格（天/人/地/外/总）各自的数理与主管、三才配置、三大运势，并说明这套体系能说明什么、不能说明什么",
+}
+
+# 送进 prompt 的盘类型名。新增盘种时三处必须一起加：chart_context.KINDS、
+# SECTION_HINTS、这里——少一处就会在 /read 里 KeyError（姓名就踩过）。
+KIND_LABELS = {
+    "bazi": "八字命盘",
+    "astro": "西方本命星盘",
+    "tarot": "塔罗牌阵",
+    "name": "姓名五格（1928 年以来的现代数理体系，不是古籍）",
 }
 
 
@@ -86,6 +96,60 @@ def _payload(chart):
         }
     if kind == "tarot":
         return {"牌阵": chart["spread"], "牌面": chart["cards"]}
+    if kind == "name":
+        # 姓名盘全是查表结果：把每格的「数 + 五行 + 吉凶 + 说明」都送进去，
+        # 模型只负责组织语言，不负责判断吉凶。
+        wuge = chart["wuge"]
+        grid_names = (
+            ("tian", "天格"), ("ren", "人格"), ("di", "地格"),
+            ("wai", "外格"), ("zong", "总格"),
+        )
+        return {
+            "姓名": chart["full"],
+            "姓": chart["surname"],
+            "名": chart["given"],
+            "用字": [
+                {
+                    "字": item["char"],
+                    "位": item["role"],
+                    "康熙笔画": item["kangxi"],
+                    "字义五行": item["wuxing"],
+                    "部首": item["radical"],
+                    "拼音": item["pinyin"],
+                    "结构": item["structure"],
+                }
+                for item in chart["chars"]
+            ],
+            "五格": {
+                label: {
+                    "数": wuge[key]["num"],
+                    "五行": wuge[key]["wuxing"],
+                    "主管": wuge[key]["role"],
+                    "吉凶": wuge[key]["level"],
+                    "诗诀": wuge[key]["poem"],
+                    "说明": wuge[key]["text"],
+                }
+                for key, label in grid_names
+            },
+            "三才": {
+                "配置": chart["sancai"]["combo"],
+                "天对人格": chart["sancai"]["tian_ren"],
+                "人对地格": chart["sancai"]["ren_di"],
+                "吉凶": chart["sancai"]["level"],
+                "说明": chart["sancai"]["text"],
+            },
+            "三运": [
+                {
+                    "名": item["name"],
+                    "看": item["basis"],
+                    "五行": item["combo"],
+                    "关系": item["relation"],
+                    "吉凶": item["level"],
+                    "说明": item["text"],
+                }
+                for item in chart["yunshi"]
+            ],
+        }
     if kind == "physiognomy":
         # 相术没有程序算出来的盘：进 prompt 的是用户确认过的特征卡。
         # 字段名带「用户自述」，免得模型把它当成图像识别的结论。
@@ -174,6 +238,19 @@ def _retrieval_query(chart, question=None):
                 value = str(value or "").strip()
                 if value:
                     bits.append(f"{key}{value}")
+    elif kind == "name":
+        # 语料里没有姓名学专著，能搜到的是五行、字义一类的说明；
+        # 五格剖象是 1928 年的现代体系，检索只为解释用字与五行。
+        wx = [
+            str(item.get("wuxing") or "").strip()
+            for item in chart.get("chars") or []
+        ]
+        wx = [item for item in wx if item]
+        if wx:
+            bits.append("用字五行 " + " ".join(dict.fromkeys(wx)))
+        combo = str((chart.get("sancai") or {}).get("combo") or "").strip()
+        if combo:
+            bits.append("三才 " + combo)
 
     q = str(question or "").strip()
     if q:
@@ -250,7 +327,7 @@ def read(chart, question=None, user_note=None, temperature=0.7, api_key=None,
         )
 
     parts = [
-        "【盘类型】" + {"bazi": "八字命盘", "astro": "西方本命星盘", "tarot": "塔罗牌阵"}[kind],
+        "【盘类型】" + KIND_LABELS[kind],
         "【盘面数据】\n" + json.dumps(_payload(chart), ensure_ascii=False, indent=2),
     ]
     if hits:

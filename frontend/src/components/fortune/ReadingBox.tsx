@@ -137,7 +137,9 @@ export function ReadingBox({ kind, params, resetKey }: Props) {
         </button>
       </div>
       <p className="reading__hint">
-        解读只解释盘面；[n] 可点开核对原文；仅供文化研究与娱乐参考。
+        {kind === "name"
+          ? "姓名解读按康熙笔画与五格剖象表解释；这套体系来自 1928 年，仅供文化参考，不涉及改名与命运断言。"
+          : "解读只解释盘面；[n] 可点开核对原文；仅供文化研究与娱乐参考。"}
       </p>
 
       {error && (

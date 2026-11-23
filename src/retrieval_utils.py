@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """检索里可单测的零件：BM25 分词器、重排。
 
-单独成模块是因为 `retrieval.py` 一导入就要读 8,681 条语料和 34MB embedding，
+单独成模块是因为 `retrieval.py` 一导入就要读 9,719 条语料和 39MB embedding，
 不适合在 CI 里为了测一个分词函数而加载。这里的函数都是纯函数或懒加载对象，
 不碰语料文件；`retrieval.py` 再把它们接进真正的检索链路。
 """
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import threading
 from pathlib import Path
@@ -22,6 +23,55 @@ def bigram_tokens(text: str) -> list[str]:
     if len(s) < 2:
         return list(s)
     return [s[i:i + 2] for i in range(len(s) - 1)]
+
+
+# 纹名：二到四字 + 紋/纹（金井紋、鴈陣紋、川字紋…）。手相/面相卷里
+# 每个条目都以纹名开头，检索问句也几乎都带纹名，把它单独提出来加权最划算。
+ENTRY_NAME_RE = re.compile(r"[一-鿿]{2,4}(?:紋|纹)")
+
+
+def fold_simplified(text: str) -> str:
+    """繁体/异体折叠成简体。古籍原文多为繁体（鴈陣紋、玉柱紋），用户问句
+    是简体（雁阵纹、玉柱纹），不折叠时字二元组一条都对不上。
+    没装 zhconv 时原样返回，检索退化但不崩。
+    """
+    try:
+        import zhconv
+    except ImportError:
+        return text
+    return zhconv.convert(text, "zh-cn")
+
+
+def normalize_cjk(text: str) -> str:
+    """折叠繁简并去掉标点/空白，只留汉字和字母数字。用于比较纹名。"""
+    s = fold_simplified(text)
+    return "".join(ch for ch in s if ch.isalnum())
+
+
+def _fold_keep_punct(text: str) -> str:
+    """折叠繁简、去掉空白，但保留标点。
+
+    重排候选池前试过把标点也去掉，字二元组更「干净」，可 20 道标点组题里
+    q01、q08 反而掉出 Top-5（q05 进、净 -1）：标点二元组在原文里也出现，
+    是有效的句法信号，去掉之后长句查询的区分度反而下降。保留标点。
+    """
+    return "".join(ch for ch in fold_simplified(text) if not ch.isspace())
+
+
+def bigram_fold_tokens(text: str) -> list[str]:
+    """默认检索分词：折叠繁简的字二元组 + 纹名二元组加权一倍，保留标点。
+
+    2026-11-22 手相题未命中，根因之一是原文繁体（鴈陣紋）与问句简体
+    （雁阵纹）二元组零命中；这一层折叠让两边的字面终于对上。
+    纹名加权是给「玉柱纹主什么」这类只有四五个字的问句补信号，
+    在四套评测上与不加权完全一致（没有回退），保留作保险。
+    """
+    s = _fold_keep_punct(text)
+    toks = [s[i:i + 2] for i in range(len(s) - 1)] if len(s) >= 2 else list(s)
+    for name in {normalize_cjk(n) for n in ENTRY_NAME_RE.findall(text)}:
+        if len(name) >= 2:
+            toks.extend([name[i:i + 2] for i in range(len(name) - 1)] * 2)
+    return toks
 
 
 def load_term_dict(terminology_dir: Path) -> list[str]:
@@ -58,15 +108,20 @@ def make_tokenizer(mode: str, terminology_dir: Path | None = None):
     mode=jieba 但没装 jieba 时退回字二元组并打警告：宁可检索质量差一点，
     也不要让整个服务起不来。警告写 stderr——MCP stdio 通道把 stdout 当协议帧。
     """
-    mode = (mode or "bigram").strip().lower()
+    mode = (mode or "bigram_fold").strip().lower()
     if mode == "bigram":
         return bigram_tokens
+    # bigram_norm 是 2026-11-22 中间版本的旧名（去标点），保留别名，
+    # 免得已经写进部署配置的值启动即报错；行为等同 bigram_fold。
+    if mode in ("bigram_fold", "bigram_norm"):
+        return bigram_fold_tokens
     # 写错模式名必须报错。以前这里对任何非 "jieba" 的值都静默返回二元组，
     # 于是 MINGLI_BM25_TOKENIZER=jieba_search 会悄悄跑成 bigram，
     # 结果文件看起来正常、结论却是假的。
     if mode not in ("jieba", "jieba_search"):
         raise ValueError(
-            "MINGLI_BM25_TOKENIZER 只能是 bigram / jieba / jieba_search，收到 {!r}".format(mode))
+            "MINGLI_BM25_TOKENIZER 只能是 bigram_fold / bigram / jieba / jieba_search，"
+            "收到 {!r}".format(mode))
     try:
         import jieba
     except ImportError:

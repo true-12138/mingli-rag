@@ -21,12 +21,12 @@ export function AboutPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             <h1 className="page__title">关于</h1>
             <p className="page__lead">
               通用模型遇到语料里没有的问题，会用现代常识补出一段读着像古籍、实际并不存在的原文，
-              而使用者很难分辨。这个站把回答限制在 <strong>45 部古籍、约 340 万字</strong>上：
+              而使用者很难分辨。这个站把回答限制在 <strong>55 部古籍、约 375 万字</strong>上：
               每条结论都能展开到书名 / 卷 / 章 / 行，找不到依据就明确说「证据不足」，而不是硬答。
             </p>
           </div>
           <div className="page__aside">
-            <span className="page__count">8,681</span>
+            <span className="page__count">9,638</span>
             <span className="page__count-label">节语料</span>
           </div>
         </div>
@@ -39,8 +39,10 @@ export function AboutPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
             <ol className="about-list">
               <li>
                 <b>语料与切分</b>
-                152 部清洗文本里筛出 45 部，切成 8,681 节 / 约 340 万字。按目标 450 字、
+                152 部清洗文本里筛出 55 部，切成 9,638 节 / 约 375 万字。按目标 450 字、
                 上限 700、句级重叠 60 切分，无标点刻本按行款合并，每节带书名 / 卷 / 章 / 行号。
+                其中 10 部相书（面相 / 手相，共 11 卷）是后来单独补录的一组，编号接在原有语料之后，
+                不影响已有引用的节号。
               </li>
               <li>
                 <b>两路召回</b>
@@ -74,8 +76,8 @@ export function AboutPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
               <li>
                 <b>并发也当成指标</b>
                 本地 20 个回答槽，200 路 SSE + 20 并发回答 480/482 成功、错误率 0.41%、
-                TTFB P95 1.01s；超出容量返回 429 而不是无限排队。320 项测试：
-                316 通过 / 4 条件跳过 / 0 失败。
+                TTFB P95 1.01s；超出容量返回 429 而不是无限排队。443 项测试：
+                439 通过 / 4 条件跳过 / 0 失败。
               </li>
             </ol>
           </section>
@@ -103,7 +105,8 @@ export function AboutPage({ onOpenDrawer }: { onOpenDrawer: () => void }) {
                 所以它一直没做默认。
               </li>
               <li>
-                不做预测吉凶、改运、医疗 / 法律 / 投资建议；排盘只做确定性历法计算。
+                不做预测吉凶、改运、医疗 / 法律 / 投资建议；排盘只做确定性计算（历法、天文与查表）。
+                姓名用五格剖象，是 1928 年以来的现代数理体系，不是古籍。
                 本站内容仅供文化研究与娱乐参考，回答请以原文为准。
                 完整 17 条局限清单写在 README 里。
               </li>

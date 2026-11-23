@@ -8,6 +8,9 @@ sentence-transformers==2.7.0
 transformers==4.37.2
 rank-bm25>=0.2.2
 jieba>=0.42.1
+# 繁简折叠：古籍原文多为繁体（鴈陣紋、玉柱紋），用户问句是简体。
+# 切 chunk 时写进 text_for_embedding、BM25 分词时也要用，缺了会静默退化。
+zhconv>=1.4
 requests>=2.28
 python-dotenv>=1.0
 # 排盘：八字用 lunar_python（节气/干支），星盘用 ephem（地心视黄经）。

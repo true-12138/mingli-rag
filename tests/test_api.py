@@ -58,7 +58,7 @@ def test_health_reports_corpus_and_modes(client):
     assert r.status_code == 200
     data = r.json()
     assert data["status"] == "ok"
-    assert data["chunks"] == 8681
+    assert data["chunks"] == 9719
     assert data["embedding_dim"] == 1024
     assert data["modes"] == ["rag", "agent", "multi"]
 

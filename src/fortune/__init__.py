@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""排盘模块：八字 / 星盘 / 塔罗。
+"""排盘模块：八字 / 星盘 / 塔罗 / 姓名。
 
-这三块和 RAG 那条链路的关系是：
+这几块和 RAG 那条链路的关系是：
 
 - **排盘是确定性计算**，不经过大模型。同样的出生信息，任何时候算出同一个盘。
   这一点很重要：如果让模型"算"，它每次给的干支都可能不一样，那是错的。
@@ -13,6 +13,7 @@ from .astro import format_chart as format_astro
 from .astro import natal_chart
 from .bazi import format_bazi
 from .bazi import paipan as paipan_bazi
+from .name import build as build_name
 from .tarot import draw as draw_tarot
 from .tarot import format_draw as format_tarot
 
@@ -23,4 +24,5 @@ __all__ = [
     "format_astro",
     "draw_tarot",
     "format_tarot",
+    "build_name",
 ]

@@ -1339,25 +1339,27 @@ button {
 
 /* ---------- 输入区 ---------- */
 
-/* 盘面条：挂在输入区上沿，明确告诉用户这一问带的是哪张盘。 */
-.chart-chip {
+/* 盘面条：紧贴问答栏标题下方，抬头就能看到这一问带的是哪张盘。 */
+.chart-note {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 24px;
-  border-top: 1px solid var(--rule);
-  background: var(--panel-soft);
-  font-size: 11.5px;
+  gap: 8px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: rgba(150, 50, 42, 0.045);
+  font-size: 12px;
   letter-spacing: 0.02em;
 }
 
-.chart-chip__label {
+.chart-note__tag {
+  flex: none;
   color: var(--cinnabar);
-  letter-spacing: 0.16em;
+  font-size: 11px;
+  letter-spacing: 0.14em;
 }
 
-.chart-chip__text {
+.chart-note__text {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -1366,21 +1368,21 @@ button {
   color: var(--ink-soft);
 }
 
-.chart-chip__close {
+.chart-note__close {
   flex: none;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: none;
   border-radius: 2px;
   background: transparent;
   color: var(--faint);
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
 }
 
-.chart-chip__close:hover {
+.chart-note__close:hover {
   color: var(--cinnabar);
   background: rgba(150, 50, 42, 0.06);
 }
@@ -2714,6 +2716,224 @@ button {
   text-align: right;
 }
 
+/* 姓名 */
+
+.f-form--name .f-field--name {
+  width: 88px;
+}
+
+.f-form--name .f-input {
+  width: 100%;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 15px;
+}
+
+.name-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.name-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 132px;
+  padding: 12px 16px 11px;
+  background: var(--panel-soft);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+.name-char__glyph {
+  font-family: var(--serif);
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.name-char__meta {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.name-char__sub {
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.name-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.name-grid__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 4px 12px;
+  border-right: 1px solid var(--rule);
+}
+
+.name-grid__cell:last-child {
+  border-right: 0;
+}
+
+.name-grid__cell--main {
+  background: var(--panel-soft);
+}
+
+.name-grid__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.name-grid__label em {
+  font-style: normal;
+  font-size: 8.5px;
+  letter-spacing: 0.02em;
+  color: var(--faint);
+}
+
+.name-grid__num {
+  font-family: var(--serif);
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.name-grid__wx {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+/* 吉凶只用两种视觉：大吉点红，其余一律中性。区分靠文字，不靠颜色堆砌。 */
+.name-level {
+  padding: 0 5px;
+  border: 1px solid var(--rule);
+  border-radius: 1px;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.name-level--great {
+  border-color: rgba(150, 50, 42, 0.45);
+  background: rgba(150, 50, 42, 0.05);
+  color: var(--cinnabar);
+}
+
+.name-level--worst {
+  border-color: var(--rule-strong);
+  color: var(--ink-soft);
+}
+
+.name-sancai {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--panel-soft);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+.name-sancai__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.name-sancai__key {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--faint);
+}
+
+.name-sancai__combo {
+  font-family: var(--serif);
+  font-size: 17px;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+
+.name-sancai__rel {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.name-sancai__head .name-level {
+  margin-left: auto;
+}
+
+.name-sancai__text {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+
+.name-yun {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.name-yun__item {
+  padding-top: 11px;
+  border-top: 1px dashed var(--rule);
+}
+
+.name-yun__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.name-yun__name {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+
+.name-yun__combo {
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+.name-yun__head .name-level {
+  margin-left: auto;
+}
+
+.name-yun__text {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--ink-soft);
+}
+
+.name-yun__basis {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--faint);
+}
+
 /* 解读 */
 
 .reading {
@@ -3268,6 +3488,34 @@ button {
 
   .tarot-cards {
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+
+  .name-char {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 8px;
+  }
+
+  .name-char__glyph {
+    font-size: 28px;
+  }
+
+  .name-grid__cell {
+    gap: 4px;
+    padding: 9px 2px 10px;
+  }
+
+  .name-grid__num {
+    font-size: 20px;
+  }
+
+  .name-grid__label {
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+  }
+
+  .name-grid__label em {
+    font-size: 8px;
   }
 
   .reading__bar {

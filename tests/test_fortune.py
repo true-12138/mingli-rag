@@ -14,6 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from fortune.astro import SIGNS, natal_chart
 from fortune.bazi import paipan
+from fortune.intake import MODELS
+from fortune.interpret import KIND_LABELS, SECTION_HINTS
+from fortune.name import build as build_name
 from fortune.tarot import DECK, SPREADS, draw
 
 
@@ -122,3 +125,73 @@ class TestTarot:
         majors = [c for c in DECK if c["arcana"] == "大阿卡纳"]
         assert len(majors) == 22
         assert len(DECK) - len(majors) == 56
+
+
+class TestName:
+    """五格公式是可被证伪的：字库笔画是既定值，加法必须对得上。"""
+
+    def test_single_surname_single_given_formulas(self):
+        # 李 7 画、明 8 画：天=7+1、人=7+8、地=8+1、外=2、总=15
+        chart = build_name("李", "明")
+        nums = {k: v["num"] for k, v in chart["wuge"].items()}
+        assert nums == {"tian": 8, "ren": 15, "di": 9, "wai": 2, "zong": 15}
+
+    def test_zong_is_sum_of_strokes(self):
+        chart = build_name("张", "伟")
+        strokes = sum(c["kangxi"] for c in chart["chars"])
+        assert chart["wuge"]["zong"]["num"] == strokes
+
+    def test_deterministic(self):
+        assert build_name("李", "明") == build_name("李", "明")
+
+    def test_sancai_and_three_yunshi(self):
+        chart = build_name("李", "明")
+        combo = "".join(chart["wuge"][k]["wuxing"] for k in ("tian", "ren", "di"))
+        assert chart["sancai"]["combo"] == combo
+        assert chart["sancai"]["level"]
+        assert len(chart["yunshi"]) == 3
+        assert all(item["text"] for item in chart["yunshi"])
+
+    def test_unknown_char_names_the_field(self):
+        """字库没有的字不能猜笔画；错误要指到具体那一格。"""
+        with pytest.raises(ValueError) as exc:
+            build_name("李", "𠀀")
+        assert getattr(exc.value, "field", None) == "given"
+
+    def test_length_limit(self):
+        with pytest.raises(ValueError):
+            build_name("李", "一二三")
+
+
+class TestInterpretCoverage:
+    """新增盘种时，/read 的每一张表都要有它；姓名就漏过一次。"""
+
+    def test_every_readable_kind_has_hints_and_label(self):
+        assert set(KIND_LABELS) == set(SECTION_HINTS) == set(MODELS)
+
+    def test_name_read_builds_prompt(self, monkeypatch):
+        """不真的调模型：桩掉检索和 _chat，只确认 prompt 里认得出姓名盘。"""
+        import sys
+        import types
+
+        from fortune import interpret
+        from fortune.name import build
+
+        seen = {}
+
+        def fake_chat(messages, **kwargs):
+            seen["prompt"] = messages[-1]["content"]
+            return '{"summary": "s", "sections": [], "citations": [], "disclaimer": "d"}'
+
+        stub = types.ModuleType("rag")
+        stub._chat = fake_chat
+        stub._parse_json = lambda raw: __import__("json").loads(raw)
+        monkeypatch.setitem(sys.modules, "rag", stub)
+        monkeypatch.setattr(interpret, "_retrieve_fragments", lambda *a, **k: ([], ""))
+
+        result = interpret.read(build("李", "明"), question="三才是什么意思")
+
+        assert "姓名五格" in seen["prompt"]
+        assert "1928" in seen["prompt"]
+        assert result["kind"] == "name"
+

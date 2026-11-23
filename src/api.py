@@ -33,7 +33,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Literal
 
-# 检索是一次 8,681×1,024 的点积，OpenBLAS 默认按核数再开一套线程；几十个并发
+# 检索是一次 9,719×1,024 的点积，OpenBLAS 默认按核数再开一套线程；几十个并发
 # 请求就是几百个 BLAS 线程互相抢。压成单线程后：/retrieve 服务端 P50 18ms→10.5ms，
 # P95 350ms→82.6ms（64 并发）。必须在 numpy 被 import 之前设置才生效。
 for _nv in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
@@ -98,7 +98,7 @@ _DOCS_ON = os.environ.get("MINGLI_ENABLE_DOCS", "").strip().lower() in {
 app = FastAPI(
     title="问古 · 古籍问答 API",
     version=API_VERSION,
-    description="45 部古籍 / 8,681 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
+    description="55 部古籍 / 9,719 chunk 的检索、单 Agent、多 Agent 与多轮对话接口。",
     docs_url="/docs" if _DOCS_ON else None,
     redoc_url="/redoc" if _DOCS_ON else None,
     openapi_url="/openapi.json" if _DOCS_ON else None,

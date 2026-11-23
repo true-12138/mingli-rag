@@ -31,8 +31,8 @@ from pydantic import BaseModel, Field, ValidationError
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fortune import draw_tarot, natal_chart, paipan_bazi
-from fortune import intake, interpret
-from fortune.intake import AstroRequest, BaziRequest, MODELS, TarotRequest
+from fortune import intake, interpret, name as name_fortune
+from fortune.intake import AstroRequest, BaziRequest, MODELS, NameRequest, TarotRequest
 from guards import _quota, _require_token, _slot
 
 logger = logging.getLogger("mingli.api.fortune")
@@ -51,12 +51,12 @@ router = APIRouter(
 class IntakeRequest(BaseModel):
     """把「已知的排盘信息」交给服务端检查，缺什么就返回什么。"""
 
-    kind: Literal["bazi", "astro", "tarot"]
+    kind: Literal["bazi", "astro", "tarot", "name"]
     params: dict[str, Any] = Field(default_factory=dict)
 
 
 class ReadRequest(BaseModel):
-    kind: Literal["bazi", "astro", "tarot"]
+    kind: Literal["bazi", "astro", "tarot", "name"]
     params: dict[str, Any]
     question: str | None = Field(default=None, max_length=500)
     note: str | None = Field(default=None, max_length=1000)
@@ -81,8 +81,17 @@ def _tarot_chart(req: TarotRequest) -> dict[str, Any]:
     return draw_tarot(n=req.n, seed=seed, spread=req.spread)
 
 
+def _name_chart(req: NameRequest) -> dict[str, Any]:
+    return name_fortune.build(req.surname, req.given)
+
+
 _MODELS = MODELS
-_BUILDERS = {"bazi": _bazi_chart, "astro": _astro_chart, "tarot": _tarot_chart}
+_BUILDERS = {
+    "bazi": _bazi_chart,
+    "astro": _astro_chart,
+    "tarot": _tarot_chart,
+    "name": _name_chart,
+}
 
 
 def _chart_from_params(kind: str, params: dict[str, Any]) -> dict[str, Any]:
@@ -112,6 +121,19 @@ def _chart_from_params(kind: str, params: dict[str, Any]) -> dict[str, Any]:
             status_code=400, detail="排盘参数不合法：%s" % where
         ) from exc
     except ValueError as exc:
+        # 姓名测算的失败是「字库没收这个字」，不是历法问题：把错误挂到
+        # 具体那一格（姓 / 名），前端只标红对应输入框。
+        if kind == "name":
+            field = getattr(exc, "field", None) or "given"
+            raise HTTPException(status_code=400, detail={
+                "message": str(exc),
+                "need_input": True,
+                "fields": intake.need_input(
+                    kind, collected["params"], [field],
+                    reason="invalid", message=str(exc),
+                    errors={field: str(exc)},
+                )["fields"],
+            }) from exc
         raise HTTPException(status_code=400, detail={
             "message": str(exc),
             "need_input": True,
@@ -159,10 +181,14 @@ def post_intake(req: IntakeRequest) -> dict[str, Any]:
         return {
             "status": "need_input",
             "kind": req.kind,
-            "reason": "calendar",
+            "reason": "invalid" if req.kind == "name" else "calendar",
             "known": collected["params"],
             "fields": detail.get("fields") or [],
-            "message": detail.get("message") or "出生时间不合法，请检查年月日。",
+            "message": detail.get("message") or (
+                "姓名里有字库未收录的字，请换一个字。"
+                if req.kind == "name"
+                else "出生时间不合法，请检查年月日。"
+            ),
         }
     # 塔罗的 seed 是在排盘时才固定下来的，回填到 params 里：调用方把
     # intake 返回的 params 原样传给 /read 才能抽到同一组牌。不回填的话
@@ -188,6 +214,15 @@ def post_astro(req: AstroRequest) -> dict[str, Any]:
 def post_tarot(req: TarotRequest) -> dict[str, Any]:
     """抽塔罗牌；响应里的 seed 请原样带回 `/read`。"""
     return _run(req)
+
+
+@router.post("/name")
+def post_name(req: NameRequest) -> dict[str, Any]:
+    """姓名测算：康熙笔画、五格、三才与三运。纯查表，不调模型。"""
+    try:
+        return _name_chart(req)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/read")
@@ -216,7 +251,7 @@ def read_fortune(
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         logger.exception("fortune read failed kind=%s", req.kind)
-        raise HTTPException(status_code=500, detail="解读失败") from exc
+        raise HTTPException(status_code=500, detail="解读失败") from None
     logger.info(
         "fortune read kind=%s sections=%d cited=%d retrieved=%d",
         req.kind,

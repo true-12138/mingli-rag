@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Sidebar, type View } from "./components/Sidebar";
 import { AboutPage } from "./pages/AboutPage";
-import { AstroPage } from "./pages/AstroPage";
 import { ChartPage } from "./pages/ChartPage";
 import { MaterialsPage } from "./pages/MaterialsPage";
 import { MemoryPage } from "./pages/MemoryPage";
@@ -10,11 +9,11 @@ import { PhysiognomyPage } from "./pages/PhysiognomyPage";
 import type { Mode } from "./api";
 import { useChat } from "./useChat";
 
-// 轻量 hash 路由：#/chart、#/astro、#/physiognomy、#/memory、#/materials、#/about。
-// 问答已并入三个术数页面，旧的 #/chat、#/fortune 落到命盘页，旧链接不作废。
+// 轻量 hash 路由：#/chart、#/physiognomy、#/memory、#/materials、#/about。
+// 问答已并入术数页面；旧的 #/chat、#/fortune、#/astro 都落到排盘页
+// （#/astro 由 ChartPage 自己认出来，直接打开星盘页签），旧链接不作废。
 function readView(): View {
   const hash = window.location.hash.replace(/^#\/?/, "");
-  if (hash === "astro") return "astro";
   if (hash === "physiognomy") return "physiognomy";
   if (hash === "memory") return "memory";
   if (hash === "materials") return "materials";
@@ -39,6 +38,13 @@ export default function App() {
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  // 换页面就丢掉上一页的盘面：八字的日主跟着进星盘页提问，
+  // 检索会拿错关键词。各页的盘由各页自己的面板挂。
+  const clearChart = chat.clearChart;
+  useEffect(() => {
+    clearChart();
+  }, [view, clearChart]);
 
   const go = useCallback((next: View) => {
     window.location.hash = `/${next}`;
@@ -73,14 +79,6 @@ export default function App() {
       <main className="main">
         {view === "chart" && (
           <ChartPage
-            chat={chat}
-            mode={mode}
-            onModeChange={setMode}
-            onOpenDrawer={openDrawer}
-          />
-        )}
-        {view === "astro" && (
-          <AstroPage
             chat={chat}
             mode={mode}
             onModeChange={setMode}

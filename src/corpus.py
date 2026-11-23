@@ -2,7 +2,8 @@
 """统一的语料读取与编号规则。
 
 标点组（punct.jsonl）先读，保持 1..N 的原编号——eval/questions.jsonl 里的
-gold_chunk_ids 依赖这套编号；无标点组（unpunct.jsonl）随后读，从 N+1 顺延。
+gold_chunk_ids 依赖这套编号；无标点组（unpunct.jsonl）随后读；相术补录
+（xiangshu.jsonl）最后读。后两组都从上一个编号之后顺延。
 
 编号规则只有这一份，embed / retrieval / eval 都调这里。以前三处各读各的文件，
 入库无标点组时很容易出现"embedding 是一套顺序、检索是另一套顺序"，而症状是
@@ -15,8 +16,12 @@ import json
 import os
 from pathlib import Path
 
-# 顺序即编号：先标点组（保持原编号），再无标点组。
-CORPUS_FILES = (("punct.jsonl", "punct"), ("unpunct.jsonl", "unpunct"))
+# 顺序即编号：先标点组（保持原编号），再无标点组，最后是相术补录。
+CORPUS_FILES = (
+    ("punct.jsonl", "punct"),
+    ("unpunct.jsonl", "unpunct"),
+    ("xiangshu.jsonl", "xiangshu"),
+)
 
 REQUIRED_FIELDS = ("sourcefile", "chunk_text", "meta")
 

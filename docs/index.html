@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>问古 · 古籍问答 Agent</title>
-<meta name="description" content="一个只回答古籍原文里写了什么的检索增强 Agent：45 部古籍、8,681 个检索块、强制引用与无依据拒答。">
+<meta name="description" content="一个只回答古籍原文里写了什么的检索增强 Agent：55 部古籍、9,719 个检索块、强制引用与无依据拒答。">
 <meta name="theme-color" content="#f4f1e9">
 <meta property="og:type" content="website">
 <meta property="og:title" content="问古 · 古籍问答 Agent">
@@ -480,7 +480,7 @@ button{font:inherit}
         <p class="eyebrow">检索增强生成 · 工具调用 · 多轮记忆</p>
         <h1 class="hero__title">问古<span class="hero__dot" aria-hidden="true"></span></h1>
         <p class="hero__sub">古籍问答 Agent</p>
-        <p class="hero__lede">45 部古籍文献（含术数类史料），8,681 个检索块，约 340 万字。每一句结论都要指回原文某一段；指不到，就说不知道。</p>
+        <p class="hero__lede">55 部古籍文献（含术数类史料），9,719 个检索块，约 375 万字。每一句结论都要指回原文某一段；指不到，就说不知道。</p>
         <div class="hero__actions">
           <a class="btn btn--solid" href="#dialogue">看五段录屏</a>
           <a class="btn btn--ghost" href="https://github.com/true-12138/mingli-rag" target="_blank" rel="noopener">读源码 ↗</a>
@@ -502,11 +502,11 @@ button{font:inherit}
       <dl class="hero__stats">
         <div>
           <dt>入索引古籍</dt>
-          <dd>45<small>部</small></dd>
+          <dd>55<small>部</small></dd>
         </div>
         <div>
           <dt>检索块 / 原文</dt>
-          <dd>8,681<small>块 · 约 340 万字</small></dd>
+          <dd>9,719<small>块 · 约 375 万字</small></dd>
         </div>
         <div>
           <dt>并发验收</dt>
@@ -559,7 +559,7 @@ button{font:inherit}
 
       <p class="pull">
         10 条语料外问题（考研、考公、买房、整容、彩票……），10/10 全部拒答，没有一条被误判为可回答的问题。
-        <small>2026-11-07 · 30 条人工评测集 · 10 条语料外 + 20 条可答</small>
+        <small>2026-11-07 · 30 条人工评测集 · 10 条语料外 + 20 条可答；2026-11-22 补录相书后在 9,612 块上线上复测，仍 10/10；当晚补卷八到 9,638 块后这套 30 题未重跑</small>
       </p>
     </div>
   </section>
@@ -580,8 +580,8 @@ button{font:inherit}
           <p class="flow__label">离线</p>
           <div class="flow__track">
             <span class="node">152 部清洗文本</span><span class="arrow">→</span>
-            <span class="node">45 部入索引</span><span class="arrow">→</span>
-            <span class="node">8,681 个检索块</span><span class="arrow">→</span>
+            <span class="node">55 部入索引</span><span class="arrow">→</span>
+            <span class="node">9,719 个检索块</span><span class="arrow">→</span>
             <span class="node">BGE-M3 向量</span><span class="arrow">+</span>
             <span class="node">BM25 倒排</span>
           </div>
@@ -597,7 +597,7 @@ button{font:inherit}
             <span class="node">回答 / 拒答</span>
           </div>
         </div>
-        <p class="flow__foot">8,681 × 1024 的向量索引约 35 MB，留在进程内做精确检索，不引 pgvector，省一次网络往返，也避免评测口径漂移。</p>
+        <p class="flow__foot">9,719 × 1024 的向量索引约 39 MB，留在进程内做精确检索，不引 pgvector，省一次网络往返，也避免评测口径漂移。</p>
       </div>
 
       <div class="split" style="margin-top:56px">
@@ -609,14 +609,14 @@ button{font:inherit}
             </thead>
             <tbody>
               <tr><td>dense（BGE-M3）</td><td>52.5%</td><td>62.5%</td><td>48.7%</td></tr>
-              <tr><td>BM25（字二元组）</td><td>42.5%</td><td>52.5%</td><td>38.7%</td></tr>
+              <tr><td>BM25（`bigram_fold`）</td><td>42.5%</td><td>52.5%</td><td>38.7%</td></tr>
               <tr class="hl"><td>RRF 融合</td><td>70.0%</td><td>75.0%</td><td>61.8%</td></tr>
             </tbody>
           </table>
-          <p class="table-note">语料从 2,830 块扩到 8,681 块后，RRF 的 line R@5 一度掉到 70.0%。在 8,681 块上重扫 280 组参数，改成 rrf_k=10 / candidate_k=40 后回到 75.0%，逐题对比只多命中 1 题、没有回退。</p>
+          <p class="table-note">语料从 2,830 块扩到 8,681 块后，RRF 的 line R@5 一度掉到 70.0%。在 8,681 块上重扫 280 组参数，改成 rrf_k=10 / candidate_k=40 后回到 75.0%，逐题对比只多命中 1 题、没有回退。2026-11-22 再补 10 部相书（9,612 块）、当晚又补《神相全编》卷八并细切（9,719 块）后，这 20 道可答题复跑仍是 75.0%。</p>
         </div>
         <div>
-          <p class="note"><strong>为什么不直接上向量库。</strong>8,681 条向量做暴力检索只要毫秒级，进程内就能算完。引入向量库会多一次网络往返、多一套索引一致性要维护，而评测集只有 20 道可答题——先把可解释的基线跑稳，再谈基础设施。</p>
+          <p class="note"><strong>为什么不直接上向量库。</strong>9,719 条向量做暴力检索只要毫秒级，进程内就能算完。引入向量库会多一次网络往返、多一套索引一致性要维护，而评测集只有 20 道可答题——先把可解释的基线跑稳，再谈基础设施。</p>
           <p class="note" style="margin-top:22px"><strong>为什么不是「混合一定更好」。</strong>RRF 只吃排名、不看分数：某一路排第 2 的强命中，可能被「两路都排第 20」的弱相关块挤出 Top-5。这是 v1.1 真实发生的失败，也是后来加深候选池的直接原因。</p>
         </div>
       </div>
@@ -791,8 +791,8 @@ button{font:inherit}
         <li>
           <b>02</b>
           <div>
-            <h3>评测只覆盖前 16 部标点古籍</h3>
-            <p>索引已收 45 部（16 部标点 + 29 部无标点），但 29 部无标点组还没有对应题目，真实覆盖率尚未测量。75.0% 只代表「问的书在库里」时的检索质量。</p>
+            <h3>三套题口径不同，不能合成一个总数</h3>
+            <p>索引已收 55 部（16 部标点 + 29 部无标点 + 10 部相书，共 9,719 块；《神相全编》卷八掌纹按纹名细切为 107 块归入正编）。三套题分开跑：标点组 30 题 RRF line R@5 75.0%（9,719 块上复跑不变）；无标点组 36 题 86.1%（8,681 块上 88.9%；补录相书后 u31 被同主题段落挤出 Top-5）；相术组 17 题 100%，覆盖 10/10 部相书（每部 1–5 题）；x03（悬胆鼻）、x04（垂珠）原措辞是 88.2%，查下来两道题在不同书里都有多个合法答案、金标只是其中一段，改成带书名的问法后复跑 17/17——这是修题，不是检索提升；旧 11 题/4 部口径是 81.8%。新增手相组 7 题（卷八掌纹）：26 块长块时只有 3/7 = 42.9%，川字纹、雁阵纹、玉柱纹、掌色四类没进 Top-5——一块 280–550 字里并排十几条纹，专名被稀释到 1/15。把卷八按纹名 /【小标题】细切为 107 块（目标约 190 字、上限 260 字）后，7 题全部进 Top-5：RRF line R@5 100%、MRR 78.6%。消融显示细切是主因：同一份语料换回旧的纯字二元组分词，仍是 7/7。任何单一数字都不代表「整体检索」。</p>
           </div>
         </li>
         <li>

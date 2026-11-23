@@ -174,6 +174,48 @@ def test_rag_answer_puts_chart_in_prompt_and_keeps_citations(monkeypatch):
     assert out["invalid_output"] is False
 
 
+def test_name_chart_allows_answer_without_citations(monkeypatch):
+    """五格剖象不是古籍：只按盘面答、不引原文，也不能标成不合规输出。"""
+    from fortune.name import build
+
+    seen = {}
+
+    def fake_chat(messages, temperature=0.0, api_key=None, **kwargs):
+        seen["messages"] = messages
+        return '{"can_answer": true, "answer": "人格15土，这套体系列为大吉。", "citations": []}'
+
+    def no_retrieve(*args, **kwargs):
+        raise AssertionError("姓名盘不该检索古籍")
+
+    monkeypatch.setattr(rag, "retrieve_one", no_retrieve)
+    monkeypatch.setattr(rag, "_chat", fake_chat)
+    monkeypatch.setattr(rag, "rewrite_question", lambda q, h, **kw: q)
+
+    out = rag.answer("人格 15 怎么讲", api_key="k", chart=build("李", "明"))
+
+    system = seen["messages"][0]["content"]
+    assert chart_context.NAME_RULE in system
+    # 不能因为古籍里没有五格剖象就拒答
+    assert "不得以「语料没有依据」拒答" in system
+    assert out["invalid_output"] is False
+    assert out["citations_chunk_ids"] == []
+
+
+def test_bazi_chart_still_requires_citations(monkeypatch):
+    """同样的「能答但不引用」，八字盘仍按不合规处理，别把规则一起放宽。"""
+
+    def fake_chat(messages, temperature=0.0, api_key=None, **kwargs):
+        return '{"can_answer": true, "answer": "甲木日主。", "citations": []}'
+
+    monkeypatch.setattr(rag, "retrieve_one", _fake_retrieve(HITS))
+    monkeypatch.setattr(rag, "_chat", fake_chat)
+    monkeypatch.setattr(rag, "rewrite_question", lambda q, h, **kw: q)
+
+    out = rag.answer("我这盘适合什么方向", api_key="k", chart=CHART)
+
+    assert out["invalid_output"] is True
+
+
 def test_rag_answer_without_chart_is_unchanged(monkeypatch):
     seen = {}
 

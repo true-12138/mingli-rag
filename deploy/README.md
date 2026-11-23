@@ -109,7 +109,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ## 7. 验收清单
 
-- [ ] `curl https://<域名>/health` 返回 200，`chunks=8681`、`embedding_dim=1024`
+- [ ] `curl https://<域名>/health` 返回 200，`chunks=9719`、`embedding_dim=1024`
 - [ ] 不带 token 直连 `127.0.0.1:8000/chat` 返回 401
 - [ ] 经 `/api/chat` 的请求正常返回（token 由 Nginx 注入）
 - [ ] 前端三种模式都能流式输出，引用可展开

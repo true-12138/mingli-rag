@@ -77,7 +77,7 @@ Browser (React + SSE)
 | Web 框架 | 保留 FastAPI，改全异步 | 现有接口与测试可复用；SSE 需要 async |
 | HTTP 客户端 | `httpx.AsyncClient` | 原生 async 流式；替换同步 `requests` |
 | 队列 | arq 仅用于离线任务 | 在线 SSE 不排队；排队会把首 token P95 推高 |
-| 向量库 | **保留进程内暴力检索，不引 pgvector ANN** | 8,681×1024 ≈ 35 MB，单次扫描毫秒级；pgvector 多一次网络往返，还会改评测口径。多实例需要共享时再上精确扫描，不上 HNSW |
+| 向量库 | **保留进程内暴力检索，不引 pgvector ANN** | 9,719×1024 ≈ 39 MB，单次扫描毫秒级；pgvector 多一次网络往返，还会改评测口径。多实例需要共享时再上精确扫描，不上 HNSW |
 | 限流 | Redis 全局回答槽 + 每用户额度 | 多实例共享；进程内信号量在 4 worker 下会变成 4 倍上限 |
 | Embedding | 独立 HTTP 服务 + 微批 | 4 worker 各载一份 BGE-M3 内存不可接受；query 编码是检索侧真正的 CPU 瓶颈 |
 | LLM key | `DEEPSEEK_API_KEYS` 逗号分隔，轮询 + failover | 单 key 并发上限是硬约束；每题 5 次调用是**串行**的，峰值在途约 20–30，不是 100 |

@@ -56,8 +56,8 @@ def test_search_classics_schema():
 def test_list_books_returns_corpus_summary():
     data = _call("list_books", {})
     assert data["ok"] is True
-    assert data["result"]["n_books"] == 45
-    assert sum(b["chunks"] for b in data["result"]["books"]) == 8681
+    assert data["result"]["n_books"] == 55
+    assert sum(b["chunks"] for b in data["result"]["books"]) == 9719
 
 
 def test_draw_tarot_is_reproducible():

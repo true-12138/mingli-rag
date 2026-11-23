@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 
 MAX_CHART_BYTES = 16 * 1024
-KINDS = ("bazi", "astro", "tarot", "physiognomy")
+KINDS = ("bazi", "astro", "tarot", "physiognomy", "name")
 
 # 进 system prompt 的一条规则：和原有规则并存，不替换。
 CHART_RULE = (
@@ -38,6 +38,18 @@ PHYSIOGNOMY_RULE = (
     "只能按这些特征查古籍说法，不得声称看过照片、不得推断用户外貌，"
     "也不得补充特征卡里没有的部位。盘面不是出处——引用编号仍然只能来自"
     "本轮检索到的片段。相术只作古籍知识参考，不涉及健康诊断与婚配断言。"
+)
+
+# 姓名盘是查表算出来的，但要防两件事：把 1928 年的五格剖象说成古籍；
+# 以及顺着「名字不好」引申出改名、命运断言。
+NAME_RULE = (
+    "本轮附带【盘面】。姓名盘由程序按康熙笔画和五格剖象表算出，是既定事实："
+    "可以解释，不能修改或重算笔画。五格剖象是 1928 年熊崎健翁整理的现代数理体系，"
+    "不是中国古代古籍——可以说「这套体系的说法是」，不得说成「古书云」「古人认为」。"
+    "五格、三才、三运的数理、五行、吉凶与说明已经完整写在盘面里，回答以盘面为准。"
+    "这套体系本来就不在古籍语料中：**即使片段没有谈到姓名学、甚至本轮没有片段，"
+    "也必须按盘面直接作答，不得以「语料没有依据」拒答**；没有可引片段时 citations 写 []，"
+    "正文不要标 [n]。姓名只作文化参考，不推导改名、健康、婚配与命运断言。"
 )
 
 
@@ -81,12 +93,19 @@ def prompt_block(chart):
     except Exception:
         return ""
     body = json.dumps(payload, ensure_ascii=False, indent=2)
-    # 相术卡是用户自述，不能照搬「程序按历法算出」的说法
+    # 相术卡是用户自述、姓名盘是查表，不能照搬「程序按历法算出」的说法
     if chart.get("kind") == "physiognomy":
         head = (
             "【盘面】\n"
             "（以下是用户自述的相术特征，不是图像识别结果：只能据此查古籍说法，"
             "不得声称看过照片、不得推断外貌、不得补项；盘面本身不是引用依据。）\n"
+        )
+    elif chart.get("kind") == "name":
+        head = (
+            "【盘面】\n"
+            "（以下是程序按康熙笔画与五格剖象表查出的姓名盘，是既定事实："
+            "可以解释，不能改笔画；五格剖象属现代数理体系，不是古籍；"
+            "盘面本身不是引用依据。）\n"
         )
     else:
         head = (
@@ -119,5 +138,11 @@ def system_prompt(base, chart):
     chart = normalize(chart)
     if chart is None:
         return base
-    rule = PHYSIOGNOMY_RULE if chart.get("kind") == "physiognomy" else CHART_RULE
+    kind = chart.get("kind")
+    if kind == "physiognomy":
+        rule = PHYSIOGNOMY_RULE
+    elif kind == "name":
+        rule = NAME_RULE
+    else:
+        rule = CHART_RULE
     return base.rstrip() + "\n\n" + rule + "\n"

@@ -2,6 +2,7 @@
 import { useState } from "react";
 
 import { ChatColumn } from "../components/ChatColumn";
+import { SUGGESTIONS } from "../components/EmptyState";
 import { PhysiognomyPanel } from "../components/fortune/PhysiognomyPanel";
 import { MenuIcon } from "../components/icons";
 import type { Mode } from "../api";
@@ -57,7 +58,11 @@ export function PhysiognomyPage({ chat, mode, onModeChange, onOpenDrawer }: Prop
       <div className="workspace">
         <div className="workspace__panel">
           <div className="page__inner">
-            <PhysiognomyPanel subject={tab} onChart={chat.attachChart} />
+            <PhysiognomyPanel
+              subject={tab}
+              onChart={chat.attachChart}
+              onClear={chat.clearChart}
+            />
           </div>
         </div>
         <ChatColumn
@@ -65,6 +70,7 @@ export function PhysiognomyPage({ chat, mode, onModeChange, onOpenDrawer }: Prop
           mode={mode}
           onModeChange={onModeChange}
           onNew={chat.startNew}
+          suggestions={tab === "face" ? SUGGESTIONS.face : SUGGESTIONS.palm}
         />
       </div>
     </div>

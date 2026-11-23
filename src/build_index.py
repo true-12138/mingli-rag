@@ -126,6 +126,14 @@ def main() -> int:
         "chapter": sum(1 for c in chunks if not c["meta"].get("chapter")),
     }
 
+    ranges = {}
+    cursor = 1
+    for _filename, src in corpus.CORPUS_FILES:
+        n = by_source.get(src, 0)
+        if n:
+            ranges[src] = f"{cursor}..{cursor + n - 1}"
+        cursor += n
+
     report = {
         "generated_by": "src/build_index.py",
         "corpus_files": [f for f, _ in corpus.CORPUS_FILES],
@@ -137,7 +145,7 @@ def main() -> int:
         "chars_by_source": chars,
         "chars_total": sum(chars.values()),
         "empty_meta": empty_meta,
-        "id_range": {"punct": f"1..{n_punct}", "unpunct": f"{n_punct + 1}..{n_total}"},
+        "id_range": ranges,
         "eval": {"questions": len(questions) if qpath.exists() else 0, "gold_refs": gold_total},
         "errors": errors,
         "warnings": warnings,
@@ -146,10 +154,14 @@ def main() -> int:
     out = dd / "chunks" / "index_report.json"
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    labels = {"punct": "标点组", "unpunct": "无标点组", "xiangshu": "相术补录"}
     print(f"语料总数      : {n_total}")
-    print(f"  标点组      : {by_source.get('punct', 0):>5} 条 / {len(books.get('punct', []))} 部 / {chars.get('punct', 0):,} 字")
-    print(f"  无标点组    : {by_source.get('unpunct', 0):>5} 条 / {len(books.get('unpunct', []))} 部 / {chars.get('unpunct', 0):,} 字")
-    print(f"编号区间      : punct 1..{n_punct} / unpunct {n_punct + 1}..{n_total}")
+    for src in by_source:
+        label = labels.get(src, src)
+        print(
+            f"  {label:<6}: {by_source[src]:>5} 条 / {len(books[src])} 部 / "
+            f"{chars[src]:,} 字（{ranges[src]}）"
+        )
     print(f"空 volume     : {empty_meta['volume']} 条   空 chapter: {empty_meta['chapter']} 条")
     print(f"评测 gold 引用: {gold_total} 处")
     print(f"报告          : {out}")

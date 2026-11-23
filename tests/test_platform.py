@@ -17,8 +17,8 @@ def test_datahub_scan_registers_version_and_quality_gates(monkeypatch, tmp_path)
     _use_tmp_db(monkeypatch, tmp_path)
     result = datahub.scan_and_store()
 
-    assert result["chunks"] == 8681
-    assert result["books"] == 45
+    assert result["chunks"] == 9719
+    assert result["books"] == 55
     assert result["version"].startswith("ds-")
     assert result["assets"], "至少要登记 chunks / embeddings"
 
@@ -29,7 +29,7 @@ def test_datahub_scan_registers_version_and_quality_gates(monkeypatch, tmp_path)
 
     latest = datahub.latest()
     assert latest["version"] == result["version"]
-    assert latest["chunks"] == 8681
+    assert latest["chunks"] == 9719
 
 
 def test_evalhub_imports_existing_runs_and_gate_blocks_regression(monkeypatch, tmp_path):

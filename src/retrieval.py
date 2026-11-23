@@ -15,7 +15,7 @@ import corpus
 DATA_DIR = corpus.data_dir()
 data_emb = str(DATA_DIR / "embeddings.npy")
 MODEL_ID = os.environ.get("MINGLI_MODEL_DIR", "BAAI/bge-m3")
-# RRF 参数是在 8,681 条语料上重新扫出来的（见 eval/tune_rrf.py 与 eval/baselines.md）。
+# RRF 参数是在 8,681 条语料上重新扫出来的（9,719 条补录后未重扫；四套题复跑无回退）（见 eval/tune_rrf.py 与 eval/baselines.md）。
 # 原来 k=60 / candidate_k=20 是 2,830 条时调的，候选池扩大三倍后融合变得太钝：
 # 第 1 名和第 20 名的分差只有 1/61 : 1/80 ≈ 1.3 倍，等于没区分。
 rrf_k=10
@@ -27,14 +27,15 @@ w_dense=1.0
 w_bm25=1.0
 import retrieval_utils
 
-# BM25 分词器：默认字二元组（v1 口径），设 MINGLI_BM25_TOKENIZER=jieba
-# 换成 jieba + data/terminology 里的 324 条术语词典。
+# BM25 分词器：默认 bigram_fold（繁简折叠 + 纹名加权，保留标点，v2 口径），
+# 设 MINGLI_BM25_TOKENIZER=bigram 退回 v1 的纯字二元组做 A/B；
+# 也可以换成 jieba，加载 data/terminology 里的 324 条术语词典。
 # 换分词器会改变所有检索结果，评测必须整轮重跑，不能和旧数字混着比。
-TOKENIZER = os.environ.get("MINGLI_BM25_TOKENIZER", "bigram")
+TOKENIZER = os.environ.get("MINGLI_BM25_TOKENIZER", "bigram_fold")
 tokenize = retrieval_utils.make_tokenizer(TOKENIZER, DATA_DIR / "terminology")
 
 # 重排：MINGLI_RERANK=1 时对候选池再打一次分。默认关闭——
-# 单次向量扫描 8,681 条约 1.6ms，耗时在 embedding 和 LLM 上，重排只在
+# 单次向量扫描 9,719 条约 1.6ms，耗时在 embedding 和 LLM 上，重排只在
 # 「融合把单路强命中挤出 Top-5」这类问题上才值得开。
 RERANK = os.environ.get("MINGLI_RERANK", "0").strip().lower() not in ("", "0", "false", "no", "off")
 RERANK_MODEL_ID = os.environ.get("MINGLI_RERANK_MODEL", "BAAI/bge-reranker-v2-m3")

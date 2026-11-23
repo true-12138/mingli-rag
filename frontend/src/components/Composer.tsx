@@ -17,11 +17,20 @@ interface Props {
   mode: Mode;
   onModeChange: (mode: Mode) => void;
   streaming: boolean;
+  // 挂上盘面后由外面按盘型给占位文字，输入框自己也提示「这一问跟着盘走」
+  placeholder?: string;
   onSend: (question: string) => void;
   onStop: () => void;
 }
 
-export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Props) {
+export function Composer({
+  mode,
+  onModeChange,
+  streaming,
+  placeholder,
+  onSend,
+  onStop,
+}: Props) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,7 +74,7 @@ export function Composer({ mode, onModeChange, streaming, onSend, onStop }: Prop
             ref={inputRef}
             rows={1}
             value={text}
-            placeholder={PLACEHOLDER}
+            placeholder={placeholder ?? PLACEHOLDER}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key !== "Enter" || event.shiftKey) return;

@@ -6,7 +6,6 @@ import { formatWhen } from "../format";
 
 export type View =
   | "chart"
-  | "astro"
   | "physiognomy"
   | "memory"
   | "materials"
@@ -24,11 +23,11 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-// 问答不再是单独板块：三个术数页面右侧都常驻对话栏，
+// 问答不再是单独板块：术数页面右侧都常驻对话栏，
 // 侧栏的会话列表因此一直显示，切页签也能接着上一轮问。
+// 星盘并进命盘页当页签，侧栏不再单列。
 const NAV: { key: View; label: string }[] = [
   { key: "chart", label: "命盘" },
-  { key: "astro", label: "星盘" },
   { key: "physiognomy", label: "相术" },
   { key: "memory", label: "记忆" },
   { key: "materials", label: "素材" },

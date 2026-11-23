@@ -2,31 +2,36 @@
   "generated_by": "src/build_index.py",
   "corpus_files": [
     "punct.jsonl",
-    "unpunct.jsonl"
+    "unpunct.jsonl",
+    "xiangshu.jsonl"
   ],
   "chunks": {
-    "total": 8681,
+    "total": 9719,
     "by_source": {
       "punct": 2830,
-      "unpunct": 5851
+      "unpunct": 5851,
+      "xiangshu": 1038
     },
     "books": {
       "punct": 16,
-      "unpunct": 29
+      "unpunct": 29,
+      "xiangshu": 10
     }
   },
   "chars_by_source": {
     "punct": 1168327,
-    "unpunct": 2231003
+    "unpunct": 2231003,
+    "xiangshu": 355114
   },
-  "chars_total": 3399330,
+  "chars_total": 3754444,
   "empty_meta": {
-    "volume": 7409,
-    "chapter": 5851
+    "volume": 8447,
+    "chapter": 6889
   },
   "id_range": {
     "punct": "1..2830",
-    "unpunct": "2831..8681"
+    "unpunct": "2831..8681",
+    "xiangshu": "8682..9719"
   },
   "eval": {
     "questions": 30,

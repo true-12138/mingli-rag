@@ -9,6 +9,7 @@ import { ActionCard } from "./ActionCard";
 import { Composer } from "./Composer";
 import { EmptyState } from "./EmptyState";
 import { TurnView } from "./TurnView";
+import { chartPlaceholder, chartSuggestions } from "../chartPrompts";
 import { listPendingActions, type FortuneChart, type Mode, type PendingAction } from "../api";
 import type { useChat } from "../useChat";
 
@@ -18,15 +19,24 @@ interface Props {
   onModeChange: (mode: Mode) => void;
   // 小屏时侧栏收进抽屉，这一栏自己的「新对话」是唯一入口
   onNew: () => void;
+  // 空白对话的示例问题：按页面给，星盘/相术页不再显示八字题
+  suggestions?: readonly string[];
 }
 
-export function ChatColumn({ chat, mode, onModeChange, onNew }: Props) {
+export function ChatColumn({ chat, mode, onModeChange, onNew, suggestions }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
 
+  // 没有会话时标题固定成「问盘」，免得和右边的「＋ 新对话」重复。
+  // 盘面刚挂上、还没开口时，标题直接改成「问这张盘」——
+  // 这是整页最显眼的一行字，用户一眼能看出问答已经和盘连上了。
   const activeTitle =
-    chat.conversations.find((conv) => conv.id === chat.activeId)?.title ?? "新对话";
+    chat.conversations.find((conv) => conv.id === chat.activeId)?.title ??
+    (chat.chart ? "问这张盘" : "问盘");
+
+  // 挂上盘之后，示例问题换成从这张盘推出来的（日主、月柱十神、自述特征）。
+  const emptySuggestions = chartSuggestions(chat.chart) ?? suggestions;
 
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -93,7 +103,7 @@ export function ChatColumn({ chat, mode, onModeChange, onNew }: Props) {
   const anchorTurn = chat.turns[chat.turns.length - 1];
 
   return (
-    <aside className="chat-pane" aria-label="古籍问答">
+    <aside className="chat-pane" aria-label="问盘">
       <header className="chat-pane__head">
         <div className="chat-pane__title" title={activeTitle}>
           {activeTitle}
@@ -109,6 +119,26 @@ export function ChatColumn({ chat, mode, onModeChange, onNew }: Props) {
         </button>
       </header>
 
+      {chat.chart && (
+        <div
+          className="chart-note"
+          role="status"
+          title="之后的追问都会带上这张盘"
+        >
+          <span className="chart-note__tag">本盘</span>
+          <span className="chart-note__text">{chartLabel(chat.chart)}</span>
+          <button
+            type="button"
+            className="chart-note__close"
+            onClick={chat.clearChart}
+            aria-label="移除盘面"
+            title="移除盘面，之后的追问不再带这张盘"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {chat.fatal && (
         <div className="banner" role="alert">
           <span>{chat.fatal}</span>
@@ -121,7 +151,7 @@ export function ChatColumn({ chat, mode, onModeChange, onNew }: Props) {
       <div className="thread" ref={scrollRef} onScroll={onScroll}>
         <div className="thread__inner">
           {chat.turns.length === 0 && !chat.loadingThread ? (
-            <EmptyState onPick={send} />
+            <EmptyState onPick={send} suggestions={emptySuggestions} />
           ) : (
             chat.turns.map((turn) => (
               <TurnView
@@ -155,26 +185,11 @@ export function ChatColumn({ chat, mode, onModeChange, onNew }: Props) {
         </div>
       </div>
 
-      {chat.chart && (
-        <div className="chart-chip" role="status">
-          <span className="chart-chip__label">已带盘面</span>
-          <span className="chart-chip__text">{chartLabel(chat.chart)}</span>
-          <button
-            type="button"
-            className="chart-chip__close"
-            onClick={chat.clearChart}
-            aria-label="移除盘面"
-            title="移除盘面，之后的追问不再带这张盘"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       <Composer
         mode={mode}
         onModeChange={onModeChange}
         streaming={chat.streaming}
+        placeholder={chartPlaceholder(chat.chart)}
         onSend={send}
         onStop={chat.stop}
       />
@@ -194,6 +209,8 @@ function chartLabel(chart: FortuneChart): string {
       const count = Object.values(chart.features).filter(Boolean).length;
       return `${chart.subject} · ${count} 项特征`;
     }
+    case "name":
+      return `姓名 · ${chart.full} · 三才${chart.sancai.combo}`;
     default:
       return "盘面";
   }

@@ -37,9 +37,25 @@ def test_load_term_dict_missing_dir_is_empty(tmp_path):
     assert ru.load_term_dict(tmp_path / "nope") == []
 
 
-def test_make_tokenizer_defaults_to_bigram():
+def test_make_tokenizer_defaults_to_bigram_fold():
     assert ru.make_tokenizer("bigram") is ru.bigram_tokens
-    assert ru.make_tokenizer("") is ru.bigram_tokens
+    assert ru.make_tokenizer("") is ru.bigram_fold_tokens
+    # 旧的默认名（去标点版本）保留成别名，部署里已经写死的值不能启动即报错
+    assert ru.make_tokenizer("bigram_norm") is ru.bigram_fold_tokens
+
+
+def test_bigram_fold_folds_traditional_and_keeps_punctuation():
+    # 鴈陣紋 → 雁阵纹：手相问句用简体，原文是繁体，不折叠就零命中
+    assert ru.fold_simplified("鴈陣紋") == "雁阵纹"
+    toks = ru.bigram_fold_tokens("甲。乙")
+    # 标点保留：20 道标点组题上，去掉标点反而掉 1 题（q01/q08）
+    assert "甲。" in toks and "。乙" in toks
+
+
+def test_bigram_fold_boosts_entry_names():
+    plain = ru.bigram_fold_tokens("玉柱纹主什么")
+    # 「玉柱」「柱纹」在正文里各出现一次，纹名加权后各多两份
+    assert plain.count("玉柱") == 3 and plain.count("柱纹") == 3
 
 
 def test_make_tokenizer_jieba_falls_back_without_package(monkeypatch):

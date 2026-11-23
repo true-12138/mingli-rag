@@ -52,10 +52,18 @@ class TarotRequest(BaseModel):
     spread: Literal["single", "three", "cross"] | None = None
 
 
+class NameRequest(BaseModel):
+    """姓名测算：单姓/复姓 + 单名/双名。笔画查康熙字典，不猜。"""
+
+    surname: str = Field(min_length=1, max_length=2)
+    given: str = Field(min_length=1, max_length=2)
+
+
 MODELS: dict[str, type[BaseModel]] = {
     "bazi": BaziRequest,
     "astro": AstroRequest,
     "tarot": TarotRequest,
+    "name": NameRequest,
 }
 
 
@@ -114,6 +122,14 @@ FIELD_SPECS: dict[str, tuple[dict[str, Any], ...]] = {
         {"name": "seed", "label": "随机种子", "type": "int", "required": False,
          "min": 0, "max": 2**63 - 1,
          "ask": "要固定 seed 以便复现吗？（一般不用填）"},
+    ),
+    "name": (
+        {"name": "surname", "label": "姓", "type": "str", "required": True,
+         "max_length": 2, "example": "李",
+         "ask": "姓什么？（单姓或复姓，如 李 / 欧阳）"},
+        {"name": "given", "label": "名", "type": "str", "required": True,
+         "max_length": 2, "example": "明",
+         "ask": "名字是什么？（一到两个字，如 明 / 明轩）"},
     ),
 }
 

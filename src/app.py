@@ -337,7 +337,7 @@ def _empty_state():
     st.markdown(
         '<div class="hero">'
         '<h1>问古籍，得原文</h1>'
-        '<p class="hero-sub">古籍里的一个词、一句断语，回到四十五部古籍里找依据。'
+        '<p class="hero-sub">古籍里的一个词、一句断语，回到古籍里找依据。'
         '找不到，它会直说。</p>'
         '</div>',
         unsafe_allow_html=True,
@@ -403,7 +403,7 @@ def _handle_question(question, messages):
     _render_user(question)
     started = _time.perf_counter()
     try:
-        with st.spinner("正在四十五部古籍里找依据…"):
+        with st.spinner("正在古籍里找依据…"):
             from agent import agent_answer as _agent_answer
             res = _agent_answer(question, api_key=api_key, history=history)
         res["_elapsed"] = round(_time.perf_counter() - started, 1)

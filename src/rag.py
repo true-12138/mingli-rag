@@ -252,6 +252,11 @@ def _attach_route(out, route, attempts, escalated=False, escalation_reason=""):
     return out
 
 
+def _skip_retrieval(chart):
+    """姓名盘不检索古籍：答案来自盘面查表，检索只会引入噪声和超时。"""
+    return bool(chart) and chart.get("kind") == "name"
+
+
 def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=None,
            chart=None, tier="auto"):
     """返回 dict：can_answer / answer / citations / citations_chunk_ids / ...
@@ -268,8 +273,13 @@ def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=N
     history = normalize_history(history)
     standalone = rewrite_question(question, history, api_key=api_key, counter=counter)
     route = router.decide(standalone, history=history, chart=chart, tier=tier, mode="rag")
-    search_query = chart_context.retrieval_query(chart, standalone)
-    hits = retrieve_one(search_query, top_k=top_k, mode=mode)
+    if _skip_retrieval(chart):
+        # 姓名盘的答案来自五格查表，不靠古籍；不检索既避开 embed 抖动，
+        # 也避免模型拿五行古籍去套 1928 年的数理体系。
+        search_query, hits = "", []
+    else:
+        search_query = chart_context.retrieval_query(chart, standalone)
+        hits = retrieve_one(search_query, top_k=top_k, mode=mode)
     hist = history_block(history)
     mem = memory_block(memories)
     ctx = chart_context.prompt_block(chart)
@@ -296,7 +306,10 @@ def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=N
     if data is None:
         out = _failure_rag(hits, standalone, history, counter, last_raw)
     else:
-        out = _finalize_rag(data, hits, standalone, history, counter)
+        out = _finalize_rag(
+            data, hits, standalone, history, counter,
+            require_citations=(chart or {}).get("kind") != "name",
+        )
 
     escalated = False
     escalation_reason = ""
@@ -313,14 +326,21 @@ def answer(question, top_k=5, mode="rrf", api_key=None, history=None, memories=N
             if data2 is None:
                 out = _failure_rag(hits, standalone, history, counter, raw2)
             else:
-                out = _finalize_rag(data2, hits, standalone, history, counter)
+                out = _finalize_rag(
+                    data2, hits, standalone, history, counter,
+                    require_citations=(chart or {}).get("kind") != "name",
+                )
 
     return _attach_route(out, route, attempts, escalated, escalation_reason)
 
 
-def _finalize_rag(data, hits, standalone, history, counter):
+def _finalize_rag(data, hits, standalone, history, counter, require_citations=True):
     """把模型输出整理成对外结构。同步 `answer` 和异步 `answer_stream` 共用，
-    保证两条路径的引用校验、拒答归一化完全一致。"""
+    保证两条路径的引用校验、拒答归一化完全一致。
+
+    require_citations=False 只给姓名盘用：五格剖象是 1928 年以来的现代体系，
+    盘面本身就能答，不能因为没引古籍就标成「不合规输出」。
+    """
     cited = data.get("citations") or []
     valid_nums, invalid_nums = [], []
     for n in cited:
@@ -336,8 +356,11 @@ def _finalize_rag(data, hits, standalone, history, counter):
     ]
     data["invalid_citations"] = invalid_nums
     data["retrieved_chunk_ids"] = [h["chunk_id"] for h in hits]
-    # 声称能答却没有一条有效引用：不算拒答，但要标成不合规输出
-    data["invalid_output"] = bool(data.get("can_answer")) and not valid_nums
+    # 声称能答却没有一条有效引用：不算拒答，但要标成不合规输出。
+    # 姓名盘例外（见函数 docstring）。
+    data["invalid_output"] = (
+        require_citations and bool(data.get("can_answer")) and not valid_nums
+    )
     data["rewritten_question"] = standalone
     data["history_turns"] = len(history)
     data["llm_calls"] = counter["llm_calls"]
@@ -410,9 +433,13 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
     standalone = await arewrite_question(question, history, api_key=api_key,
                                          counter=counter, client=client)
     route = router.decide(standalone, history=history, chart=chart, tier=tier, mode="rag")
-    search_query = chart_context.retrieval_query(chart, standalone)
-    hits = await asyncio.to_thread(retrieve_one, search_query, top_k=top_k, mode=mode)
-    if on_step is not None:
+    skip_retrieval = _skip_retrieval(chart)
+    if skip_retrieval:
+        search_query, hits = "", []
+    else:
+        search_query = chart_context.retrieval_query(chart, standalone)
+        hits = await asyncio.to_thread(retrieve_one, search_query, top_k=top_k, mode=mode)
+    if on_step is not None and not skip_retrieval:
         on_step({
             "agent": "retrieval",
             "tool": "retrieve",
@@ -446,7 +473,10 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
     if data is None:
         out = _failure_rag(hits, standalone, history, counter, last_raw)
     else:
-        out = _finalize_rag(data, hits, standalone, history, counter)
+        out = _finalize_rag(
+            data, hits, standalone, history, counter,
+            require_citations=(chart or {}).get("kind") != "name",
+        )
 
     escalated = False
     escalation_reason = ""
@@ -469,7 +499,10 @@ async def answer_stream(question, top_k=5, mode="rrf", api_key=None, history=Non
             if data2 is None:
                 out = _failure_rag(hits, standalone, history, counter, raw2)
             else:
-                out = _finalize_rag(data2, hits, standalone, history, counter)
+                out = _finalize_rag(
+                    data2, hits, standalone, history, counter,
+                    require_citations=(chart or {}).get("kind") != "name",
+                )
 
     out["usage"] = llm.merge_usage(counter.get("usage"))
     return _attach_route(out, route, attempts, escalated, escalation_reason)

@@ -6,7 +6,7 @@
     for q in query:
         q_freq = np.array([(doc.get(q) or 0) for doc in self.doc_freqs])
 
-每个 query 词都遍历**全部 8,681 篇文档**做 Python 级 dict 查找。中文用字二元组
+每个 query 词都遍历**全部 9,719 篇文档**做 Python 级 dict 查找。中文用字二元组
 分词，一个 query 有 4–8 个词，就是 3–7 万次 dict 查找，全程持有 GIL：
 
     1 线程 31.9 QPS，8 线程 31.2 QPS —— 加线程完全不长吞吐

@@ -165,7 +165,7 @@ export interface ActionState {
 
 // ---------- 排盘 ----------
 
-export type FortuneKind = "bazi" | "astro" | "tarot";
+export type FortuneKind = "bazi" | "astro" | "tarot" | "name";
 
 export interface BirthInput {
   year: number;
@@ -189,6 +189,57 @@ export interface AstroInput extends BirthInput {
 export interface TarotInput {
   spread: "single" | "three" | "cross";
   seed?: number | null;
+}
+
+// 姓名测算：笔画查康熙字典，五格/三才/三运查表，纯确定性。
+export interface NameInput {
+  surname: string;
+  given: string;
+}
+
+export interface NameChar {
+  char: string;
+  role: "姓" | "名";
+  kangxi: number;
+  wuxing: string;
+  radical: string;
+  pinyin: string;
+  structure: string;
+}
+
+export interface NameGrid {
+  num: number;
+  wuxing: string;
+  role: string;
+  level: string;
+  poem: string;
+  text: string;
+  keywords: string;
+  level_note?: string;
+}
+
+export interface NameChart {
+  kind: "name";
+  surname: string;
+  given: string;
+  full: string;
+  chars: NameChar[];
+  wuge: Record<"tian" | "ren" | "di" | "wai" | "zong", NameGrid>;
+  sancai: {
+    combo: string;
+    tian_ren: string;
+    ren_di: string;
+    level: string;
+    text: string;
+  };
+  yunshi: {
+    name: string;
+    basis: string;
+    combo: string;
+    relation: string;
+    level: string;
+    text: string;
+  }[];
 }
 
 export interface BaziChart {
@@ -268,7 +319,7 @@ export interface PhysiognomyChart {
   note?: string;
 }
 
-export type FortuneChart = BaziChart | AstroChart | TarotChart | PhysiognomyChart;
+export type FortuneChart = BaziChart | AstroChart | TarotChart | PhysiognomyChart | NameChart;
 
 // 排盘信息不够时，后端返回「还缺什么」，由这里渲染成追问表单。
 export interface IntakeField {
@@ -374,6 +425,13 @@ export function drawAstro(input: AstroInput): Promise<AstroChart> {
 
 export function drawTarot(input: TarotInput): Promise<TarotChart> {
   return request<TarotChart>("/v1/fortune/tarot", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function drawName(input: NameInput): Promise<NameChart> {
+  return request<NameChart>("/v1/fortune/name", {
     method: "POST",
     body: JSON.stringify(input),
   });
